@@ -1,0 +1,88 @@
+---
+title: "XSL Model Bake-off"
+author: "George Kachergis"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(tidyverse)
+require(ggplot2)
+```
+
+## Introduction
+
+The goal is to test a variety of cross-situational word learning models from the recent literature on a range of findings. We will examine both associative models and hypothesis-testing models, and will find optimal parameters both globally (for all experiments), as well as per condition, and perhaps even per participant.
+
+Models:
+- baseline count model
+- propose-but-verify
+- guess-and-test
+- pursuit model
+- Kachergis model (+ sampling version?)
+  - strength bias model
+  - uncertainty bias model
+  - novelty bias model
+- Tilles & Fontanari
+- Fazly
+- "Bayesian" decay
+
+
+
+### The Data
+
+I have participant-level data for: 1) 556 subjects from 18 conditions (Kachergis & Yu, 2013), 2) frequency and contextual diversity experiments (including a multi-block version), and 3) 
+
+I have also developed simulations of a number of other experiments by others, but only have group-level performance for these conditions. 
+For example, Koehne, Trueswell & Gleitman (2013), in which each of 16 novel nouns was assigned two meanings with different co-occurrence frequencies: One referent was present whenever the noun was present (six times, 100% referent), the other referent was present in only half of the cases the noun was (three times, 50% referent). All other objects co-occurred only once with a noun (17%). Training trial order was manipulated: including and excluding the 50% referent were presented within four levels (within participants): Firstly, the 50%-present (P) and 50%-absent (A) trials could be either blocked (AAAPPP and PPPAAA) or not blocked (APAPAP and PAPAPA); secondly, the first encounter of a noun could be either an A trial (AAAPPP and APAPAP) or a P trial (PPPAAA and PAPAPA).
+Medina et al. 2011 is another example,
+and Suanda et al. (2014)'s contextual diversity with children is another.
+Finally, Yu, Zhong, and Fricker (2012), which pre-trained three word-object associations and found higher performance on the other 15 words after this pre-training.
+
+```{r, load-data}
+# individual-level subject data for 18 conditions (from Kachergis & Yu 2013)
+load("data/asym_master.RData") 
+asym <- raw %>% group_by(Condition, CondNum, Subject) %>%
+  summarise(perf = mean(Correct)) %>%
+  group_by(Condition, CondNum) %>% summarise(Nsubj=n()) 
+# CondNums with missing names: 
+# 217 - 2 words x 4 objects, 54 trials
+# 218 - 3 words x 4 objects, 36 trials
+# 220 - 3 words x 4 objects, 54 trials
+sum(asym$Nsubj) # 556 subjects
+
+load("data/asymmetric_conditions.RData") 
+# conds = 
+
+load("data/master_orders.RData") # trial orders for ME (filt) and FreqCD papers
+# orders
+
+# multi-block experiment
+load("data/priming_all_trajectory.RData") 
+# 86 subjects on 4 blocks of equal frequency 4pairs/trial, or 3,6,9x freq 3 or 4 pairs per trial
+asym <- raw %>% group_by(Condition, CondNum, Subject) %>%
+  summarise(perf = mean(Correct)) %>%
+  group_by(Condition, CondNum) %>% summarise(Nsubj=n())
+```
+
+For each condition, need an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
+We also require a test function--often presenting each word a single time along *m*AFC of objects, where *m* is the number of objects seen during the training, but sometimes a subset of the objects are tested.
+
+### The Models
+
+Each model accepts a condition's list of training trials, as well as p
+
+```{r, model-list}
+# need to be run >100 times per given parameter values
+stochastic_models = list.files("models/stochastic/")
+# assoc models need to be run only once per given parameter values
+assoc_models = list.files("models/") 
+assoc_models = assoc_models[assoc_models!="stochastic"]
+
+```
+
+```{r, fitting-functions}
+source("fitting_functions.R")
+```
+

@@ -1,0 +1,24 @@
+{
+    "id": "97A43B01",
+    "path": "~/Documents/GitHub/xsl-bakeoff/models/stochastic/pursuit_detailed.R",
+    "project_path": "models/stochastic/pursuit_detailed.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1600541244291.0,
+    "source_on_save": false,
+    "relative_order": 9,
+    "properties": {
+        "cursorPosition": "75,24",
+        "scrollLine": "72"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1600609681,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1600609681068,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,24 @@
+{
+    "id": "CB0CA2C2",
+    "path": "~/Documents/GitHub/xsl-bakeoff/models/stochastic/guess-and-test.R",
+    "project_path": "models/stochastic/guess-and-test.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1600481826373.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "cursorPosition": "33,42",
+        "scrollLine": "15"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1600565240,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1600565240789,
+    "read_only": false,
+    "read_only_alternatives": []
+}
