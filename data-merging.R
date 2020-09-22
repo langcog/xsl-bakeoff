@@ -4,6 +4,13 @@ load("data/asym_test_data.RData") # tdat
 
 load("data/asymmetric_conditions.RData")
 
+tr301 = read.table("data/301_training_R.txt")
+names(tr301) = c(1,2)
+#tr301 = as.matrix(tr301)
+
+conds[["301"]] = list()
+conds[["301"]]$train = list(words=tr301, objs=tr301)
+conds[["301"]]$Condition = "2x2 5x 24AFC"
 
 # track down data from these conds:
 for(cond in names(conds)) {
@@ -18,7 +25,7 @@ for(cond in names(conds)) {
 }
 # 211 - 214, 217, 218, 220
 
-# 301 - "2x2 24w 6x"
+# 301 - "2x2 24w 5x"
 
 #211, 1x3.  Words appear 6 times. objects 18.  4afc.
 #212, 2x3.  Words appear 6 times. objects 9.  4afc.

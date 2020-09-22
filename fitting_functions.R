@@ -29,9 +29,8 @@ for(ord in names(orders)) {
 
 #load(paste(data_dir,"asym_master.RData",sep='')) # raw
 
-# should also add cond 301 - 46 subjects 24afc
 
-#conds[["211"]]$Nsubj = 43 # 4AFC - should at least change model evaluation
+#conds[["211"]]$Nsubj = 43 # 4AFC - should change model evaluation to use conds[["211"]]$test
 #conds[["212"]]$Nsubj = 38 # 4AFC
 #conds[["213"]]$Nsubj = 31 # 4AFC
 #conds[["214"]]$Nsubj = 36 # 4AFC
@@ -42,7 +41,7 @@ for(ord in names(conds)) {
     totSs = totSs + conds[[ord]]$Nsubj
   } else print(ord) 
 } 
-# 1486 subjects
+# 1532 subjects
 
 
 
