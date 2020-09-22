@@ -26,7 +26,7 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 	m <- matrix(0, voc_sz, ref_sz) # hypothesis matrix
 	
 	traj = list()
-	perf = matrix(0, nrow=reps, ncol=ref_sz) # a row for each block
+	perf = matrix(0, nrow=reps, ncol=voc_sz) # a row for each block
 	freq = rep(0,voc_sz) # number of occurrences per pair, so far 
 	
 	for(rep in 1:reps) {

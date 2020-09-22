@@ -25,12 +25,12 @@ model <- function(params, ord=c(), reps=1) {
   for(rep in 1:reps) { # for trajectory experiments, train multiple times
     for(t in 1:nrow(ord$words)) {
       
-      tr_w = as.integer(ord$words[[t]])
+      tr_w = as.integer(ord$words[t,])
       tr_w = tr_w[!is.na(tr_w)]
-      tr_o = as.integer(ord$objs[[t]])
+      tr_o = as.integer(ord$objs[t,])
       tr_o = tr_o[!is.na(tr_o)]
       
-      align = matrix(0, voc_sz, voc_sz) # calc from probs of stim on trial
+      align = matrix(0, voc_sz, ref_sz) # calc from probs of stim on trial
       tr_probs = probs
         for(f in tr_o) {
           for(w in tr_w) {
@@ -51,7 +51,8 @@ model <- function(params, ord=c(), reps=1) {
           probs[w,] = (assoc[w,] + lambda) / denom
           t_unseen[w] = lambda / denom
         }
-      index = (rep-1)*length(ord$trials) + t # index for learning trajectory
+      #index = (rep-1)*nrow(ord$trials$words) + t # index for learning trajectory
+      index = t
       traj[[index]] = diag(probs) + 1e-9
     }
     perf[rep,] = diag(probs)

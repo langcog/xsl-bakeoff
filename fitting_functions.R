@@ -56,6 +56,7 @@ run_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F) {
     SSE = 0
     totSs = 0
     for(i in 1:length(conds)) {
+      #print(conds[[i]]$Condition)
       mp = model(parameters, conds[[i]]$train)
       mod[[names(conds)[i]]] = mp$perf
       SSE = SSE + conds[[i]]$Nsubj * sum( (mp$perf - conds[[i]]$HumanItemAcc)^2 )
@@ -94,7 +95,7 @@ run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, prin
     SSE = 0
     totSs = 0
     for(i in 1:length(conds)) {
-      print(conds[[i]]$Condition)
+      #print(conds[[i]]$Condition)
       mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds[[i]]$train)
       mperf = rowSums(mp) / ncol(mp)
       mod[[names(conds)[i]]] = mperf
@@ -160,17 +161,14 @@ already_run <- function() {
 
 ## TESTING
 
-gt = run_stochastic_model(conds, "guess-and-test", c(.1, .5)) # perf[rep,] = diag(m) size mismatch "3x4 +6o"
-
-pt = run_stochastic_model(conds, "pursuit_detailed", c(.2, .3, .05))
-
-st = fit_model("strength", conds[[1]], c(.001,.1), c(5,1)) # run_model
+#gt = run_stochastic_model(conds, "guess-and-test", c(.1, .5)) # SSE=1.14
+#pt = run_stochastic_model(conds, "pursuit_detailed", c(.2, .3, .05)) # SSE=4.06
+#st = fit_model("strength", conds[[1]], c(.001,.1), c(5,1)) # run_model
 
 ##### NOT RUN YET
 load("fits/group_fits.Rdata")
 
 group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
-
 group_fits[["pursuit_detailed"]] = fit_stochastic_model("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
 
 gfd = get_model_dataframe(group_fits, combined_data)
@@ -183,7 +181,7 @@ fit_by_cond <- function(models, conds) {
   fits = list()
   for(mname in models) {
     mod_fits = list()
-    for(cname in conds) {
+    for(cname in names(conds)) {
       mod_fits[[cname]] = fit_model(mname, conds[[cname]], c(.001,.1,.5), c(5,15,1)) 
     }
     fits[[mname]] = mod_fits
@@ -191,6 +189,13 @@ fit_by_cond <- function(models, conds) {
   return(fits)
 }
 
+already_run2 <- function() {
+  cond_fits = list()
+  cond_fits[["kachergis"]] = fit_by_cond(c("kachergis"), combined_data)
+  cond_fits[["uncertainty"]] = fit_by_cond(c("uncertainty"), combined_data)
+  # rewrite get_model_dataframe for 
+  save(cond_fits, file="fits/cond_fits.Rdata")
+}
 
 gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) + 
   geom_point() + facet_wrap(vars(Model)) + theme_bw() 
@@ -203,116 +208,20 @@ gfd %>% filter(!is.na(HumanPerf)) %>%
   group_by(Model) %>% 
   summarise(SSE = sum((ModelPerf-HumanPerf)^2),
             r = cor(ModelPerf, HumanPerf))
-# Bayesian_decay  24.5 0.588
-# fazly           66.3 0.134
-# kachergis       22.2 0.647
-# strength        45.8 0.276
-# uncertainty     34.9 0.546
+# Model            SSE     r
+# Bayesian_decay  25.3 0.574
+# fazly           23.7 0.622
+# kachergis       22.6 0.643
+# strength        46.3 0.275
+# uncertainty     35.2 0.550
 
 # fix the below, (and tilles)
 
 # group_fits[["novelty"]] = fit_model("novelty", conds, c(.001,.1,.5), c(5,15,1))
 # NaN value of objective function
 
-group_fits[["rescorla-wagner"]] =  fit_model("rescorla-wagner", conds, c(.0001,.1, .1), c(10,1,10))
+#group_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", conds, c(.0001,.1, .1), c(10,1,10))
 
 
 #models = c("kachergis", "fazly", "strength", "uncertainty", "novelty", "Bayesian_decay", "rescorla_wagner")
 
-
-
-
-
-#mr = run_model(conds, "fazly", c(.0001,8000,.7), print_perf=T)
-#mr = run_model(conds, "kachergis", c(1,3,.97), print_perf=T)
-#mod = run_model(conds[["201"]], "kachergis", c(1,3,.97), print_perf=T)
-#mod = run_model(conds[["201"]], "strength", c(1,.97), print_perf=T)
-
-#coocs3x4 = make_cooccurrence_matrix(conds[["201"]], print_matrix=T, heatmap_filename="201")
-#filt3e6l = make_cooccurrence_matrix(orders[["filt3E_6L"]])
-
-
-#rwo = fit_model("rescorla-wagner", conds[conds_with_data], c(.0001,.1, .1), c(10,1,10))
-#rww = fit_model("rescorla-wagner_words_cues", conds[conds_with_data], c(.0001,.1, .1), c(10,1,10))
-
-#run_model(orders[["freq369-3x3hiCD"]], "Bayesian_decay", c(5.569798, 8.028788, 3.048987), print_perf=T)
-
-faz_parms = c(.0001, 1000, .7)
-f = run_model(orders[["freq369-3x3hiCD"]], "fazly", faz_parms, print_perf=T)
-# according to Fazly et al. should be: .84 .94 .88 .75 .80 .89 .92 .95 .93 .98 .89 .92 .92 .98 .88 .88 .98 .85
-faz_perf = c(.84, .94, .88, .75, .80, .89, .92, .95, .93, .98,.89,.92,.92,.98,.88,.88,.98,.85)
-# freq3: .85 freq6: .93  freq9: .92
-
-f = run_model(orders[["freq369-3x3hiCD"]], "fazly", faz_parms, print_perf=T)
-cor(faz_perf, f$perf) # .97! really close...
-
-# with no threshold, and with dummy word
-fazf = fit_model("fazly", orders[condnames], c(1e-12,5,1e-12), c(.5,60000,1))
-faza = fit_model("fazly", conds[conds_with_data], c(1e-12,5,1e-12), c(.5,60000,1))
-
-# with threshold and with dummy word
-fazf = fit_model("fazly", orders[condnames], c(1e-12,5,1e-12), c(.5,60000,1))
-faza = fit_model("fazly", conds[conds_with_data], c(1e-12,5,1e-12), c(.5,60000,1))
-f3 = run_model(orders[["freq369-3x3hiCD"]], "fazly", c(0.01228797, 169.3632, 0.6993908), print_perf=T)
-mean(f3$perf[1:6]) # .43
-mean(f3$perf[7:12]) # .55
-mean(f3$perf[13:18]) # .65
-
-# no threshold no dummy word
-fazf = fit_model("fazly", orders[condnames], c(1e-12,5,1e-12), c(.5,60000,1))
-faza = fit_model("fazly", conds[conds_with_data], c(1e-12,5,1e-12), c(.5,60000,1))
-
-multinomial_likelihood_perfect <- function(par, ord) {
-	M = model(par, ord=ord)
-	pOgW = diag(M) / rowSums(M) # p(o|w)
-	lik = sum(log(pOgW))
-	return(-lik) # 18*log(1/18) = -52.02669 for AFC guessing
-}
-
-multinomial_likelihood <- function(cdat, M) {
-	M = M / rowSums(M) # p(o|w)
-	lik = 0
-	for(i in 1:dim(cdat)[1]) { 
-		wordi = cdat[i,"Word"]
-		response_probs = M[wordi,unlist(cdat[i,c("Obj1","Obj2","Obj3","Obj4")])] # strengths of test objects
-		resp = cdat[wordi,]$Response  #resp = cdat[which(cdat$Word==i),]$Response
-		lik = lik + log(M[wordi,resp] / sum(response_probs)) 
-	}
-	return(-lik) # minimize -loglik
-}
-
-
-binomial_likelihood <- function(cdat, M) {
-	est_prob = diag(M) / rowSums(M) # prob correct
-	lik = 0
-	for(i in 1:length(cdat)) { # dim(M)[1]
-		resp = cdat[i]
-		if(resp==i) {
-			lik = lik + log(est_prob[i])
-		} else {
-			lik = lik + log(1-est_prob[i])
-		}
-	}
-	return(lik) # 18*log(1/18) = -52.02669 for guessing
-}
-
-
-fit_subj <- function(par, ord, sdat) {
-	tot_lik = 0
-	M <- model(par, ord=ord)
-	# need: for each word (CorrectAns), what object they chose (Response)
-	mlik = binomial_likelihood(sdat, M)
-	return(-mlik)
-}
-
-fit_all <- function(par, ord, dat) {
-	tot_lik = 0
-	for(s in dim(dat)[1]) {
-		sdat <- unlist(dat[s,])
-		M <- model(par, ord=ord)
-		# need: for each word (CorrectAns), what object they chose (Response)
-		tot_lik = tot_lik + binomial_likelihood(sdat, M)
-	}
-	mlik = tot_lik #/ length(unique(dat$Subject))
-	return(-mlik)
-}
