@@ -44,6 +44,16 @@ for(ord in names(conds)) {
 # 1532 subjects
 
 
+mafc_test <- function(mperf, test) {
+  perf = rep(0, length(test$trials))
+  for(i in 1:length(test$trials)) {
+    w = test$trials[[i]]$word
+    denom = sum(mperf[w, test$trials[[i]]$objs])
+    perf[i] = mperf[w,w] / denom
+  }
+  return(perf)
+}
+
 
 # run given model on 1 or more condition 
 run_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F) {
@@ -58,8 +68,14 @@ run_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F) {
     for(i in 1:length(conds)) {
       #print(conds[[i]]$Condition)
       mp = model(parameters, conds[[i]]$train)
-      mod[[names(conds)[i]]] = mp$perf
-      SSE = SSE + conds[[i]]$Nsubj * sum( (mp$perf - conds[[i]]$HumanItemAcc)^2 )
+      if(!is.null(conds[[i]]$test)) {
+        mperf = mafc_test(mp$matrix, conds[[i]]$test)
+        mod[[names(conds)[i]]] = mperf
+      } else {
+        mperf = mp$perf
+        mod[[names(conds)[i]]] = mperf
+      }
+      SSE = SSE + conds[[i]]$Nsubj * sum( (mperf - conds[[i]]$HumanItemAcc)^2 )
       totSs = totSs + conds[[i]]$Nsubj
     }
     SSE = SSE / totSs
@@ -84,8 +100,14 @@ stochastic_dummy <- function(n, parameters, ord) {
   return(model(parameters, ord)$perf)
 }
 
+stochastic_matrix_dummy <- function(n, parameters, ord) {
+  return(model(parameters, ord)$matrix)
+}
+
+
 run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F, Nsim=200) {
   source(paste0(model_dir,"stochastic/",model_name,".R"))
+  # fitting a single condition
   if(!is.null(conds$train)) {
     mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds$train)
     mod = rowSums(mp) / ncol(mp)
@@ -96,8 +118,16 @@ run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, prin
     totSs = 0
     for(i in 1:length(conds)) {
       #print(conds[[i]]$Condition)
-      mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds[[i]]$train)
-      mperf = rowSums(mp) / ncol(mp)
+      # 4AFC conditions use different testing
+      if(!is.null(conds[[i]]$test)) {
+        mp = lapply(1:Nsim, stochastic_matrix_dummy, parameters=parameters, 
+                    ord=conds[[i]]$train)
+        mperf = Reduce('+', mp)
+        mperf = mafc_test(mperf, test)
+      } else {
+        mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds[[i]]$train)
+        mperf = rowSums(mp) / ncol(mp)
+      }
       mod[[names(conds)[i]]] = mperf
       SSE = SSE + conds[[i]]$Nsubj * sum( (mperf - conds[[i]]$HumanItemAcc)^2 )
       totSs = totSs + conds[[i]]$Nsubj
@@ -146,14 +176,17 @@ get_model_dataframe <- function(fits, conds) {
 
 combined_data = c(conds, orders)
 
-group_fits = list()
 
-already_run <- function() {
+
+do_group_fits <- function() {
+  group_fits = list()
   group_fits[["kachergis"]] = fit_model("kachergis", combined_data, c(.001,.1,.5), c(5,15,1)) 
+  # group_fits[["novelty"]] = fit_model("novelty", combined_data, c(.001,.1,.5), c(5,15,1)) # NaN value of objective function!
   group_fits[["fazly"]] = fit_model("fazly", combined_data, c(1e-10,2), c(2,20000)) 
   group_fits[["Bayesian_decay"]] = fit_model("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
   group_fits[["strength"]] = fit_model("strength", combined_data, c(.001,.1), c(5,1))
   group_fits[["uncertainty"]] = fit_model("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
+  group_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", conds, c(1e-5,1e-5,1e-5), c(1,1,1))
   gfd = get_model_dataframe(group_fits, combined_data)
   save(group_fits, gfd, file="fits/group_fits.Rdata")
 }
@@ -161,13 +194,20 @@ already_run <- function() {
 
 ## TESTING
 
+#pv = run_stochastic_model(conds, "trueswell2012", c(.1, .5)) # SSE=1.18
+
 #gt = run_stochastic_model(conds, "guess-and-test", c(.1, .5)) # SSE=1.14
+# so far: Iteration: 10 bestvalit: 0.932846 bestmemit:    0.685980    0.994259
+
 #pt = run_stochastic_model(conds, "pursuit_detailed", c(.2, .3, .05)) # SSE=4.06
-#st = fit_model("strength", conds[[1]], c(.001,.1), c(5,1)) # run_model
+
+
+nv = fit_model("novelty", conds[[1]], c(.001,.1,.5), c(5,15,1)) # run_model
 
 ##### NOT RUN YET
 load("fits/group_fits.Rdata")
 
+group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
 group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
 group_fits[["pursuit_detailed"]] = fit_stochastic_model("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
 
@@ -176,23 +216,23 @@ gfd = get_model_dataframe(group_fits, combined_data)
 save(group_fits, gfd, file="fits/group_fits.Rdata")
 
 
-# use for fitting each model to each condition
-fit_by_cond <- function(models, conds) {
-  fits = list()
-  for(mname in models) {
-    mod_fits = list()
-    for(cname in names(conds)) {
-      mod_fits[[cname]] = fit_model(mname, conds[[cname]], c(.001,.1,.5), c(5,15,1)) 
-    }
-    fits[[mname]] = mod_fits
+# use for fitting given model to each condition
+fit_by_cond <- function(mname, conds, lower, upper) {
+  mod_fits = list()
+  for(cname in names(conds)) {
+    mod_fits[[cname]] = fit_model(mname, conds[[cname]], lower, upper) 
   }
-  return(fits)
+  return(mod_fits)
 }
 
-already_run2 <- function() {
+do_cond_fits <- function() {
   cond_fits = list()
-  cond_fits[["kachergis"]] = fit_by_cond(c("kachergis"), combined_data)
-  cond_fits[["uncertainty"]] = fit_by_cond(c("uncertainty"), combined_data)
+  cond_fits[["kachergis"]] = fit_by_cond(c("kachergis"), combined_data, c(.001,.1,.5), c(5,15,1))
+  cond_fits[["uncertainty"]] = fit_by_cond(c("uncertainty"), combined_data, c(.001,.1,.5), c(5,15,1))
+  cond_fits[["fazly"]] = fit_by_cond("fazly", combined_data, c(1e-10,2), c(2,20000)) 
+  cond_fits[["Bayesian_decay"]] = fit_by_cond("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
+  cond_fits[["strength"]] = fit_model("strength", combined_data, c(.001,.1), c(5,1))
+  cond_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", conds, c(1e-5,1e-5,1e-5), c(1,1,1))
   # rewrite get_model_dataframe for 
   save(cond_fits, file="fits/cond_fits.Rdata")
 }
@@ -212,6 +252,7 @@ gfd %>% filter(!is.na(HumanPerf)) %>%
 # Bayesian_decay  25.3 0.574
 # fazly           23.7 0.622
 # kachergis       22.6 0.643
+# rescorla-wagner 42.9 0.593
 # strength        46.3 0.275
 # uncertainty     35.2 0.550
 
@@ -220,7 +261,6 @@ gfd %>% filter(!is.na(HumanPerf)) %>%
 # group_fits[["novelty"]] = fit_model("novelty", conds, c(.001,.1,.5), c(5,15,1))
 # NaN value of objective function
 
-#group_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", conds, c(.0001,.1, .1), c(10,1,10))
 
 
 #models = c("kachergis", "fazly", "strength", "uncertainty", "novelty", "Bayesian_decay", "rescorla_wagner")

@@ -51,15 +51,22 @@ model <- function(params, ord=c(), reps=1, test_noise=0) {
 				
 		# if objects are cues that predict words, then we want colSums;
 		# if words are cues, use rowSums--but only of the currently-presented stimuli
-		pred = colSums(m[tr_w,tr_o]) 
+		if(length(tr_w)==1) {
+		  pred = m[tr_w,tr_o]
+		} else if(length(tr_o)==1) {
+		  pred = sum(m[tr_w,tr_o])
+		} else {
+		  pred = colSums(m[tr_w,tr_o]) 
+		}
 		delta = alpha*beta*(lambda - pred)
 		m[tr_w,tr_o] = m[tr_w,tr_o] + delta 
 		
 		m = m*C
 		
-		index = (rep-1)*length(ord$trials) + t # index for learning trajectory
+		index = (rep-1)*nrow(ord$words) + t # index for learning trajectory
 		traj[[index]] = m
 	  }
+	
 	m_test = m+test_noise # test noise constant k
 	perf[rep,] = diag(m_test) / rowSums(m_test)
 	}

@@ -64,7 +64,7 @@ model <- function(params, ord=c(), reps=1, test_noise=.01) {
 		# update associations on this trial
 		m[tr_w,tr_o] = m[tr_w,tr_o] + (X * assocs * (novelty_w %*% t(novelty_o))) / denom 
 
-		index = (rep-1)*length(ord$trials) + t # index for learning trajectory
+		index = (rep-1)*nrow(ord$words) + t # index for learning trajectory
 		traj[[index]] = m
 	  }
 	m_test = m+test_noise # test noise constant k

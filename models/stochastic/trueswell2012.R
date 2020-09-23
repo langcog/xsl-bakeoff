@@ -26,7 +26,8 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 	#sa <- params[2] # prob of storage (slow learning down)
 
 	voc_sz = max(unlist(ord$words), na.rm=TRUE) # vocabulary size
-	m <- matrix(0, voc_sz, voc_sz) # hypothesis matrix
+	ref_sz = max(unlist(ord$objs), na.rm=TRUE)
+	m <- matrix(0, voc_sz, ref_sz) # hypothesis matrix
   
 	traj = list()
 	perf = matrix(0, reps, voc_sz) # a row for each block
@@ -34,29 +35,40 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
     
 	for(rep in 1:reps) {
 		for(t in 1:nrow(ord$words)) {
-			tr = as.integer(ord$words[t,]) # ASSUMES words==objects
-			freq[tr] = freq[tr] + 1 
-			probs = runif(length(tr))
-			forget = tr[which(probs > rowSums(m[tr,]))]
-			#remember = tr[which(probs <= mem_strength[tr])]
-			m[forget,] = m[forget,]*0
-			have_hypoths = tr[which(rowSums(m[tr,])!=0)] # throw out inconsistent ones
+			tr_w = as.integer(ord$words[t,]) # ASSUMES words==objects
+			tr_o = as.integer(ord$objs[t,])
+			freq[tr_w] = freq[tr_w] + 1 
+			if(length(tr_w)>1) {
+			  forget = tr_w[which(runif(length(tr_w)) > rowSums(m[tr_w,]))]
+			  m[forget,] = 0
+			  have_hypoths = tr_w[which(rowSums(m[tr_w,])!=0)] 
+			} else { # 1 word/trial
+			   if(runif(1) > sum(m[tr_w,])) {
+			      m[tr_w,] = 0 # forgotten
+			   } 
+			  have_hypoths = tr_w[which(sum(m[tr_w,])!=0)] 
+			}
+			
+			# throw out inconsistent hyps
 			for(w in have_hypoths) {
 				hypo = which(m[w,]>0)
-				if(!is.element(hypo, tr)) { 
-					m[w,] = m[w,]*0 # disconfirmed
+				if(!is.element(hypo, tr_o)) { 
+					m[w,] = 0 # disconfirmed
 				} else {
 					m[w,hypo] = m[w,hypo] + alpha_increase # strengthen
 				}
 			}
-			need_hypoths = tr[which(rowSums(m[tr,])==0)]
-			#store = need_hypoths[which(runif(length(need_hypoths)) < sa)]
+			if(length(tr_w)>1) {
+			  need_hypoths = tr_w[which(rowSums(m[tr_w,])==0)]
+			} else if(sum(m[tr_w,]==0)) {
+			  need_hypoths = tr_w
+			}
 			store = need_hypoths
 			new_hyps = sample(store, length(store), replace=FALSE)
 			for(w in 1:length(store)) {
 				m[need_hypoths[w], new_hyps[w]] = alpha
 			}
-			index = (rep-1)*length(ord$trials) + t # index for learning trajectory
+			index = (rep-1)*nrow(ord$words) + t # index for learning trajectory
 			traj[[index]] = m
 		}
 		perf[rep,] = diag(m) / (rowSums(m)+1e-12) # just in case of zeros
