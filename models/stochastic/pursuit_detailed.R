@@ -87,11 +87,11 @@ model <- function(params, ord=c(), verbose=F) {
       #compScore[t] = sum(diag(lexicon) / rowSums(lexicon+1e-9)) # should use index
       compScore[t] = sum(diag(Pm_w))
     }
-  resp_prob = diag(lexicon) / rowSums(lexicon+1e-9) 
+  resp_prob = diag(lexicon) / rowSums(lexicon+1e-12) 
 
   if(verbose) print(m)
   #want = list(perf=diag(Pm_w), matrix=Pm_w, compScore=compScore) 
-  want = list(perf=as.numeric(resp_prob), matrix=lexicon, compScore=as.numeric(compScore))
+  want = list(perf=as.numeric(resp_prob), matrix=lexicon+1e-12, compScore=as.numeric(compScore))
   return(want)
 }
 

@@ -123,7 +123,7 @@ run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, prin
         mp = lapply(1:Nsim, stochastic_matrix_dummy, parameters=parameters, 
                     ord=conds[[i]]$train)
         mperf = Reduce('+', mp)
-        mperf = mafc_test(mperf, test)
+        mperf = mafc_test(mperf, conds[[i]]$test)
       } else {
         mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds[[i]]$train)
         mperf = rowSums(mp) / ncol(mp)
@@ -145,7 +145,7 @@ run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, prin
 }
 
 fit_stochastic_model <- function(model_name, conds, lower, upper) {
-  fit = DEoptim(run_stochastic_model, lower=lower, upper=upper, DEoptim.control(reltol=.001, NP=100, itermax=100), 
+  fit = DEoptim(run_stochastic_model, lower=lower, upper=upper, DEoptim.control(reltol=.001, NP=100, itermax=20), 
                 model_name=model_name, conds=conds, SSE_only=T)
   return(fit)
 }
@@ -208,6 +208,7 @@ nv = fit_model("novelty", conds[[1]], c(.001,.1,.5), c(5,15,1)) # run_model
 load("fits/group_fits.Rdata")
 
 group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
+# trueswell2012 SSE = 0.878519  c(0.113666, 0.266792)
 group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
 group_fits[["pursuit_detailed"]] = fit_stochastic_model("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
 

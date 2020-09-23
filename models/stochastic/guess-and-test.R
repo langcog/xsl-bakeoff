@@ -63,6 +63,6 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 		perf[rep,] = diag(m)
 	}
 	if(verbose) print(perf)
-	want = list(perf=perf, matrix=m, traj=traj)
+	want = list(perf=perf, matrix=m+1e-12, traj=traj)
 	return(want)
 }
