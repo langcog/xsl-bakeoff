@@ -82,7 +82,80 @@ assoc_models = assoc_models[assoc_models!="stochastic"]
 
 ```
 
-```{r, fitting-functions}
-source("fitting_functions.R")
+```{r, load-fits}
+#source("fitting_functions.R")
+
+# each model jointly fit to all conditions
+load("fits/group_fits.Rdata")
+
+# each model separately fit to each condition (should try cross-validation approach?)
+load("fits/cond_fits.Rdata")
+
+#load("fits/individual_fits.Rdata")
+# not all conditions have subject-level data (but I think I can track it down)
+# moreover, some subjects participated in multiple conditions, but I'm not sure 
+# I can trace that for all of the conditions (certainly for the exps I ran -- ~25 conditions)
 ```
+
+```{r, summarize-group-fits}
+gfd %>% filter(!is.na(HumanPerf)) %>%
+  group_by(Model) %>% 
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+            r = cor(ModelPerf, HumanPerf)) %>%
+  arrange(SSE)
+
+```
+
+```{r, summarize-condition-fits}
+cfd %>% filter(!is.na(HumanPerf)) %>%
+  group_by(Model) %>% 
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+            r = cor(ModelPerf, HumanPerf)) # kable
+```
+
+
+
+```{r, plot-group-fits-avg}
+# look at condition average fits
+ccondm <- cfd %>% group_by(Model, Condition, Nsubj) %>%
+  summarise(HumanPerf=mean(HumanPerf), 
+            ModelPerf = mean(ModelPerf))
+
+ccondm %>% group_by(Model) %>% 
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+            r = cor(ModelPerf, HumanPerf)) %>% 
+  arrange(SSE)
+
+gcondm <- gfd %>% group_by(Model, Condition, Nsubj) %>%
+  summarise(HumanPerf=mean(HumanPerf), 
+            ModelPerf = mean(ModelPerf))
+
+gcondm %>% group_by(Model) %>% 
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+            r = cor(ModelPerf, HumanPerf)) %>% 
+  arrange(SSE)
+
+gcondm %>%
+  ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition, size=Nsubj)) + 
+  geom_point(alpha=.7) + facet_wrap(vars(Model)) + theme_bw() +
+  geom_abline(intercept=0, slope=1, linetype="dashed")
+  #theme(legend.position="bottom")
+```
+
+```{r, plot-group-fits}
+gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) + 
+  geom_point(alpha=.8) + facet_wrap(vars(Model)) + theme_bw() +
+  geom_abline(intercept=0, slope=1, linetype="dashed")
+
+#gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Model, color=Model)) + 
+#  geom_point() + facet_wrap(vars(Condition)) + theme_bw() + geom_smooth(method = "lm")
+```
+
+
+```{r, plot-cond-fits}
+cfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) + 
+  geom_point(alpha=.8) + facet_wrap(vars(Model)) + theme_bw() +
+  geom_abline(intercept=0, slope=1, linetype="dashed")
+```
+
 

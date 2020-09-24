@@ -59,14 +59,15 @@ mafc_test <- function(mperf, test) {
 run_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F) {
 	source(paste0(model_dir,model_name,".R"))
   if(!is.null(conds$train)) {
-    mod = model(parameters, ord=conds$train)$perf
-    SSE = sum( (mod - conds$HumanItemAcc)^2 )
+    mod = list(perf = model(parameters, ord=conds$train)$perf)
+    SSE = sum( (mod$perf - conds$HumanItemAcc)^2 )
   } else {
     mod = list()
     SSE = 0
     totSs = 0
     for(i in 1:length(conds)) {
       #print(conds[[i]]$Condition)
+      #print(parameters)
       mp = model(parameters, conds[[i]]$train)
       if(!is.null(conds[[i]]$test)) {
         mperf = mafc_test(mp$matrix, conds[[i]]$test)
@@ -150,12 +151,19 @@ fit_stochastic_model <- function(model_name, conds, lower, upper) {
   return(fit)
 }
 
+stochastic_models = c("guess-and-test","pursuit_detailed","trueswell2012")
 
+# for group fits (all conditions per model)
 get_model_dataframe <- function(fits, conds) {
   mdf = tibble()
   for(model_name in names(fits)) {
-    pars = fits[[model_name]]$optim$bestmem
-    mdat = run_model(conds, model_name, pars)
+    if(is.element(model_name, stochastic_models)) {
+      pars = fits[[model_name]]$pars
+      mdat = run_stochastic_model(conds, model_name, pars)
+    } else {
+      pars = fits[[model_name]]$optim$bestmem
+      mdat = run_model(conds, model_name, pars)
+    }
     for(c in names(mdat)) {
       if(c!="SSE") {
         Nitems = length(mdat[[c]])
@@ -174,14 +182,41 @@ get_model_dataframe <- function(fits, conds) {
   return(mdf)
 }
 
-combined_data = c(conds, orders)
+get_model_dataframe_cond_fits <- function(fits, conds) {
+  mdf = tibble()
+  SSE = 0
+  for(model_name in names(fits)) {
+    for(c in names(fits[[model_name]])) {
+      pars = fits[[model_name]][[c]]$optim$bestmem
+      SSE = fits[[model_name]][[c]]$optim$bestval
+      
+      if(is.element(model_name, stochastic_models)) {
+        mdat = run_stochastic_model(conds, model_name, pars)
+      } else {
+        mdat = run_model(conds[[c]], model_name, pars)
+      }
+      Nitems = length(mdat$perf)
+      HumanPerf = conds[[c]]$HumanItemAcc
+      if(length(HumanPerf)==0) HumanPerf = rep(NA, Nitems)
+      tmp = tibble(Model=rep(model_name, Nitems), 
+                   condnum=rep(c, Nitems), 
+                   Condition=rep(conds[[c]]$Condition, Nitems),
+                   ModelPerf=as.vector(mdat$perf), 
+                   HumanPerf=HumanPerf,
+                   Nsubj=rep(conds[[c]]$Nsubj, Nitems))
+      mdf = rbind(mdf, tmp)
+    }
+  }
+  return(mdf)
+}
 
+combined_data = c(conds, orders)
 
 
 do_group_fits <- function() {
   group_fits = list()
   group_fits[["kachergis"]] = fit_model("kachergis", combined_data, c(.001,.1,.5), c(5,15,1)) 
-  # group_fits[["novelty"]] = fit_model("novelty", combined_data, c(.001,.1,.5), c(5,15,1)) # NaN value of objective function!
+  group_fits[["novelty"]] = fit_model("novelty", combined_data, c(.001,.1,.5), c(5,15,1)) # NaN value of objective function!
   group_fits[["fazly"]] = fit_model("fazly", combined_data, c(1e-10,2), c(2,20000)) 
   group_fits[["Bayesian_decay"]] = fit_model("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
   group_fits[["strength"]] = fit_model("strength", combined_data, c(.001,.1), c(5,1))
@@ -193,7 +228,6 @@ do_group_fits <- function() {
 
 
 ## TESTING
-
 #pv = run_stochastic_model(conds, "trueswell2012", c(.1, .5)) # SSE=1.18
 
 #gt = run_stochastic_model(conds, "guess-and-test", c(.1, .5)) # SSE=1.14
@@ -202,13 +236,20 @@ do_group_fits <- function() {
 #pt = run_stochastic_model(conds, "pursuit_detailed", c(.2, .3, .05)) # SSE=4.06
 
 
-nv = fit_model("novelty", conds[[1]], c(.001,.1,.5), c(5,15,1)) # run_model
+#nv = fit_model("novelty", conds[[1]], c(.001,.1,.5), c(5,15,1)) # run_model
 
 ##### NOT RUN YET
 load("fits/group_fits.Rdata")
+for(m in names(group_fits)) { 
+  print(paste(m, round(group_fits[[m]]$optim$bestval, 2)))
+}
+
+# temporary (until we finish full fits)
+group_fits[["trueswell2012"]] = list(pars = c(0.113666, 0.266792)) # SSE=.879
+group_fits[["guess-and-test"]] = list(pars = c(0.691312, 0.991726)) # SSE=.884
+group_fits[["pursuit_detailed"]] = list(pars = c(0.168878,  0.320642,  0.008964)) # SSE=1.022
 
 group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
-# trueswell2012 SSE = 0.878519  c(0.113666, 0.266792)
 group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
 group_fits[["pursuit_detailed"]] = fit_stochastic_model("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
 
@@ -221,6 +262,7 @@ save(group_fits, gfd, file="fits/group_fits.Rdata")
 fit_by_cond <- function(mname, conds, lower, upper) {
   mod_fits = list()
   for(cname in names(conds)) {
+    print(cname)
     mod_fits[[cname]] = fit_model(mname, conds[[cname]], lower, upper) 
   }
   return(mod_fits)
@@ -230,32 +272,16 @@ do_cond_fits <- function() {
   cond_fits = list()
   cond_fits[["kachergis"]] = fit_by_cond(c("kachergis"), combined_data, c(.001,.1,.5), c(5,15,1))
   cond_fits[["uncertainty"]] = fit_by_cond(c("uncertainty"), combined_data, c(.001,.1,.5), c(5,15,1))
+  cond_fits[["strength"]] = fit_by_cond("strength", combined_data, c(.001,.1), c(5,1))
+  cond_fits[["novelty"]] = fit_by_cond(c("novelty"), combined_data, c(.001,.1,.5), c(5,15,1))
   cond_fits[["fazly"]] = fit_by_cond("fazly", combined_data, c(1e-10,2), c(2,20000)) 
   cond_fits[["Bayesian_decay"]] = fit_by_cond("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
-  cond_fits[["strength"]] = fit_model("strength", combined_data, c(.001,.1), c(5,1))
-  cond_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", conds, c(1e-5,1e-5,1e-5), c(1,1,1))
-  # rewrite get_model_dataframe for 
-  save(cond_fits, file="fits/cond_fits.Rdata")
+  cond_fits[["rescorla-wagner"]] = fit_by_cond("rescorla-wagner", conds, c(1e-5,1e-5,1e-5), c(1,1,1))
+  
+  cfd <- get_model_dataframe_cond_fits(cond_fits, combined_data)
+  save(cond_fits, cfd, file="fits/cond_fits.Rdata")
 }
 
-gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) + 
-  geom_point() + facet_wrap(vars(Model)) + theme_bw() 
-
-#gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Model, color=Model)) + 
-#  geom_point() + facet_wrap(vars(Condition)) + theme_bw() + geom_smooth(method = "lm")
-
-require(tidyverse)
-gfd %>% filter(!is.na(HumanPerf)) %>%
-  group_by(Model) %>% 
-  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
-            r = cor(ModelPerf, HumanPerf))
-# Model            SSE     r
-# Bayesian_decay  25.3 0.574
-# fazly           23.7 0.622
-# kachergis       22.6 0.643
-# rescorla-wagner 42.9 0.593
-# strength        46.3 0.275
-# uncertainty     35.2 0.550
 
 # fix the below, (and tilles)
 

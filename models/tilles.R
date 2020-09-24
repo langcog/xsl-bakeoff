@@ -37,10 +37,10 @@ model <- function(params, ord=c()) {
 		
 		Nprev = length(which(novel==FALSE)) # N_{t-1} for alpha_{t-1}
 		
-		cur_novel = tr[which(novel[tr_w])] # ~ = current novel stimuli
-		cur_old = tr[which(!novel[tr_w])] # current trial's old stimuli
+		cur_novel = tr_o[which(novel[tr_o])] # ~ = current novel stimuli
+		cur_old = tr_o[which(!novel[tr_o])] # current trial's old stimuli
 		other_old = setdiff(which(!novel), cur_old) # stimuli appearing before, but not currently
-		novel[tr] = FALSE
+		novel[tr_o] = FALSE
 		
 		N = length(which(novel==FALSE)) # number of distinct stimuli observed so far: N_t
 		
@@ -64,10 +64,10 @@ model <- function(params, ord=c()) {
 		r <- matrix(0, voc_sz, voc_sz)
 		
 		# slow iterative method; rowSums(m) = 1
-		for(w in tr) {
-			flux[w] = sum(m[w,other_old]) / sum(m[w,tr]) # eq 5.1
-			r[w,tr] = X*m[w,tr]*flux[w] # eq 5.2
-			m[w,tr] = m[w,tr] + alpha[w]*r[w,tr] + (1-alpha[w])*(1/N - m[w,tr]) # eq 8
+		for(w in tr_w) {
+			flux[w] = sum(m[w,other_old]) / sum(m[w,tr_o]) # eq 5.1
+			r[w,tr_o] = X*m[w,tr_o]*flux[w] # eq 5.2
+			m[w,tr_o] = m[w,tr_o] + alpha[w]*r[w,tr_o] + (1-alpha[w])*(1/N - m[w,tr_o]) # eq 8
 			m[w,other_old] = m[w,other_old] - alpha[w]*X*m[w,other_old] + (1-alpha[w])*(1/N - m[w,other_old]) # eq 9
 		}
     
@@ -80,10 +80,10 @@ model <- function(params, ord=c()) {
     # if params[3] < .268 on "block2_369-3x3hiCD" m[18,18] becomes negative at trial 9
 		flux = rep(0,voc_sz)
 		r <- matrix(0, voc_sz, voc_sz)
-		flux[other_old] = rowSums(m[other_old,tr]) / rowSums(m[other_old,other_old]) # eq 11.1
+		flux[other_old] = rowSums(m[other_old,tr_o]) / rowSums(m[other_old,other_old]) # eq 11.1
 		r[other_old,other_old] = B*mt[other_old,other_old]*flux[other_old] # eq 11.2
 		m[other_old,other_old] = mt[other_old,other_old] + alpha[other_old]*r[other_old,other_old] + (1-alpha[other_old])*(1/N - mt[other_old,other_old]) # eq 12
-		m[other_old,tr] = mt[other_old,tr] - alpha[other_old]*B*mt[other_old,tr] + (1-alpha[other_old])*(1/N - mt[other_old,tr]) # eq 13
+		m[other_old,tr_o] = mt[other_old,tr_o] - alpha[other_old]*B*mt[other_old,tr_o] + (1-alpha[other_old])*(1/N - mt[other_old,tr_o]) # eq 13
 		
 		compScore[t] = sum(diag(m))
 	}
