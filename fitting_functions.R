@@ -236,7 +236,7 @@ do_group_fits <- function() {
 #pt = run_stochastic_model(conds, "pursuit_detailed", c(.2, .3, .05)) # SSE=4.06
 
 
-#nv = fit_model("novelty", conds[[1]], c(.001,.1,.5), c(5,15,1)) # run_model
+#tl = fit_model("tilles", conds[[1]], c(1e-5,1e-5,1e-5), c(1,1,1)) # run_model
 
 ##### NOT RUN YET
 load("fits/group_fits.Rdata")
@@ -268,6 +268,16 @@ fit_by_cond <- function(mname, conds, lower, upper) {
   return(mod_fits)
 }
 
+fit_stochastic_by_cond <- function(mname, conds, lower, upper) {
+  mod_fits = list()
+  for(cname in names(conds)) {
+    print(cname)
+    mod_fits[[cname]] = fit_model(mname, conds[[cname]], lower, upper) 
+  }
+  return(mod_fits)
+}
+
+
 do_cond_fits <- function() {
   cond_fits = list()
   cond_fits[["kachergis"]] = fit_by_cond(c("kachergis"), combined_data, c(.001,.1,.5), c(5,15,1))
@@ -281,12 +291,6 @@ do_cond_fits <- function() {
   cfd <- get_model_dataframe_cond_fits(cond_fits, combined_data)
   save(cond_fits, cfd, file="fits/cond_fits.Rdata")
 }
-
-
-# fix the below, (and tilles)
-
-# group_fits[["novelty"]] = fit_model("novelty", conds, c(.001,.1,.5), c(5,15,1))
-# NaN value of objective function
 
 
 

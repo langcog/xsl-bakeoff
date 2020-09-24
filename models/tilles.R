@@ -29,7 +29,7 @@ model <- function(params, ord=c()) {
 	tr_o = as.integer(ord$objs[1,])
 	m[tr_w,tr_o] = 1/length(tr_o) # eq 1
 	novel[tr_w] = FALSE
-	for(t in 2:dim(ord)[1]) { 
+	for(t in 2:nrow(ord$words)) { 
 	  tr_w = as.integer(ord$words[t,])
 	  tr_w = tr_w[!is.na(tr_w)]
 	  tr_o = as.integer(ord$objs[t,])
