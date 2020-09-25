@@ -1,11 +1,5 @@
 # Associative Uncertainty- (Entropy) & Familiarity-Biased Model
-# George Kachergis  george.kachergis@gmail.com
-
-# for testing:
-#mat = matrix(c(1,2, 1,3), nrow=2, ncol=2, byrow=T)
-# ord = list(words=mat, objs=mat)
-#mat2 = matrix(c(1,2,3, 1,4,5, 2,3,4, 5,6,1), nrow=4, ncol=3, byrow=T)
-# ord = list(words=mat2, objs=mat2)
+# George Kachergis June 10, 2011
 
 shannon.entropy <- function(p) {
 	if (min(p) < 0 || sum(p) <= 0)
@@ -37,74 +31,64 @@ update_known <- function(m, tr_w, tr_o, startval = .01) {
   return(m)
 }
 
-update_knownOLD <- function(m, tr_w, tr_o) {
-  startval = .01
-  
-  for(i in tr_w) {
-    for(c in 1:dim(m)[2]) {
-      if(sum(m[,c]>0) & m[i,c]==0) {
-        m[i,c] = startval
-        m[c,i] = startval
-      }
-    }
-    for(j in tr_o) {
-      if(m[i,j]==0) m[i,j] = startval
-      if(j<=nrow(m) & i<=ncol(m)) {
-        if(m[j,i]==0) m[j,i] = startval
-      }
-    }
-  }
-  return(m)
-}
 
-
-model <- function(params, ord=c(), reps=1, test_noise=0) {
-	X <- params[1] # associative weight to distribute
+model <- function(params, ord=c(), reps=1, K=1) {
+  #K = of assocs to update per word
+  X <- params[1] # associative weight to distribute
 	B <- params[2] # weighting of uncertainty vs. familiarity
 	C <- params[3] # decay
-	
+
 	voc_sz = max(unlist(ord$words), na.rm=TRUE) # vocabulary size
 	ref_sz = max(unlist(ord$objs), na.rm=TRUE) # number of objects
 	traj = list()
 	m <- matrix(0, voc_sz, ref_sz) # association matrix
 	perf = matrix(0, reps, voc_sz) # a row for each block
+  
+	mean_ent = c()
+
+	# want an item x occurrence matrix, to be filled in during training 
+	freq = rep(0,voc_sz) # number of occurrences per word, so far (to index the resps matrix)
+  
 	# training
 	for(rep in 1:reps) { # for trajectory experiments, train multiple times
 	  for(t in 1:nrow(ord$words)) { 
 		#print(format(m, digits=3))
-	   
-		tr_w = as.integer(ord$words[t,])
-		tr_w = tr_w[!is.na(tr_w)]
-		tr_o = as.integer(ord$objs[t,])
-		tr_o = tr_o[!is.na(tr_o)]
-    
+	  tr_w = as.integer(ord$words[t,])
+	  tr_w = tr_w[!is.na(tr_w)]
+	  tr_o = as.integer(ord$objs[t,])
+	  tr_o = tr_o[!is.na(tr_o)]
+		
+	  freq[tr_w] = freq[tr_w] + 1
 		m = update_known(m, tr_w, tr_o) # what's been seen so far?
-		if(length(tr_w)>1) {
-		  ent_w = apply(m[tr_w,], 1, shannon.entropy) 
-		} else {
-		  ent_w = shannon.entropy(m[tr_w,])
-		}
-		ent_w = exp(B*ent_w)
+		
+		for(w in tr_w) { ent[w] = shannon.entropy(m[w,]) }
+		ent_w = exp(B*ent_w) 
 		
 		ent_o = apply(m[,tr_o], 2, shannon.entropy) 
 		ent_o = exp(B*ent_o)
 		
-		nent = (ent_w %*% t(ent_o))
-		#nent = nent / sum(nent)
-		# get all current w,o strengths and normalize to distr X
-		assocs = m[tr_w,tr_o]
-		denom = sum(assocs * nent)
+		temp_wts = matrix(0, voc_sz, voc_sz)
+		temp_wts[tr_w,tr_o] = m[tr_w,tr_o] # use these weights to calculate entropy
+		nent = (ent_w %*% t(ent_o)) 
+		temp_wts = temp_wts * nent
+		
+		chosen_assocs = matrix(0, voc_sz, ref_sz)
+		for(w in tr_w) { 
+		  x <- sample(1:ref_sz, K, replace=FALSE, prob=temp_wts[w,]) 
+		  chosen_assocs[w,x] = m[w,x] # PK for chosen
+		}
+		denom = sum(chosen_assocs * nent)
+		chosen_assocs = (X * chosen_assocs * nent) / denom
 		m = m*C # decay everything
-		# update associations on this trial
-		m[tr_w,tr_o] = m[tr_w,tr_o] + (X * assocs * (ent_w %*% t(ent_o))) / denom 
-
+		m = m + chosen_assocs
+		
 		index = (rep-1)*nrow(ord$words) + t # index for learning trajectory
 		traj[[index]] = m
 	  }
-	  m_test = m+test_noise # test noise constant k
-	  perf[rep,] = diag(m_test) / rowSums(m_test)
+	  perf[rep,] = diag(m) / rowSums(m+1e-9)
 	}
-	want = list(perf=perf, matrix=m, traj=traj)
+  resp_prob = diag(m) / rowSums(m)
+  want = list(perf=resp_prob, matrix=m, traj=traj) 
 	return(want)
 	}
 

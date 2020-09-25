@@ -247,7 +247,7 @@ for(m in names(group_fits)) {
 # temporary (until we finish full fits)
 group_fits[["trueswell2012"]] = list(pars = c(0.113666, 0.266792)) # SSE=.879
 group_fits[["guess-and-test"]] = list(pars = c(0.691312, 0.991726)) # SSE=.884
-group_fits[["pursuit_detailed"]] = list(pars = c(0.168878,  0.320642,  0.008964)) # SSE=1.022
+group_fits[["pursuit_detailed"]] = list(pars = c(0.088324, 0.409523, 0.000059)) # SSE = 0.996221
 
 group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
 group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
@@ -272,10 +272,14 @@ fit_stochastic_by_cond <- function(mname, conds, lower, upper) {
   mod_fits = list()
   for(cname in names(conds)) {
     print(cname)
-    mod_fits[[cname]] = fit_model(mname, conds[[cname]], lower, upper) 
+    mod_fits[[cname]] = fit_stochastic_model(mname, conds[[cname]], lower, upper) 
   }
   return(mod_fits)
 }
+
+cond_fits[["trueswell2012"]] = fit_stochastic_by_cond("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
+cond_fits[["guess-and-test"]] = fit_stochastic_by_cond("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
+cond_fits[["pursuit_detailed"]] = fit_stochastic_by_cond("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
 
 
 do_cond_fits <- function() {
