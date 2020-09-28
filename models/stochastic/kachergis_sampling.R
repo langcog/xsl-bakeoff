@@ -61,13 +61,15 @@ model <- function(params, ord=c(), reps=1, K=1) {
 	  freq[tr_w] = freq[tr_w] + 1
 		m = update_known(m, tr_w, tr_o) # what's been seen so far?
 		
-		for(w in tr_w) { ent[w] = shannon.entropy(m[w,]) }
+		ent_w = rep(0, voc_sz)
+		for(w in tr_w) { ent_w[w] = shannon.entropy(m[w,]) }
 		ent_w = exp(B*ent_w) 
 		
-		ent_o = apply(m[,tr_o], 2, shannon.entropy) 
+		ent_o = rep(0, ref_sz)
+		for(o in tr_o) { ent_o[o] = shannon.entropy(m[,o]) }
 		ent_o = exp(B*ent_o)
 		
-		temp_wts = matrix(0, voc_sz, voc_sz)
+		temp_wts = matrix(0, voc_sz, ref_sz)
 		temp_wts[tr_w,tr_o] = m[tr_w,tr_o] # use these weights to calculate entropy
 		nent = (ent_w %*% t(ent_o)) 
 		temp_wts = temp_wts * nent
