@@ -6,9 +6,11 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = F, warning=F, message=F)
 require(tidyverse)
 require(ggplot2)
+library(knitr)
+library(kableExtra)
 ```
 
 ## Introduction
@@ -16,29 +18,27 @@ require(ggplot2)
 The goal is to test a variety of cross-situational word learning models from the recent literature on a range of findings. We will examine both associative models and hypothesis-testing models, and will find optimal parameters both globally (for all experiments), as well as per condition, and perhaps even per participant.
 
 Models:
-- baseline count model
-- propose-but-verify
-- guess-and-test
-- pursuit model
-- Kachergis model (+ sampling version?)
-  - strength bias model
-  - uncertainty bias model
-  - novelty bias model
-- Tilles & Fontanari
-- Fazly
-- "Bayesian" decay
-
+* baseline count model?
+* propose-but-verify
+* guess-and-test
+* pursuit model
+* Kachergis model (associative + sampling version)
+  + strength bias model
+  + uncertainty bias model
+  + novelty bias model
+* Fazly et al.
+* "Bayesian" decay
+* Tilles & Fontanari 2013 (ToDo: verify)
+* Yurovsky & Frank 2015 (ToDo!!)
 
 
 ### The Data
 
 I have participant-level data for: 1) 556 subjects from 18 conditions (Kachergis & Yu, 2013), 2) frequency and contextual diversity experiments (including a multi-block version), and 3) 
 
-I have also developed simulations of a number of other experiments by others, but only have group-level performance for these conditions. 
-For example, Koehne, Trueswell & Gleitman (2013), in which each of 16 novel nouns was assigned two meanings with different co-occurrence frequencies: One referent was present whenever the noun was present (six times, 100% referent), the other referent was present in only half of the cases the noun was (three times, 50% referent). All other objects co-occurred only once with a noun (17%). Training trial order was manipulated: including and excluding the 50% referent were presented within four levels (within participants): Firstly, the 50%-present (P) and 50%-absent (A) trials could be either blocked (AAAPPP and PPPAAA) or not blocked (APAPAP and PAPAPA); secondly, the first encounter of a noun could be either an A trial (AAAPPP and APAPAP) or a P trial (PPPAAA and PAPAPA).
-Medina et al. 2011 is another example,
-and Suanda et al. (2014)'s contextual diversity with children is another.
-Finally, Yu, Zhong, and Fricker (2012), which pre-trained three word-object associations and found higher performance on the other 15 words after this pre-training.
+We will first optimize each model's parameters to the entire dataset (all 1532 participants), as well as to each condition.
+We will then conduct generalization experiments to see how well each model (with earlier optimized parameters) predicts the result of other experiments in the literature, for which we do not have participant-level data.
+
 
 ```{r, load-data}
 # individual-level subject data for 18 conditions (from Kachergis & Yu 2013)
@@ -50,7 +50,7 @@ asym <- raw %>% group_by(Condition, CondNum, Subject) %>%
 # 217 - 2 words x 4 objects, 54 trials
 # 218 - 3 words x 4 objects, 36 trials
 # 220 - 3 words x 4 objects, 54 trials
-sum(asym$Nsubj) # 556 subjects
+# sum(asym$Nsubj) # 556 subjects
 
 load("data/asymmetric_conditions.RData") 
 # conds = 
@@ -71,7 +71,7 @@ We also require a test function--often presenting each word a single time along 
 
 ### The Models
 
-Each model accepts a condition's list of training trials, as well as p
+Each model accepts a condition's list of training trials, as well as 2 or 3 parameters.
 
 ```{r, model-list}
 # need to be run >100 times per given parameter values
@@ -97,43 +97,43 @@ load("fits/cond_fits.Rdata")
 # I can trace that for all of the conditions (certainly for the exps I ran -- ~25 conditions)
 ```
 
+## Group-level Model Fits
+
 ```{r, summarize-group-fits}
-gfd %>% filter(!is.na(HumanPerf)) %>%
+group_fit_tab <- gfd %>% filter(!is.na(HumanPerf)) %>%
   group_by(Model) %>% 
   summarise(SSE = sum((ModelPerf-HumanPerf)^2),
             r = cor(ModelPerf, HumanPerf)) %>%
   arrange(SSE)
 
-```
-
-```{r, summarize-condition-fits}
-cfd %>% filter(!is.na(HumanPerf)) %>%
-  group_by(Model) %>% 
-  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
-            r = cor(ModelPerf, HumanPerf)) # kable
+kable(group_fit_tab, digits=3, caption="Group model fits.") 
 ```
 
 
+Plotted by condition means.
 
-```{r, plot-group-fits-avg}
+```{r, plot-group-fits-avg, fig.width=8}
 # look at condition average fits
 ccondm <- cfd %>% group_by(Model, Condition, Nsubj) %>%
   summarise(HumanPerf=mean(HumanPerf), 
             ModelPerf = mean(ModelPerf))
 
-ccondm %>% group_by(Model) %>% 
-  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
-            r = cor(ModelPerf, HumanPerf)) %>% 
-  arrange(SSE)
+# condition-level (above is item-level)
+#ccondm %>% group_by(Model) %>% 
+#  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+#            r = cor(ModelPerf, HumanPerf)) %>% 
+#  arrange(SSE)
+
 
 gcondm <- gfd %>% group_by(Model, Condition, Nsubj) %>%
   summarise(HumanPerf=mean(HumanPerf), 
             ModelPerf = mean(ModelPerf))
 
-gcondm %>% group_by(Model) %>% 
-  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
-            r = cor(ModelPerf, HumanPerf)) %>% 
-  arrange(SSE)
+# condition-level (above is item-level)
+#gcondm %>% group_by(Model) %>% 
+#  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+#            r = cor(ModelPerf, HumanPerf)) %>% 
+#  arrange(SSE)
 
 gcondm %>%
   ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition, size=Nsubj)) + 
@@ -142,7 +142,9 @@ gcondm %>%
   #theme(legend.position="bottom")
 ```
 
-```{r, plot-group-fits}
+Plotted by individual items.
+
+```{r, plot-group-fits, fig.width=8, caption="Model vs. human performance by model and condition for group model fits."}
 gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) + 
   geom_point(alpha=.8) + facet_wrap(vars(Model)) + theme_bw() +
   geom_abline(intercept=0, slope=1, linetype="dashed")
@@ -151,11 +153,52 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) 
 #  geom_point() + facet_wrap(vars(Condition)) + theme_bw() + geom_smooth(method = "lm")
 ```
 
+## Per-Condition Model Fits
 
-```{r, plot-cond-fits}
+
+```{r, summarize-condition-fits}
+cond_fit_tab <- cfd %>% filter(!is.na(HumanPerf)) %>%
+  group_by(Model) %>% 
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+            r = cor(ModelPerf, HumanPerf)) %>%
+  arrange(SSE)
+
+kable(cond_fit_tab, digits=3, caption="By-condition model fits.") 
+```
+
+```{r, plot-cond-fits, fig.width=8, caption="Model vs. human performance by model and condition for per-condition model fits."}
 cfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) + 
   geom_point(alpha=.8) + facet_wrap(vars(Model)) + theme_bw() +
   geom_abline(intercept=0, slope=1, linetype="dashed")
 ```
+
+
+## Generalization Experiments
+
+Using the model parameters obtained above, we simulate model performance for a selection of published experiments and compare to participants' group-level performance for these conditions. 
+The first three studies are of adult participants, and include two experiments that have been interpreted as supporting hypothesis-testing theories of word learning.
+
+### Koehne, Trueswell & Gleitman (2013)
+For example, Koehne, Trueswell & Gleitman (2013), in which each of 16 novel nouns was assigned two meanings with different co-occurrence frequencies: 
+One referent was present whenever the noun was present (six times, 100% referent), the other referent was present in only half of the cases the noun was (three times, 50% referent). All other objects co-occurred only once with a noun (17%). 
+Training trial order was manipulated: including and excluding the 50% referent were presented within four levels (within participants): 
+Firstly, the 50%-present (P) and 50%-absent (A) trials could be either blocked (AAAPPP and PPPAAA) or not blocked (APAPAP and PAPAPA); secondly, the first encounter of a noun could be either an A trial (AAAPPP and APAPAP) or a P trial (PPPAAA and PAPAPA).
+
+### Medina et al. 2011 
+Medina et al. 2011 tasked adult participants with learning 12 nonce words presented across 60 training trials presenting only one word at a time.
+The number of referents per training trial varied: High Informative (HI) trials showed two referents, while Low Informative (LI) trials showed five referents.
+Unlike most cross-situational word learning experiments, each word depicted not a single referent, but instead corresponded to a category of five referents, each appearing  (e.g., "bosa" might appear with five pictures of bears on as many separate trials).
+Different between-subjects conditions presented 12 HI trials (one per word) at the beginning, middle, or end of training, or not at all (HI-absent).
+
+### Yu, Zhong, and Fricker (2012)
+Yu, Zhong, and Fricker (2012) pre-trained adult participants with three word-object associations and found higher performance on the other 15 words after this pre-training, demonstrating that knowing even a few word meanings can improve learning for other co-occurring words. 
+
+### Suanda et al. (2014)
+Suanda et al. (2014) varied contextual diversity in a cross-situational word learning study of 5- to 7-year-olds, presenting children with 8 to-be-learned words shown two per trial across a total of 16 trials.
+
+### Vlach & DeBrock (2017, 2019)
+
+
+### Smith & Yu 2008
 
 
