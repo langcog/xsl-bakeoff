@@ -30,12 +30,6 @@ for(ord in names(orders)) {
 #load(paste(data_dir,"asym_master.RData",sep='')) # raw
 
 
-#conds[["211"]]$Nsubj = 43 # 4AFC - should change model evaluation to use conds[["211"]]$test
-#conds[["212"]]$Nsubj = 38 # 4AFC
-#conds[["213"]]$Nsubj = 31 # 4AFC
-#conds[["214"]]$Nsubj = 36 # 4AFC
-
-
 for(ord in names(conds)) {
   if(!is.na(conds[[ord]]$Nsubj)) {
     totSs = totSs + conds[[ord]]$Nsubj
@@ -186,7 +180,9 @@ get_model_dataframe_cond_fits <- function(fits, conds) {
   mdf = tibble()
   SSE = 0
   for(model_name in names(fits)) {
+    print(model_name)
     for(c in names(fits[[model_name]])) {
+      print(c)
       pars = fits[[model_name]][[c]]$optim$bestmem
       SSE = fits[[model_name]][[c]]$optim$bestval
       
@@ -211,28 +207,6 @@ get_model_dataframe_cond_fits <- function(fits, conds) {
 }
 
 combined_data = c(conds, orders)
-
-
-do_group_fits <- function() {
-  group_fits = list()
-  group_fits[["kachergis"]] = fit_model("kachergis", combined_data, c(.001,.1,.5), c(5,15,1)) 
-  group_fits[["novelty"]] = fit_model("novelty", combined_data, c(.001,.1,.5), c(5,15,1)) # NaN value of objective function!
-  group_fits[["fazly"]] = fit_model("fazly", combined_data, c(1e-10,2), c(2,20000)) 
-  group_fits[["Bayesian_decay"]] = fit_model("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
-  group_fits[["strength"]] = fit_model("strength", combined_data, c(.001,.1), c(5,1))
-  group_fits[["uncertainty"]] = fit_model("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
-  group_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", conds, c(1e-5,1e-5,1e-5), c(1,1,1))
-  
-  # ToDo: merge these in from group_stochastic_fits.Rdata
-  # load("fits/group_stochastic_fits.Rdata")
-  group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
-  group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
-  group_fits[["pursuit_detailed"]] = fit_stochastic_model("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
-  group_fits[["kachergis_sampling"]] = fit_stochastic_model("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
-  
-  gfd = get_model_dataframe(group_fits, combined_data)
-  save(group_fits, gfd, file="fits/group_fits.Rdata")
-}
 
 
 ## TESTING
@@ -277,6 +251,26 @@ fit_stochastic_by_cond <- function(mname, conds, lower, upper) {
   return(mod_fits)
 }
 
+completed_group_fits <- function() {
+  group_fits = list()
+  group_fits[["kachergis"]] = fit_model("kachergis", combined_data, c(.001,.1,.5), c(5,15,1)) 
+  group_fits[["novelty"]] = fit_model("novelty", combined_data, c(.001,.1,.5), c(5,15,1)) # NaN value of objective function!
+  group_fits[["fazly"]] = fit_model("fazly", combined_data, c(1e-10,2), c(2,20000)) 
+  group_fits[["Bayesian_decay"]] = fit_model("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
+  group_fits[["strength"]] = fit_model("strength", combined_data, c(.001,.1), c(5,1))
+  group_fits[["uncertainty"]] = fit_model("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
+  group_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
+  
+  # ToDo: merge these in from group_stochastic_fits.Rdata
+  # load("fits/group_stochastic_fits.Rdata")
+  group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
+  group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
+  group_fits[["pursuit_detailed"]] = fit_stochastic_model("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
+  group_fits[["kachergis_sampling"]] = fit_stochastic_model("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
+  
+  gfd = get_model_dataframe(group_fits, combined_data)
+  save(group_fits, gfd, file="fits/group_fits.Rdata")
+}
 
 completed_cond_fits <- function() {
   cond_fits = list()
@@ -298,6 +292,68 @@ completed_cond_fits <- function() {
   save(cond_fits, cfd, file="fits/cond_fits.Rdata")
 }
 
+# given a vector of indices and a list, remove all indexed items
+get_train_test_split <- function(test_inds, conds) {
+  dat = list(train = conds, test = list())
+  for(i in test_inds) { 
+    dat$train[[i]] = NULL 
+    dat$test[[names(conds)[i]]] = conds[[i]]
+  }
+  return(dat)
+}
+
+require(caret)
+
+# run fit_model / fit_stochastic_model for each of 5 subsets of combined_data conditions
+# save the parameters...and whole dataframe?
+cross_validated_group_fits <- function(model_name, combined_data, lower, upper) {
+  #model_name = "kachergis"
+  dat = list()
+  test = list()
+  testdf = tibble()
+  set.seed(123)
+  folds <- createFolds(names(combined_data), k = 5, list = T)
+  cv_group_fits = list()
+  for(i in 1:length(folds)) {
+    conds = get_train_test_split(folds[[i]], combined_data)
+    opt = fit_model(model_name, conds$train, lower, upper)
+    dat[["pars"]] = rbind(dat[["pars"]], opt$optim$bestmem)
+    dat[["train_acc"]] = c(dat[["train_acc"]], opt$optim$bestval)
+    test[[i]] = run_model(conds$test, model_name, dat[["pars"]][i,])
+    # add the data frame of test data? much more convenient..
+    tmp = list()
+    tmp[[model_name]] = opt
+    testdf = rbind(testdf, get_model_dataframe(tmp, conds$test))
+    print(paste("fold",i,"train SSE:",round(opt$optim$bestval,3),"test SSE:",round(test[[i]]$SSE,3)))
+  }
+  # add the folds ??
+  dat[["test"]] = test
+  dat[["testdf"]] = testdf
+  return(dat)
+}
+
+cv_group_fits = list()
+cv_group_fits[["kachergis"]] = cross_validated_group_fits("kachergis", combined_data, c(.001,.1,.5), c(5,15,1))
+cv_group_fits[["novelty"]] = cross_validated_group_fits("novelty", combined_data, c(.001,.1,.5), c(5,15,1))
+cv_group_fits[["fazly"]] = cross_validated_group_fits("fazly", combined_data, c(1e-10,2), c(2,20000)) 
+
+cv_group_fits[["Bayesian_decay"]] = cross_validated_group_fits("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
+cv_group_fits[["strength"]] = cross_validated_group_fits("strength", combined_data, c(.001,.1), c(5,1))
+cv_group_fits[["uncertainty"]] = cross_validated_group_fits("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
+cv_group_fits[["rescorla-wagner"]] = cross_validated_group_fits("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
+
+save(cv_group_fits, file="fits/cv_group_fits.Rdata")
+# do for each model and save
+
+
+
+# now we're going to fit each model to 80% of the items per condition (5-fold CV)
+cross_validated_cond_fits <- function(combined_data) {
+  # for each condition, 
+  for(c in names(combined_data)) {
+    
+  }
+}
 
 
 #models = c("kachergis", "fazly", "strength", "uncertainty", "novelty", "Bayesian_decay", "rescorla_wagner")

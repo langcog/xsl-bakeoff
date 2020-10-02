@@ -69,7 +69,7 @@ asym <- raw %>% group_by(Condition, CondNum, Subject) %>%
 For each condition, need an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
 We also require a test function--often presenting each word a single time along *m*AFC of objects, where *m* is the number of objects seen during the training, but sometimes a subset of the objects are tested.
 
-### The Models
+### Model Descriptions
 
 Each model accepts a condition's list of training trials, as well as 2 or 3 parameters.
 
@@ -95,7 +95,27 @@ load("fits/cond_fits.Rdata")
 # not all conditions have subject-level data (but I think I can track it down)
 # moreover, some subjects participated in multiple conditions, but I'm not sure 
 # I can trace that for all of the conditions (certainly for the exps I ran -- ~25 conditions)
+
+load("fits/cv_group_fits.Rdata")
+cvg <- tibble()
+for(m in names(cv_group_fits)) {
+  cvg <- rbind(cvg, cv_group_fits[[m]]$testdf)
+}
+
+cvg_fit_tab <- cvg %>% group_by(Model) %>% 
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+            r = cor(ModelPerf, HumanPerf)) %>%
+  arrange(SSE)
+
+
 ```
+
+## Model Fitting Procedure
+
+We will fit each model with two different cross-validation methods.
+First, data from all 46 conditions
+
+# Results
 
 ## Group-level Model Fits
 
