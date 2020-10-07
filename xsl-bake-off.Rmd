@@ -204,11 +204,83 @@ One referent was present whenever the noun was present (six times, 100% referent
 Training trial order was manipulated: including and excluding the 50% referent were presented within four levels (within participants): 
 Firstly, the 50%-present (P) and 50%-absent (A) trials could be either blocked (AAAPPP and PPPAAA) or not blocked (APAPAP and PAPAPA); secondly, the first encounter of a noun could be either an A trial (AAAPPP and APAPAP) or a P trial (PPPAAA and PAPAPA).
 
+```{r}
+load("other_exps/KoehneTrueswellGleitman2013orders.RData")
+
+run_Koehne_exp <- function(par, ord) {
+  mp = model(par, ord)$m
+  diag(mp[,1:8])/rowSums(mp[,1:8]) # 100% referemts: ~60% perf
+  diag(mp) = 0
+  perf = c()
+  for(w in 1:nrow(mp)) {
+    perf[w] = mp[w,w+1]/sum(mp[w,1:9])
+  }
+  return(perf) 
+}
+
+
+evalSSE_Koehne <- function(par, hum_perf, verbose=F) {
+  mod_perf = c( mean(run_Koehne_exp(par, aaappp)),
+                mean(run_Koehne_exp(par, apapap)),
+                mean(run_Koehne_exp(par, papapa)),
+                mean(run_Koehne_exp(par, pppaaa)) )
+  if(verbose) print(mod_perf)
+  return(sum((hum_perf-mod_perf)^2))
+}
+
+# the model predicts the same ordering as humans out of the box -- PPPAAA is best, AAAPPP is worst
+# contradicts Koehne et al.'s interpretation: "This finding is inconsistent with a standard cross-situational 
+# account because all conditions should have been above chance independent of presentation order.
+
+
+```
+
+
 ### Medina et al. 2011 
 Medina et al. 2011 tasked adult participants with learning 12 nonce words presented across 60 training trials presenting only one word at a time.
 The number of referents per training trial varied: High Informative (HI) trials showed two referents, while Low Informative (LI) trials showed five referents.
 Unlike most cross-situational word learning experiments, each word depicted not a single referent, but instead corresponded to a category of five referents, each appearing  (e.g., "bosa" might appear with five pictures of bears on as many separate trials).
 Different between-subjects conditions presented 12 HI trials (one per word) at the beginning, middle, or end of training, or not at all (HI-absent).
+
+```{r}
+load("other_exps/Medina2013orders.RData")
+
+# graph performance per block (1-5)
+get_block_perf <- function(modperf) {
+  perf_inds = seq(12,60,12)
+  perf = c()
+  for(i in perf_inds) {
+    perf = c(perf, mean(diag(modperf$traj[[i]]) / rowSums(modperf$traj[[i]])))
+  }
+  return(perf)
+}
+
+run_Medina_exp <- function(model_name, pars, plot=T) {
+  source(paste0("models/",model_name,".R"))
+  HI1 = model(pars, Medina[["HIfirst"]]$train)
+  HIm = model(pars, Medina[["HImid"]]$train)
+  HIl = model(pars, Medina[["HIlast"]]$train)
+  HIabs = model(pars, Medina[["HIabsent"]]$train)
+
+  mdat = data.frame(rbind(cbind(Condition="HI first", Vignette=1:5, Performance=get_block_perf(HI1)),
+        cbind(Condition="HI middle", Vignette=1:5, Performance=get_block_perf(HIm)),
+        cbind(Condition="HI last", Vignette=1:5, Performance=get_block_perf(HIl)),
+        cbind(Condition="HI absent", Vignette=1:5, Performance=get_block_perf(HIabs)) ))
+  mdat$Performance = as.numeric(as.character(mdat$Performance))
+  mdat$Model = model_name
+  
+  if(plot) {
+    p <- ggplot(mdat, aes(x=Vignette, y=Performance, group=Condition, shape=Condition, color=Condition)) + 
+      geom_point() + geom_line() + theme_bw() + ylim(c(0,1.0))
+    print(p)
+  }
+  return(mdat)
+}
+
+run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
+
+```
+
 
 ### Yu, Zhong, and Fricker (2012)
 Yu, Zhong, and Fricker (2012) pre-trained adult participants with three word-object associations and found higher performance on the other 15 words after this pre-training, demonstrating that knowing even a few word meanings can improve learning for other co-occurring words. 

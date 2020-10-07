@@ -29,7 +29,7 @@ Medina[["HImid"]]$train = list(words=words, objs=rbind(LIobj, LIobj2, HIobj, LIo
 Medina[["HIlast"]]$train = list(words=words, objs=rbind(LIobj, LIobj2, LIobj3, LIobj4, HIobj))
 Medina[["HIabsent"]]$train = list(words=words, objs=rbind(LIobj, LIobj2, LIobj3, LIobj4, LIobj5))
 
-save(Medina, file="Medina2011orders.RData")
+save(Medina, file="Medina2013orders.RData")
 
 source("models/kachergis.R")
 pars = c(.03, 1, 1)

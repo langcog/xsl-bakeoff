@@ -1,6 +1,9 @@
 require(DEoptim) # pso
+require(caret)
 
 #source("fit.R")
+
+stochastic_models = c("guess-and-test","pursuit_detailed","trueswell2012","kachergis_sampling")
 
 order_dir = "orders/"
 model_dir = "models/"
@@ -145,7 +148,6 @@ fit_stochastic_model <- function(model_name, conds, lower, upper) {
   return(fit)
 }
 
-stochastic_models = c("guess-and-test","pursuit_detailed","trueswell2012","kachergis_sampling")
 
 # for group fits (all conditions per model)
 get_model_dataframe <- function(fits, conds) {
@@ -302,7 +304,6 @@ get_train_test_split <- function(test_inds, conds) {
   return(dat)
 }
 
-require(caret)
 
 # run fit_model / fit_stochastic_model for each of 5 subsets of combined_data conditions
 # save the parameters...and whole dataframe?
@@ -316,10 +317,16 @@ cross_validated_group_fits <- function(model_name, combined_data, lower, upper) 
   cv_group_fits = list()
   for(i in 1:length(folds)) {
     conds = get_train_test_split(folds[[i]], combined_data)
-    opt = fit_model(model_name, conds$train, lower, upper)
+    if(is.element(model_name, stochastic_models)) {
+      opt = fit_stochastic_model(model_name, conds$train, lower, upper)
+      test[[i]] = run_stochastic_model(conds$test, model_name, opt$optim$bestmem)
+    } else {
+      opt = fit_model(model_name, conds$train, lower, upper)
+      test[[i]] = run_model(conds$test, model_name, opt$optim$bestmem)
+    }
     dat[["pars"]] = rbind(dat[["pars"]], opt$optim$bestmem)
     dat[["train_acc"]] = c(dat[["train_acc"]], opt$optim$bestval)
-    test[[i]] = run_model(conds$test, model_name, dat[["pars"]][i,])
+    
     # add the data frame of test data? much more convenient..
     tmp = list()
     tmp[[model_name]] = opt
@@ -332,26 +339,34 @@ cross_validated_group_fits <- function(model_name, combined_data, lower, upper) 
   return(dat)
 }
 
-cv_group_fits = list()
-cv_group_fits[["kachergis"]] = cross_validated_group_fits("kachergis", combined_data, c(.001,.1,.5), c(5,15,1))
-cv_group_fits[["novelty"]] = cross_validated_group_fits("novelty", combined_data, c(.001,.1,.5), c(5,15,1))
-cv_group_fits[["fazly"]] = cross_validated_group_fits("fazly", combined_data, c(1e-10,2), c(2,20000)) 
+completed_group_cv_fits <- function() {
+  cv_group_fits = list()
+  cv_group_fits[["kachergis"]] = cross_validated_group_fits("kachergis", combined_data, c(.001,.1,.5), c(5,15,1))
+  cv_group_fits[["novelty"]] = cross_validated_group_fits("novelty", combined_data, c(.001,.1,.5), c(5,15,1))
+  cv_group_fits[["fazly"]] = cross_validated_group_fits("fazly", combined_data, c(1e-10,2), c(2,20000)) 
 
-cv_group_fits[["Bayesian_decay"]] = cross_validated_group_fits("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
-cv_group_fits[["strength"]] = cross_validated_group_fits("strength", combined_data, c(.001,.1), c(5,1))
-cv_group_fits[["uncertainty"]] = cross_validated_group_fits("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
-cv_group_fits[["rescorla-wagner"]] = cross_validated_group_fits("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
+  cv_group_fits[["Bayesian_decay"]] = cross_validated_group_fits("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
+  cv_group_fits[["strength"]] = cross_validated_group_fits("strength", combined_data, c(.001,.1), c(5,1))
+  cv_group_fits[["uncertainty"]] = cross_validated_group_fits("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
+  cv_group_fits[["rescorla-wagner"]] = cross_validated_group_fits("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
+  
+  #cv_group_fits[["guess-and-test"]] = cross_validated_group_fits("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
+  #cv_group_fits[["trueswell2012"]] = cross_validated_group_fits("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
+  #cv_group_fits[["pursuit_detailed"]] = cross_validated_group_fits("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
+  #cv_group_fits[["kachergis_sampling"]] = cross_validated_group_fits("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
+  
+  save(cv_group_fits, file="fits/cv_group_fits.Rdata")
+}
 
-save(cv_group_fits, file="fits/cv_group_fits.Rdata")
 # do for each model and save
 
 
 
 # now we're going to fit each model to 80% of the items per condition (5-fold CV)
 cross_validated_cond_fits <- function(combined_data) {
-  # for each condition, 
+  # for each condition, select 80% of items for training SSE, fit to those, then test on remaining 20%
   for(c in names(combined_data)) {
-    
+    # modify run_model to check in each cond for "train_items" ?
   }
 }
 

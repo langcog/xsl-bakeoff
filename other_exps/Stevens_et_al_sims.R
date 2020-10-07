@@ -14,13 +14,29 @@
 # and 50%-absent (A) trials could be either blocked (AAAPPP and PPPAAA) or not blocked 
 # (APAPAP and PAPAPA); secondly, the first encounter of a noun could be either an 
 # A trial (AAAPPP and APAPAP) or a P trial (PPPAAA and PAPAPA)
-pppaaa = read.table("KoehneTrueswellGleitman2013-pppaaa.txt", header=T, sep='\t') # line/trial: w o1 o2 o3 o4
+pppaaa = read.table("other_exps/KoehneTrueswellGleitman2013-pppaaa.txt", header=T, sep='\t') # line/trial: w o1 o2 o3 o4
 # each word appears in six consecutive trials; the first 3 appearances have the 50%-referent present, 
 # and the later 3 trials are absent the 50%-referent
-aaappp = read.table("KoehneTrueswellGleitman2013-aaappp.txt", header=T, sep='\t') 
+aaappp = read.table("other_exps/KoehneTrueswellGleitman2013-aaappp.txt", header=T, sep='\t') 
 
-apapap = read.table("KoehneTrueswellGleitman2013-apapap.txt", header=T, sep='\t') 
-papapa = read.table("KoehneTrueswellGleitman2013-papapa.txt", header=T, sep='\t') 
+apapap = read.table("other_exps/KoehneTrueswellGleitman2013-apapap.txt", header=T, sep='\t') 
+papapa = read.table("other_exps/KoehneTrueswellGleitman2013-papapa.txt", header=T, sep='\t')
+
+Koehne = list()
+Koehne[["pppaaa"]]$train = list(words = pppaaa$w, objs = pppaaa[,2:5])
+Koehne[["pppaaa"]]$HumanAcc = 0.3215 # average of Exp 1 and 2 (how many subjects total?)
+
+Koehne[["aaappp"]]$train = list(words = aaappp$w, objs = aaappp[,2:5])
+Koehne[["aaappp"]]$HumanAcc = 0.1795
+
+Koehne[["apapap"]]$train = list(words = apapap$w, objs = apapap[,2:5])
+Koehne[["apapap"]]$HumanAcc = 0.2305
+
+Koehne[["papapa"]]$train = list(words = papapa$w, objs = papapa[,2:5])
+Koehne[["papapa"]]$HumanAcc = 0.2305
+
+
+save(Koehne, file="other_exps/KoehneTrueswellGleitman2013orders.RData")
 
 require(DEoptim)
 
