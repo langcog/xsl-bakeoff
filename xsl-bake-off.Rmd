@@ -87,8 +87,11 @@ assoc_models = assoc_models[assoc_models!="stochastic"]
 
 # each model jointly fit to all conditions
 load("fits/group_fits.Rdata")
-
+#for(m in names(group_fits)) { 
+#  print(paste(m, round(group_fits[[m]]$optim$bestval, 2)))
+#}
 # each model separately fit to each condition (should try cross-validation approach?)
+
 load("fits/cond_fits.Rdata")
 
 #load("fits/individual_fits.Rdata")

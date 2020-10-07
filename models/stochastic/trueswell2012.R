@@ -21,6 +21,7 @@
 
 model <- function(params, ord=c(), reps=1, verbose=F) {
 	if(verbose) print(params)
+  #print(ord)
 	alpha = params[1] # prob to remember first guess
 	alpha_increase = params[2] # Trueswell 2013 empirically estimates this...
 	#sa <- params[2] # prob of storage (slow learning down)

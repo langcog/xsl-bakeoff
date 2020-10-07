@@ -1,0 +1,48 @@
+source("fitting_functions.R")
+
+group_fits <- function() {
+  group_fits = list()
+  group_fits[["kachergis"]] = fit_model("kachergis", combined_data, c(.001,.1,.5), c(5,15,1)) 
+  group_fits[["fazly"]] = fit_model("fazly", combined_data, c(1e-10,2), c(2,20000))
+  group_fits[["novelty"]] = fit_model("novelty", combined_data, c(.001,.1,.5), c(5,15,1)) # NaN value of objective function!
+  group_fits[["Bayesian_decay"]] = fit_model("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
+  group_fits[["strength"]] = fit_model("strength", combined_data, c(.001,.1), c(5,1))
+  group_fits[["uncertainty"]] = fit_model("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
+  group_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
+  #group_fits[["decay"]] = fit_model("decay", combined_data, .01, 1) # barely better than baseline
+  
+  # ToDo: merge these in from group_stochastic_fits.Rdata
+  # load("fits/group_stochastic_fits.Rdata")
+  group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
+  group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
+  group_fits[["pursuit_detailed"]] = fit_stochastic_model("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
+  group_fits[["kachergis_sampling"]] = fit_stochastic_model("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
+  
+  gfd = get_model_dataframe(group_fits, combined_data)
+  save(group_fits, gfd, file="fits/group_fits.Rdata")
+}
+
+group_fits()
+
+cond_fits <- function() {
+  cond_fits = list()
+  cond_fits[["kachergis"]] = fit_by_cond(c("kachergis"), combined_data, c(.001,.1,.5), c(5,15,1))
+  cond_fits[["uncertainty"]] = fit_by_cond(c("uncertainty"), combined_data, c(.001,.1,.5), c(5,15,1))
+  cond_fits[["strength"]] = fit_by_cond("strength", combined_data, c(.001,.1), c(5,1))
+  cond_fits[["novelty"]] = fit_by_cond(c("novelty"), combined_data, c(.001,.1,.5), c(5,15,1))
+  cond_fits[["fazly"]] = fit_by_cond("fazly", combined_data, c(1e-10,2), c(2,20000)) 
+  cond_fits[["Bayesian_decay"]] = fit_by_cond("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
+  cond_fits[["rescorla-wagner"]] = fit_by_cond("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
+  # something's gotta be wrong with R-W
+  
+  # stochastic models so far fitted with 20-30 iterations per cond -- should increase this (to 100, and perhaps refit a few times?)
+  cond_fits[["trueswell2012"]] = fit_stochastic_by_cond("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
+  cond_fits[["guess-and-test"]] = fit_stochastic_by_cond("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
+  cond_fits[["pursuit_detailed"]] = fit_stochastic_by_cond("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
+  cond_fits[["kachergis_sampling"]] = fit_stochastic_by_cond("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
+  
+  cfd <- get_model_dataframe_cond_fits(cond_fits, combined_data)
+  save(cond_fits, cfd, file="fits/cond_fits.Rdata")
+}
+
+cond_fits()

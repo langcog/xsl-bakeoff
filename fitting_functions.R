@@ -1,45 +1,15 @@
 require(DEoptim) # pso
 require(caret)
 
-#source("fit.R")
-
-stochastic_models = c("guess-and-test","pursuit_detailed","trueswell2012","kachergis_sampling")
-
 order_dir = "orders/"
 model_dir = "models/"
 data_dir = "data/"
 
-# load lists of many trial orderings (and some means of human performance):
-load("data/master_orders.RData") # orders
-load("data/asymmetric_conditions.RData") # conds
-print(names(orders)) # e.g., orders[["filt0E_3L"]]
-print(names(conds))
+#source("fit.R")
 
-load("data/filtering_item_acc.RData")
-fd <- subset(acc_s, AtoA==T)
-for(ord in unique(fd$order)) {
-  css = subset(fd, order==ord)
-  orders[[ord]]$Nsubj = css$n[1]
-  orders[[ord]]$HumanItemAcc = css$Correct
-}
+stochastic_models = c("guess-and-test","pursuit_detailed","trueswell2012","kachergis_sampling")
 
-totSs = 0
-for(ord in names(orders)) {
-  totSs = totSs + orders[[ord]]$Nsubj
-  orders[[ord]]$Condition = ord
-}
-# 782 subjects
-
-#load(paste(data_dir,"asym_master.RData",sep='')) # raw
-
-
-for(ord in names(conds)) {
-  if(!is.na(conds[[ord]]$Nsubj)) {
-    totSs = totSs + conds[[ord]]$Nsubj
-  } else print(ord) 
-} 
-# 1532 subjects
-
+load("data/combined_data.RData")
 
 mafc_test <- function(mperf, test) {
   perf = rep(0, length(test$trials))
@@ -208,7 +178,6 @@ get_model_dataframe_cond_fits <- function(fits, conds) {
   return(mdf)
 }
 
-combined_data = c(conds, orders)
 
 
 ## TESTING
@@ -219,11 +188,6 @@ combined_data = c(conds, orders)
 #tl = fit_model("tilles", conds[[1]], c(1e-5,1e-5,1e-5), c(1,1,1)) # run_model
 
 
-
-load("fits/group_fits.Rdata")
-for(m in names(group_fits)) { 
-  print(paste(m, round(group_fits[[m]]$optim$bestval, 2)))
-}
 
 # temporary (until we finish full fits)
 #group_fits[["trueswell2012"]] = list(pars = c(0.113666, 0.266792)) # SSE=.879
@@ -253,46 +217,7 @@ fit_stochastic_by_cond <- function(mname, conds, lower, upper) {
   return(mod_fits)
 }
 
-completed_group_fits <- function() {
-  group_fits = list()
-  group_fits[["kachergis"]] = fit_model("kachergis", combined_data, c(.001,.1,.5), c(5,15,1)) 
-  group_fits[["novelty"]] = fit_model("novelty", combined_data, c(.001,.1,.5), c(5,15,1)) # NaN value of objective function!
-  group_fits[["fazly"]] = fit_model("fazly", combined_data, c(1e-10,2), c(2,20000)) 
-  group_fits[["Bayesian_decay"]] = fit_model("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
-  group_fits[["strength"]] = fit_model("strength", combined_data, c(.001,.1), c(5,1))
-  group_fits[["uncertainty"]] = fit_model("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
-  group_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
-  
-  # ToDo: merge these in from group_stochastic_fits.Rdata
-  # load("fits/group_stochastic_fits.Rdata")
-  group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
-  group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
-  group_fits[["pursuit_detailed"]] = fit_stochastic_model("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
-  group_fits[["kachergis_sampling"]] = fit_stochastic_model("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
-  
-  gfd = get_model_dataframe(group_fits, combined_data)
-  save(group_fits, gfd, file="fits/group_fits.Rdata")
-}
 
-completed_cond_fits <- function() {
-  cond_fits = list()
-  cond_fits[["kachergis"]] = fit_by_cond(c("kachergis"), combined_data, c(.001,.1,.5), c(5,15,1))
-  cond_fits[["uncertainty"]] = fit_by_cond(c("uncertainty"), combined_data, c(.001,.1,.5), c(5,15,1))
-  cond_fits[["strength"]] = fit_by_cond("strength", combined_data, c(.001,.1), c(5,1))
-  cond_fits[["novelty"]] = fit_by_cond(c("novelty"), combined_data, c(.001,.1,.5), c(5,15,1))
-  cond_fits[["fazly"]] = fit_by_cond("fazly", combined_data, c(1e-10,2), c(2,20000)) 
-  cond_fits[["Bayesian_decay"]] = fit_by_cond("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
-  cond_fits[["rescorla-wagner"]] = fit_by_cond("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
-  
-  # stochastic models so far fitted with 20-30 iterations per cond -- should increase this (to 100, and perhaps refit a few times?)
-  cond_fits[["trueswell2012"]] = fit_stochastic_by_cond("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
-  cond_fits[["guess-and-test"]] = fit_stochastic_by_cond("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
-  cond_fits[["pursuit_detailed"]] = fit_stochastic_by_cond("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
-  cond_fits[["kachergis_sampling"]] = fit_stochastic_by_cond("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
-  
-  cfd <- get_model_dataframe_cond_fits(cond_fits, combined_data)
-  save(cond_fits, cfd, file="fits/cond_fits.Rdata")
-}
 
 # given a vector of indices and a list, remove all indexed items
 get_train_test_split <- function(test_inds, conds) {
@@ -339,24 +264,6 @@ cross_validated_group_fits <- function(model_name, combined_data, lower, upper) 
   return(dat)
 }
 
-completed_group_cv_fits <- function() {
-  cv_group_fits = list()
-  cv_group_fits[["kachergis"]] = cross_validated_group_fits("kachergis", combined_data, c(.001,.1,.5), c(5,15,1))
-  cv_group_fits[["novelty"]] = cross_validated_group_fits("novelty", combined_data, c(.001,.1,.5), c(5,15,1))
-  cv_group_fits[["fazly"]] = cross_validated_group_fits("fazly", combined_data, c(1e-10,2), c(2,20000)) 
-
-  cv_group_fits[["Bayesian_decay"]] = cross_validated_group_fits("Bayesian_decay", combined_data, c(1e-5,1e-5,1e-5), c(10,10,10)) 
-  cv_group_fits[["strength"]] = cross_validated_group_fits("strength", combined_data, c(.001,.1), c(5,1))
-  cv_group_fits[["uncertainty"]] = cross_validated_group_fits("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
-  cv_group_fits[["rescorla-wagner"]] = cross_validated_group_fits("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
-  
-  #cv_group_fits[["guess-and-test"]] = cross_validated_group_fits("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
-  #cv_group_fits[["trueswell2012"]] = cross_validated_group_fits("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
-  #cv_group_fits[["pursuit_detailed"]] = cross_validated_group_fits("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
-  #cv_group_fits[["kachergis_sampling"]] = cross_validated_group_fits("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
-  
-  save(cv_group_fits, file="fits/cv_group_fits.Rdata")
-}
 
 # do for each model and save
 
