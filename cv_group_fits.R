@@ -1,4 +1,5 @@
 source("fitting_functions.R")
+require(tibble)
 
 cv_group_fits <- function() {
   cv_group_fits = list()
@@ -19,4 +20,18 @@ cv_group_fits <- function() {
   save(cv_group_fits, file="fits/cv_group_fits.Rdata")
 }
 
-cv_group_fits()
+#cv_group_fits()
+load("fits/cv_group_fits.Rdata")
+cv_group_fits[["guess-and-test"]] = cross_validated_group_fits("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
+cv_group_fits[["trueswell2012"]] = cross_validated_group_fits("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
+# Error in m[need_hypoths[w], new_hyps[w]] <- alpha : 
+# number of items to replace is not a multiple of replacement length
+cv_group_fits[["pursuit_detailed"]] = cross_validated_group_fits("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
+# Error in m[novel[w], min_ref] <- gamma : 
+# number of items to replace is not a multiple of replacement length
+cv_group_fits[["kachergis_sampling"]] = cross_validated_group_fits("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
+# Error in temp_wts * nent : non-conformable arrays
+
+save(cv_group_fits, file="fits/cv_group_fits.Rdata")
+#for(m in names(cv_group_fits) print(paste(cv_group_fits[[m]]$
+                                          
