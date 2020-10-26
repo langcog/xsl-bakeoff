@@ -9,12 +9,6 @@
 # for ICDL 2012 was: hypoth_model.R
 # similar to Blythe, Smith, and Smith's guess-and-test model
 
-# for testing:
-#mat = matrix(c(1,2, 1,3), nrow=2, ncol=2, byrow=T)
-# ord = list(words=mat, objs=mat)
-#mat2 = matrix(c(1,2,3, 1,4,5, 2,3,4, 5,6,1), nrow=4, ncol=3, byrow=T)
-# ord = list(words=mat2, objs=mat2)
-
 
 model <- function(params, ord=c(), reps=1, verbose=F) {
 	f <- params[1] # forget at retrieval

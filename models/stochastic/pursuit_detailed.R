@@ -1,5 +1,9 @@
 # Stevens et al. 2014 pursuit model
-# The pursuit model assumes that when word w is heard, it’s strongest associated meaning (h) is selected, and the association A(w,h) is updated based on the presence or absence of that referent. A(w,h) is increased if h is present in the current context, and no other association involving w is strengthened. If h is not present, A(w,h) is decreased and a single new referent is chosen from the context. Whenever the P(h’|w) for some h’ exceeds a threshold value, that meaning is added to the lexicon (never to be removed).
+# The pursuit model assumes that when word w is heard, it’s strongest associated meaning (h) is selected, 
+# and the association A(w,h) is updated based on the presence or absence of that referent. 
+# A(w,h) is increased if h is present in the current context, and no other association involving w is strengthened. 
+# If h is not present, A(w,h) is decreased and a single new referent is chosen from the context. 
+# Whenever the P(h’|w) for some h’ exceeds a threshold value, that meaning is added to the lexicon (never to be removed).
 
 # for each word w in utterance
 # 1) if w is novel, choose a referent in context with minimum association and give it gamma
@@ -17,8 +21,7 @@
 ### where did i get the following??
 #	for all h'!=h, p(h') = gamma/(n-1) + p(h')*(1-gamma) where n=# of hypotheses being considered
 
-#ord = matrix(c(1,2, 1,3), nrow=2, ncol=2, byrow=T)
-#ord = matrix(c(1,2,3, 1,4,5, 2,3,4, 5,6,1), nrow=4, ncol=3, byrow=T)
+
 #params = c(.2, .6, .05)
 
 model <- function(params, ord=c(), verbose=F) {

@@ -1,14 +1,6 @@
-# now based on Trueswell et al 2013 model:
+# based on Trueswell et al 2013 propose-but-verify model:
 # 1. guess at chance, 2. next time a word occurs, remember previous guess w prob alpha
 # 3. if the remembered guess is present, increase alpha; otherwise choose a new random guess
-# was:
-# hypothesis-testing model based on Medina, Snedeker, 
-# Trueswell, & Gleitman, 2011's verbal description:
-# one-trial / "fast mapping" hypothesis:
-#  i) learners hypothesize a single meaning based on their first encounter with a word
-# ii) learners neither weight nor even store back-up alternative meanings
-# iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed
-# Thus, they do not accrue a "best" final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses.
 
 # for testing:
 #mat = matrix(c(1,2, 1,3), nrow=2, ncol=2, byrow=T)
@@ -33,12 +25,18 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 	traj = list()
 	perf = matrix(0, reps, voc_sz) # a row for each block
 	freq = rep(0,voc_sz) # number of occurrences per pair, so far (to index the resps matrix)
-    
+  
 	for(rep in 1:reps) {
 		for(t in 1:nrow(ord$words)) {
 			tr_w = as.integer(ord$words[t,]) # ASSUMES words==objects
 			tr_o = as.integer(ord$objs[t,])
 			freq[tr_w] = freq[tr_w] + 1 
+			
+			# for each word, 1) check if there is a hypothesized ref
+			# if so, is it on this trial? yes -> strengthen
+			
+			# forget if runif > stored hyp strength (should be 1 non-zero entry per row)
+			# identify words that have hypothesized refs
 			if(length(tr_w)>1) {
 			  forget = tr_w[which(runif(length(tr_w)) > rowSums(m[tr_w,]))]
 			  m[forget,] = 0

@@ -120,6 +120,14 @@ First, data from all 46 conditions
 
 # Results
 
+
+## Conditions-left-out Cross-validated Group Fits
+
+
+```{r}
+kable(cvg_fit_tab, digits=3, caption="Group model fits.")
+```
+
 ## Group-level Model Fits
 
 ```{r, summarize-group-fits}

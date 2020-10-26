@@ -120,15 +120,19 @@ fit_stochastic_model <- function(model_name, conds, lower, upper) {
 
 
 # for group fits (all conditions per model)
-get_model_dataframe <- function(fits, conds) {
+get_model_dataframe <- function(fits, conds, cvdat=c()) {
   mdf = tibble()
   for(model_name in names(fits)) {
-    if(is.element(model_name, stochastic_models)) {
-      pars = fits[[model_name]]$pars # change once we have DEoptim objs
-      mdat = run_stochastic_model(conds, model_name, pars)
+    if(length(cvdat)!=0) {
+      mdat = cvdat
     } else {
-      pars = fits[[model_name]]$optim$bestmem
-      mdat = run_model(conds, model_name, pars)
+      if(is.element(model_name, stochastic_models)) {
+        pars = fits[[model_name]]$pars # change once we have DEoptim objs
+        mdat = run_stochastic_model(conds, model_name, pars)
+      } else {
+        pars = fits[[model_name]]$optim$bestmem
+        mdat = run_model(conds, model_name, pars)
+      }
     }
     for(c in names(mdat)) {
       if(c!="SSE") {
@@ -255,12 +259,12 @@ cross_validated_group_fits <- function(model_name, combined_data, lower, upper) 
     # add the data frame of test data? much more convenient..
     tmp = list()
     tmp[[model_name]] = opt
-    testdf = rbind(testdf, get_model_dataframe(tmp, conds$test))
+    testdf = rbind(testdf, get_model_dataframe(tmp, conds$test, cvdat=test[[i]]))
     print(paste("fold",i,"train SSE:",round(opt$optim$bestval,3),"test SSE:",round(test[[i]]$SSE,3)))
   }
   # add the folds ??
   dat[["test"]] = test
-  dat[["testdf"]] = testdf
+  dat[["testdf"]] = testdf # get_cv_test_df(test)
   return(dat)
 }
 
