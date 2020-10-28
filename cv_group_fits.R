@@ -13,7 +13,9 @@ cv_group_fits <- function() {
   cv_group_fits[["rescorla-wagner"]] = cross_validated_group_fits("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
   
   cv_group_fits[["guess-and-test"]] = cross_validated_group_fits("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
-  #cv_group_fits[["trueswell2012"]] = cross_validated_group_fits("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
+  cv_group_fits[["trueswell2012"]] = cross_validated_group_fits("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
+  # In if (!is.element(hypo, tr_o)) { ... :
+  # the condition has length > 1 and only the first element will be used
   #cv_group_fits[["pursuit_detailed"]] = cross_validated_group_fits("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
   #cv_group_fits[["kachergis_sampling"]] = cross_validated_group_fits("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
   
@@ -23,9 +25,6 @@ cv_group_fits <- function() {
 #cv_group_fits()
 load("fits/cv_group_fits.Rdata")
 #cv_group_fits[["guess-and-test"]] = cross_validated_group_fits("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
-cv_group_fits[["trueswell2012"]] = cross_validated_group_fits("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
-# Error in m[need_hypoths[w], new_hyps[w]] <- alpha : 
-# number of items to replace is not a multiple of replacement length
 cv_group_fits[["pursuit_detailed"]] = cross_validated_group_fits("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
 # Error in m[novel[w], min_ref] <- gamma : 
 # number of items to replace is not a multiple of replacement length
