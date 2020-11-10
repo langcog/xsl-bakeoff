@@ -58,7 +58,7 @@ load("data/asymmetric_conditions.RData")
 load("data/master_orders.RData") # trial orders for ME (filt) and FreqCD papers
 # orders
 
-# multi-block experiment
+# multi-block experiment: test generalization?
 load("data/priming_all_trajectory.RData") 
 # 86 subjects on 4 blocks of equal frequency 4pairs/trial, or 3,6,9x freq 3 or 4 pairs per trial
 asym <- raw %>% group_by(Condition, CondNum, Subject) %>%
@@ -218,9 +218,10 @@ Firstly, the 50%-present (P) and 50%-absent (A) trials could be either blocked (
 ```{r}
 load("other_exps/KoehneTrueswellGleitman2013orders.RData")
 
-run_Koehne_exp <- function(par, ord) {
-  mp = model(par, ord)$m
-  diag(mp[,1:8])/rowSums(mp[,1:8]) # 100% referemts: ~60% perf
+run_Koehne_exp <- function(model_name, par, ord) {
+  source(paste0("models/",model_name,".R"))
+  mp = model(par, ord)$matrix
+  diag(mp[,1:8])/rowSums(mp[,1:8]) # 100% referents: ~60% perf
   diag(mp) = 0
   perf = c()
   for(w in 1:nrow(mp)) {
@@ -230,19 +231,38 @@ run_Koehne_exp <- function(par, ord) {
 }
 
 
-evalSSE_Koehne <- function(par, hum_perf, verbose=F) {
-  mod_perf = c( mean(run_Koehne_exp(par, aaappp)),
-                mean(run_Koehne_exp(par, apapap)),
-                mean(run_Koehne_exp(par, papapa)),
-                mean(run_Koehne_exp(par, pppaaa)) )
-  if(verbose) print(mod_perf)
-  return(sum((hum_perf-mod_perf)^2))
+evalSSE_Koehne <- function(model_name, par, orders, verbose=F) {
+  df = tibble(Cond = names(Koehne), Human=rep(0.0, 4), Model=rep(0.0, 4), Model_sd=rep(0.0, 4))
+  for(i in 1:length(Koehne)) {
+    cond = names(Koehne)[i]
+    # words needs to be an Nx1 matrix
+    Koehne[[cond]]$train$words = matrix(Koehne[[cond]]$train$words, ncol=1)
+    mperf = run_Koehne_exp(model_name, par, Koehne[[cond]]$train)
+    df[i,]$Model = mean(mperf)
+    df[i,]$Model_sd = sd(mperf)
+    df[i,]$Human = Koehne[[cond]]$HumanAcc
+  }
+  if(verbose) print(df)
+  return(sum((df$Human-df$Model)^2)/4)
 }
 
-# the model predicts the same ordering as humans out of the box -- PPPAAA is best, AAAPPP is worst
-# contradicts Koehne et al.'s interpretation: "This finding is inconsistent with a standard cross-situational 
-# account because all conditions should have been above chance independent of presentation order.
+# cv_group_fits[["kachergis"]]$pars
+for(model_name in names(cv_group_fits)[1:6]) {
+  sses = rep(NA, 5)
+  for(i in 1:5) {
+    pars = cv_group_fits[[model_name]]$pars[i,]
+    sses[i] = evalSSE_Koehne("kachergis", pars, Koehne, verbose=F) # .017
+  }
+  print(paste(model_name, mean(sses)))
+}
+# problem with fazly model
 
+# run_Koehne_exp("kachergis", c(0.1077372, 14.99996, 1), Koehne[["pppaaa"]]$train)
+
+
+# the model predicts the same ordering as humans out of the box -- PPPAAA is best, AAAPPP is worst
+# contradicts Koehne et al.'s interpretation: "This finding is inconsistent with a standard cross-situational
+# account because all conditions should have been above chance independent of presentation order.
 
 ```
 
@@ -253,7 +273,7 @@ The number of referents per training trial varied: High Informative (HI) trials 
 Unlike most cross-situational word learning experiments, each word depicted not a single referent, but instead corresponded to a category of five referents, each appearing  (e.g., "bosa" might appear with five pictures of bears on as many separate trials).
 Different between-subjects conditions presented 12 HI trials (one per word) at the beginning, middle, or end of training, or not at all (HI-absent).
 
-```{r}
+```{r, medina-exp}
 load("other_exps/Medina2013orders.RData")
 
 # graph performance per block (1-5)
@@ -289,6 +309,7 @@ run_Medina_exp <- function(model_name, pars, plot=T) {
 }
 
 run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
+run_Medina_exp("fazly", c(0.4695008, 3.690278)) # Error in rowSums(modperf$traj[[i]]) : 'x' must be an array of at least two dimensions
 
 ```
 
@@ -296,12 +317,115 @@ run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
 ### Yu, Zhong, and Fricker (2012)
 Yu, Zhong, and Fricker (2012) pre-trained adult participants with three word-object associations and found higher performance on the other 15 words after this pre-training, demonstrating that knowing even a few word meanings can improve learning for other co-occurring words. 
 
+```{r, pretraining-exp}
+# orig4x4, but 3 pairs (which ones??) are pretrained: accuracy on those is .9187, 
+# and accuracy on the other 15 is .5812 
+# How variable is this effect based on selecting different 3 items for retraining?)
+yuzhong_emp = c(.9187, .5812)
+
+run_pretrain_experiment <- function(parms, n_pretrained=3, start_val=1) {
+  voc_sz = 18
+  start_matrix = matrix(0, voc_sz, voc_sz)
+  pretrain_inds = sample(1:18, n_pretrained)
+  other_inds = setdiff(1:18, pretrain_inds)
+  #start_matrix[pretrain_inds, pretrain_inds] = .01 # irrelevant to seed off-diagonal or not
+  diag(start_matrix)[pretrain_inds] = start_val
+  mm = model(parms, orig4x4, start_matrix = start_matrix) 
+
+  return(c(mean(mm$perf[pretrain_inds]), mean(mm$perf[other_inds])))
+}
+
+run_experiment_batch <- function(parms, n_pretrained=3, start_val=1, Nsim=100) {
+  dat = data.frame()
+  for(i in 1:Nsim) {
+    dat = rbind(dat, round(run_pretrain_experiment(parms, n_pretrained=n_pretrained, start_val=start_val), 3))
+  }
+  names(dat) = c("pretrain", "other")
+  return(dat)
+}
+
+mean(model(c(.1, 2, .92), orig4x4)$perf) # .45
+
+pt3 = run_experiment_batch(c(.1, 2, .92), n_pretrained=3, start_val=1.6, Nsim=200)
+colMeans(pt3) # pretrained = .89, other = .55
+
+sum((colMeans(pt3) - yuzhong_emp)^2) # .002
+
+pt6 = run_experiment_batch(c(.1, 2, .92), n_pretrained=6, start_val=1.6, Nsim=200)
+colMeans(pt6) # pretrained = .89, other = .66
+
+pt9 = run_experiment_batch(c(.1, 2, .92), n_pretrained=9, start_val=1.6, Nsim=200)
+colMeans(pt9) # pretrained = .89, other = .76
+
+```
+
+
 ### Suanda et al. (2014)
 Suanda et al. (2014) varied contextual diversity in a cross-situational word learning study of 5- to 7-year-olds, presenting children with 8 to-be-learned words shown two per trial across a total of 16 trials.
 
+```{r, suanda-exp}
+# Suanda et al. 2014 - contextual diversity effects in children
+# Low CD = .34 sd=.18
+# Mod CD = .39 sd=.20
+# Hi CD = .48 sd=.21
+suanda_emp = c(.34, .39, .48)
+
+loCD = read.table("Suanda2014-lowCD.txt", header=F, sep='\t') 
+medCD = read.table("Suanda2014-medCD.txt", header=F, sep='\t') 
+hiCD = read.table("Suanda2014-hiCD.txt", header=F, sep='\t') 
+
+require(DEoptim)
+
+# for specific order format: w o o o 
+coocs <- function(ord) { 
+  voc_sz = max(unlist(ord))
+  m = matrix(0, nrow=voc_sz, ncol=voc_sz)
+  for(t in 1:nrow(ord)) {
+    tr = unlist(ord[t,])
+    m[tr,tr] = m[tr,tr] + 1
+  }
+  return(m)
+}
+
+coocs(loCD)
+coocs(medCD)
+coocs(hiCD)
+
+source("models/model.R")
+
+evalSSE <- function(par, human, verbose=F) {
+  mod_perf = c( mean(model(par, loCD)$perf),
+                mean(model(par, medCD)$perf),
+                mean(model(par, hiCD)$perf) )
+  if(verbose) print(mod_perf)
+  return(sum((human-mod_perf)^2))
+}
+
+Suanda_fit <- DEoptim(fn=evalSSE, human=suanda_emp, lower=c(.001, .1, .7), upper=c(2, 7, 1), 
+                 DEoptim.control(reltol=.0001, steptol=50, itermax=200, trace=10))
+evalSSE(c(0.044, 2.840, 0.999), suanda_emp, verbose=T) # SSE=.004
+# 0.38 0.41 0.43
+
+# adult params get high performance
+evalSSE( c(0.490592, 6.927328, 0.802789), human, verbose=T) 
+```
+
+
 ### Vlach & DeBrock (2017, 2019)
+12 word-object pairs, 2 pairs/trial, 36 trials
+6 pairs repeated, 6 spaced?
+
+```{r, vlach-exp}
+vlach_ord <- read.csv("other_exps/VlachDeBrock2017_2019.txt", header=F, sep='\t')
+
+```
 
 
 ### Smith & Yu 2008
+6 word-object pairs, 2 pairs/trial, 30 trials
 
+```{r}
+sy_ord <- read.csv("other_exps/smithYu2008-2x2-6w.txt", header=F, sep='\t')
+
+```
 
