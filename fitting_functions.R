@@ -127,7 +127,7 @@ get_model_dataframe <- function(fits, conds, cvdat=c()) {
       mdat = cvdat
     } else {
       if(is.element(model_name, stochastic_models)) {
-        pars = fits[[model_name]]$pars # change once we have DEoptim objs
+        pars = fits[[model_name]]$optim$bestmem 
         mdat = run_stochastic_model(conds, model_name, pars)
       } else {
         pars = fits[[model_name]]$optim$bestmem

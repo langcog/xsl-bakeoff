@@ -185,7 +185,7 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) 
 ```
 
 ## Per-Condition Model Fits
-
+(not done yet for sampling models, and we may not even want to do this except for a version with cross-validation)
 
 ```{r, summarize-condition-fits}
 cond_fit_tab <- cfd %>% filter(!is.na(HumanPerf)) %>%
@@ -206,8 +206,9 @@ cfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) 
 
 ## Generalization Experiments
 
-Using the model parameters obtained above, we simulate model performance for a selection of published experiments and compare to participants' group-level performance for these conditions. 
+Using the parameters optimized to each model for all of the conditions, we simulate model performance for a selection of published experiments and compare to participants' group-level performance for these conditions. 
 The first three studies are of adult participants, and include two experiments that have been interpreted as supporting hypothesis-testing theories of word learning.
+
 
 ### Koehne, Trueswell & Gleitman (2013)
 For example, Koehne, Trueswell & Gleitman (2013), in which each of 16 novel nouns was assigned two meanings with different co-occurrence frequencies: 
@@ -218,6 +219,7 @@ Firstly, the 50%-present (P) and 50%-absent (A) trials could be either blocked (
 ```{r}
 load("other_exps/KoehneTrueswellGleitman2013orders.RData")
 
+# ToDo: modify to work for stochastic models, too
 run_Koehne_exp <- function(model_name, par, ord) {
   source(paste0("models/",model_name,".R"))
   mp = model(par, ord)$matrix
@@ -246,16 +248,12 @@ evalSSE_Koehne <- function(model_name, par, orders, verbose=F) {
   return(sum((df$Human-df$Model)^2)/4)
 }
 
-# cv_group_fits[["kachergis"]]$pars
-for(model_name in names(cv_group_fits)[1:6]) {
-  sses = rep(NA, 5)
-  for(i in 1:5) {
-    pars = cv_group_fits[[model_name]]$pars[i,]
-    sses[i] = evalSSE_Koehne("kachergis", pars, Koehne, verbose=F) # .017
-  }
-  print(paste(model_name, mean(sses)))
+gen_exps = tibble(exp=character(), model=character(), SSE=numeric())
+for(model_name in names(group_fits)[1:6]) {
+  pars = group_fits[[model_name]]$optim$bestmem
+  sse = evalSSE_Koehne(model_name, pars, Koehne, verbose=F) # 
+  gen_exps = bind_rows(gen_exps, tibble(exp="Koehne et al.", model=model_name, SSE=sse))
 }
-# problem with fazly model
 
 # run_Koehne_exp("kachergis", c(0.1077372, 14.99996, 1), Koehne[["pppaaa"]]$train)
 
@@ -311,6 +309,7 @@ run_Medina_exp <- function(model_name, pars, plot=T) {
 run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
 run_Medina_exp("fazly", c(0.4695008, 3.690278)) # Error in rowSums(modperf$traj[[i]]) : 'x' must be an array of at least two dimensions
 
+# ToDo: write evalSSE_Medina()
 ```
 
 
@@ -322,7 +321,9 @@ Yu, Zhong, and Fricker (2012) pre-trained adult participants with three word-obj
 # and accuracy on the other 15 is .5812 
 # How variable is this effect based on selecting different 3 items for retraining?)
 yuzhong_emp = c(.9187, .5812)
+yuzhong_ord = orders[["orig_4x4"]]$train
 
+# pre-train a random subset of n_pretrained word-object pairs
 run_pretrain_experiment <- function(parms, n_pretrained=3, start_val=1) {
   voc_sz = 18
   start_matrix = matrix(0, voc_sz, voc_sz)
@@ -330,12 +331,13 @@ run_pretrain_experiment <- function(parms, n_pretrained=3, start_val=1) {
   other_inds = setdiff(1:18, pretrain_inds)
   #start_matrix[pretrain_inds, pretrain_inds] = .01 # irrelevant to seed off-diagonal or not
   diag(start_matrix)[pretrain_inds] = start_val
-  mm = model(parms, orig4x4, start_matrix = start_matrix) 
+  mm = model(parms, yuzhong_ord, start_matrix = start_matrix) 
 
   return(c(mean(mm$perf[pretrain_inds]), mean(mm$perf[other_inds])))
 }
 
-run_experiment_batch <- function(parms, n_pretrained=3, start_val=1, Nsim=100) {
+# run Nsim pretraining experiments (with different random pretrained items)
+run_pretrain_experiment_batch <- function(parms, n_pretrained=3, start_val=1, Nsim=100) {
   dat = data.frame()
   for(i in 1:Nsim) {
     dat = rbind(dat, round(run_pretrain_experiment(parms, n_pretrained=n_pretrained, start_val=start_val), 3))
@@ -344,17 +346,17 @@ run_experiment_batch <- function(parms, n_pretrained=3, start_val=1, Nsim=100) {
   return(dat)
 }
 
-mean(model(c(.1, 2, .92), orig4x4)$perf) # .45
+source("models/kachergis.R")
 
-pt3 = run_experiment_batch(c(.1, 2, .92), n_pretrained=3, start_val=1.6, Nsim=200)
+pt3 = run_pretrain_experiment_batch(c(.1, 2, .92), n_pretrained=3, start_val=1.6, Nsim=200)
 colMeans(pt3) # pretrained = .89, other = .55
 
 sum((colMeans(pt3) - yuzhong_emp)^2) # .002
 
-pt6 = run_experiment_batch(c(.1, 2, .92), n_pretrained=6, start_val=1.6, Nsim=200)
+pt6 = run_pretrain_experiment_batch(c(.1, 2, .92), n_pretrained=6, start_val=1.6, Nsim=200)
 colMeans(pt6) # pretrained = .89, other = .66
 
-pt9 = run_experiment_batch(c(.1, 2, .92), n_pretrained=9, start_val=1.6, Nsim=200)
+pt9 = run_pretrain_experiment_batch(c(.1, 2, .92), n_pretrained=9, start_val=1.6, Nsim=200)
 colMeans(pt9) # pretrained = .89, other = .76
 
 ```
@@ -391,9 +393,10 @@ coocs(loCD)
 coocs(medCD)
 coocs(hiCD)
 
-source("models/model.R")
+#source("models/kachergis.R")
 
-evalSSE <- function(par, human, verbose=F) {
+evalSSE_Suanda <- function(model_name, par, human, verbose=F) {
+  source(paste0("models/",model_name,".R"))
   mod_perf = c( mean(model(par, loCD)$perf),
                 mean(model(par, medCD)$perf),
                 mean(model(par, hiCD)$perf) )
@@ -401,13 +404,19 @@ evalSSE <- function(par, human, verbose=F) {
   return(sum((human-mod_perf)^2))
 }
 
-Suanda_fit <- DEoptim(fn=evalSSE, human=suanda_emp, lower=c(.001, .1, .7), upper=c(2, 7, 1), 
-                 DEoptim.control(reltol=.0001, steptol=50, itermax=200, trace=10))
-evalSSE(c(0.044, 2.840, 0.999), suanda_emp, verbose=T) # SSE=.004
+#Suanda_fit <- DEoptim(fn=evalSSE, human=suanda_emp, lower=c(.001, .1, .7), upper=c(2, 7, 1), 
+#                 DEoptim.control(reltol=.0001, steptol=50, itermax=200, trace=10))
+#evalSSE_Suanda(c(0.044, 2.840, 0.999), suanda_emp, verbose=T) # SSE=.004
 # 0.38 0.41 0.43
 
 # adult params get high performance
-evalSSE( c(0.490592, 6.927328, 0.802789), human, verbose=T) 
+#evalSSE_Suanda( c(0.490592, 6.927328, 0.802789), human, verbose=T) 
+
+for(model_name in names(group_fits)[1:6]) {
+  pars = group_fits[[model_name]]$optim$bestmem
+  sse = evalSSE_Suanda(model_name, pars, suanda_emp, verbose=F) # 
+  gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, SSE=sse))
+}
 ```
 
 

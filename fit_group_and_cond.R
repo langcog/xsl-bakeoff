@@ -10,8 +10,6 @@ group_fits <- function() {
   group_fits[["uncertainty"]] = fit_model("uncertainty", combined_data, c(.001,.1,.5), c(5,15,1))
   group_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
   #group_fits[["decay"]] = fit_model("decay", combined_data, .01, 1) # barely better than baseline
-  gfd = get_model_dataframe(group_fits, combined_data)
-  save(group_fits, gfd, file="fits/group_fits.Rdata")
   
   # ToDo: merge these in from group_stochastic_fits.Rdata
   # load("fits/group_stochastic_fits.Rdata")
@@ -25,6 +23,8 @@ group_fits <- function() {
   # bestvalit: 0.356301 bestmemit:    0.152348   11.209949    0.999401
   # Error in m[need_hypoths[w], new_hyps[w]] <- alpha : number of items to replace is not a multiple of replacement length
   
+  # look into this warning: In if (!is.element(hypo, tr_o)) { ... :
+  #  the condition has length > 1 and only the first element will be used
   gfd = get_model_dataframe(group_fits, combined_data)
   save(group_fits, gfd, file="fits/group_fits.Rdata")
 }
