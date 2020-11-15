@@ -8,6 +8,15 @@ loCD = read.table("Suanda2014-lowCD.txt", header=F, sep='\t')
 medCD = read.table("Suanda2014-medCD.txt", header=F, sep='\t') 
 hiCD = read.table("Suanda2014-hiCD.txt", header=F, sep='\t') 
 
+Suanda = list()
+Suanda[["Low CD"]]$train = list(words = loCD, objs = loCD)
+Suanda[["Low CD"]]$HumanAcc = .34
+Suanda[["Medium CD"]]$train = list(words = medCD, objs = medCD)
+Suanda[["Medium CD"]]$HumanAcc = .39
+Suanda[["High CD"]]$train = list(words = hiCD, objs = hiCD)
+Suanda[["High CD"]]$HumanAcc = .48
+save(Suanda, file="Suanda2014orders.RData")
+
 require(DEoptim)
 
 # for specific order format: w o o o 

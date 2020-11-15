@@ -273,7 +273,14 @@ Different between-subjects conditions presented 12 HI trials (one per word) at t
 
 ```{r, medina-exp}
 load("other_exps/Medina2013orders.RData")
-
+# HIfirst: 66% accuracy on vignette 1; 41% accuracy by the fifth vignette; offer this guess as “the meaning of the word” at experiment’s end (37% accuracy on the Final Guess)
+# they don't list the means per cond/vignette, except in Fig2. 
+# I tried to read off the performance from the Figure...
+Medina[["HIfirst"]]$HumAcc = c(.66, .33, .39, .46, .41) # final: .37
+Medina[["HImid"]]$HumAcc = c()
+Medina[["HIlast"]]$HumAcc = c()
+Medina[["HIabsent"]]$HumAcc = c()
+  
 # graph performance per block (1-5)
 get_block_perf <- function(modperf) {
   perf_inds = seq(12,60,12)
@@ -337,7 +344,8 @@ run_pretrain_experiment <- function(parms, n_pretrained=3, start_val=1) {
 }
 
 # run Nsim pretraining experiments (with different random pretrained items)
-run_pretrain_experiment_batch <- function(parms, n_pretrained=3, start_val=1, Nsim=100) {
+run_pretrain_experiment_batch <- function(model_name, parms, n_pretrained=3, start_val=1, Nsim=100) {
+  source(paste0("models/",model_name,".R"))
   dat = data.frame()
   for(i in 1:Nsim) {
     dat = rbind(dat, round(run_pretrain_experiment(parms, n_pretrained=n_pretrained, start_val=start_val), 3))
@@ -364,77 +372,82 @@ colMeans(pt9) # pretrained = .89, other = .76
 
 ### Suanda et al. (2014)
 Suanda et al. (2014) varied contextual diversity in a cross-situational word learning study of 5- to 7-year-olds, presenting children with 8 to-be-learned words shown two per trial across a total of 16 trials.
-
+...2AFC?
 ```{r, suanda-exp}
 # Suanda et al. 2014 - contextual diversity effects in children
-# Low CD = .34 sd=.18
-# Mod CD = .39 sd=.20
-# Hi CD = .48 sd=.21
-suanda_emp = c(.34, .39, .48)
+load("other_exps/Suanda2014orders.RData") # Suanda orders and HumanAcc
 
-loCD = read.table("Suanda2014-lowCD.txt", header=F, sep='\t') 
-medCD = read.table("Suanda2014-medCD.txt", header=F, sep='\t') 
-hiCD = read.table("Suanda2014-hiCD.txt", header=F, sep='\t') 
+# Suanda[["Low CD"]]: each pair appears 3 times with another pair and once with a 2nd pair
+# Medium CD: each pair appears once with two other pairs and twice with another pair
+# High CD: each pair appears with 4 other pairs
 
-require(DEoptim)
-
-# for specific order format: w o o o 
-coocs <- function(ord) { 
-  voc_sz = max(unlist(ord))
-  m = matrix(0, nrow=voc_sz, ncol=voc_sz)
-  for(t in 1:nrow(ord)) {
-    tr = unlist(ord[t,])
-    m[tr,tr] = m[tr,tr] + 1
+evalSSE_orders <- function(model_name, par, orders, verbose=F) {
+  df = tibble(Cond = character(), Human=numeric(), Model=numeric(), Model_sd=numeric())
+  for(i in 1:length(orders)) {
+    cond = names(orders)[i]
+    mperf = model(par, orders[[cond]]$train)$perf
+    df = bind_rows(df, tibble(cond=cond, Model=mean(mperf), Model_sd=sd(mperf), 
+                              Human=orders[[cond]]$HumanAcc))
   }
-  return(m)
+  if(verbose) print(df)
+  return(sum((df$Human-df$Model)^2)/length(orders))
 }
-
-coocs(loCD)
-coocs(medCD)
-coocs(hiCD)
-
-#source("models/kachergis.R")
-
-evalSSE_Suanda <- function(model_name, par, human, verbose=F) {
-  source(paste0("models/",model_name,".R"))
-  mod_perf = c( mean(model(par, loCD)$perf),
-                mean(model(par, medCD)$perf),
-                mean(model(par, hiCD)$perf) )
-  if(verbose) print(mod_perf)
-  return(sum((human-mod_perf)^2))
-}
-
-#Suanda_fit <- DEoptim(fn=evalSSE, human=suanda_emp, lower=c(.001, .1, .7), upper=c(2, 7, 1), 
-#                 DEoptim.control(reltol=.0001, steptol=50, itermax=200, trace=10))
-#evalSSE_Suanda(c(0.044, 2.840, 0.999), suanda_emp, verbose=T) # SSE=.004
-# 0.38 0.41 0.43
-
-# adult params get high performance
-#evalSSE_Suanda( c(0.490592, 6.927328, 0.802789), human, verbose=T) 
 
 for(model_name in names(group_fits)[1:6]) {
   pars = group_fits[[model_name]]$optim$bestmem
-  sse = evalSSE_Suanda(model_name, pars, suanda_emp, verbose=F) # 
+  sse = evalSSE_orders(model_name, pars, Suanda, verbose=F) # 
   gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, SSE=sse))
 }
+# fazly: Error in if (min(p) < 0 || sum(p) <= 0) return(NA) : missing value where TRUE/FALSE needed
 ```
 
 
 ### Vlach & DeBrock (2017, 2019)
 12 word-object pairs, 2 pairs/trial, 36 trials
-6 pairs repeated, 6 spaced?
+6 pairs massed, 6 interleaved
+2AFC testing
 
 ```{r, vlach-exp}
 vlach_ord <- read.csv("other_exps/VlachDeBrock2017_2019.txt", header=F, sep='\t')
+# 2017 paper had immediate testing: 2–3 year-olds (61% correct responses), 4–5 year-olds (67% correct)
+#  - no diff between interleaved/massed with the immediate test
+# 2019 paper introduced a 5-minute delay between learning and test phases (children aged 25-58 mos), M=.57
+#  - sig. higher performance on the interleaved word-object mappings
 
+massed = c(1, 8, 9, 10, 11, 12)
+spaced = setdiff(1:12, massed)
+# 2AFC test, overall M=6.81 words learned (better with age: only 47-58 mos / 50-70 mos groups above chance
+# Exp1: massed M=3.17, interleaved M=3.64 
+# Exp2: massed M=3.00, interleaved M=3.48
+
+mp = model(c(.003, 2, .97), vlach_ord)
+mperf = mAFC_test(mp$matrix, 2)
+massed_perf = sum(mperf[massed]) 
+spaced_perf = sum(mperf[spaced]) 
 ```
 
 
-### Smith & Yu 2008
+### Smith & Yu 2008 / Yu & Smith (2011)
 6 word-object pairs, 2 pairs/trial, 30 trials
 
 ```{r}
 sy_ord <- read.csv("other_exps/smithYu2008-2x2-6w.txt", header=F, sep='\t')
 
+
+mAFC_test <- function(mat, m) {
+  perf = rep(0, nrow(mat))
+  for(i in 1:nrow(mat)) {
+    # sample m-1 incorrect referents
+    alts = sample(setdiff(1:ncol(mat), i), m-1)
+    perf[i] = mat[i,i] / sum(mat[i,c(alts, i)])
+  }
+  return(perf)
+}
+
+mp = model(c(.0015, 2, .97), sy)
+sum(mAFC_test(mp$matrix, 2)) # 3.57 words learned
+
+mp = model(c(.003, 1, .97), sy)
+sum(mAFC_test(mp$matrix, 2)) # 4.00 words learned
 ```
 
