@@ -1,6 +1,6 @@
 ---
-title: "XSL Model Bake-off"
-author: "George Kachergis"
+title: "A large-scale comparison of several cross-situational word learning models"
+author: "George Kachergis & Michael C. Frank"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -13,65 +13,95 @@ library(knitr)
 library(kableExtra)
 ```
 
-## Introduction
+# Introduction
 
-The goal is to test a variety of cross-situational word learning models from the recent literature on a range of findings. We will examine both associative models and hypothesis-testing models, and will find optimal parameters both globally (for all experiments), as well as per condition, and perhaps even per participant.
+The goal of this study is to test the ability of a variety of cross-situational word learning models to account for a wide range of experimental data. 
+Many models for cross-situational word learning have been proposed, and yet most of these models have only been tested on a few different experiments--often distinct ones, and only with one or two other models for comparison. 
+Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) modeled, recognizing that the plurality of models and the theories and intuitions they represent can only be winnowed down via rigorous comparison.
+We will find best-fitting parameters for associative models, hypothesis-testing models, and a few hybrid models, and will quantify generalization on held-out data, as well as qualitatively in other experiments.
+Finally, we will interpret the results, and what they entail for theories of cross-situational word learning.
 
-Models:
-* baseline count model?
+### Models
+* baseline count model (SSE=.620)
 * propose-but-verify
 * guess-and-test
 * pursuit model
 * Kachergis model (associative + sampling version)
-  + strength bias model
-  + uncertainty bias model
-  + novelty bias model
+    + strength bias model
+    + uncertainty bias model
+    + novelty bias model
 * Fazly et al.
 * "Bayesian" decay
 * Tilles & Fontanari 2013 (ToDo: verify)
 * Yurovsky & Frank 2015 (ToDo!!)
 
 
-### The Data
+## The Data
 
-I have participant-level data for: 1) 556 subjects from 18 conditions (Kachergis & Yu, 2013), 2) frequency and contextual diversity experiments (including a multi-block version), and 3) 
+```{r load-data}
+load("data/combined_data.RData")
 
-We will first optimize each model's parameters to the entire dataset (all 1532 participants), as well as to each condition.
-We will then conduct generalization experiments to see how well each model (with earlier optimized parameters) predicts the result of other experiments in the literature, for which we do not have participant-level data.
+totSs = 0
+totItems = 0
+for(c in 1:length(combined_data)) { 
+  totSs = totSs + combined_data[[c]]$Nsubj 
+  totItems = totItems + length(combined_data[[c]]$HumanItemAcc)
+}
+```
 
 
-```{r, load-data}
+The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
+Most of these data have been previously published: 
+
+We will first optimize each model's parameters with 5-fold cross-validation, leaving out data from 20% of the conditions to test generalization from optimizing to the remaining 80%.
+We will then optimize each model's parameterss to the entire dataset, and use these parameters to test generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
+
+
+```{r, load-trajectory-data, include=F}
 # individual-level subject data for 18 conditions (from Kachergis & Yu 2013)
-load("data/asym_master.RData") 
-asym <- raw %>% group_by(Condition, CondNum, Subject) %>%
-  summarise(perf = mean(Correct)) %>%
-  group_by(Condition, CondNum) %>% summarise(Nsubj=n()) 
+#load("data/asym_master.RData") 
+#asym <- raw %>% group_by(Condition, CondNum, Subject) %>%
+#  summarise(perf = mean(Correct)) %>%
+#  group_by(Condition, CondNum) %>% summarise(Nsubj=n()) 
 # CondNums with missing names: 
 # 217 - 2 words x 4 objects, 54 trials
 # 218 - 3 words x 4 objects, 36 trials
 # 220 - 3 words x 4 objects, 54 trials
 # sum(asym$Nsubj) # 556 subjects
 
-load("data/asymmetric_conditions.RData") 
-# conds = 
-
-load("data/master_orders.RData") # trial orders for ME (filt) and FreqCD papers
-# orders
+#load("data/asymmetric_conditions.RData") 
+#load("data/master_orders.RData") # trial orders for ME (filt) and FreqCD papers
 
 # multi-block experiment: test generalization?
-load("data/priming_all_trajectory.RData") 
+#load("data/priming_all_trajectory.RData") 
 # 86 subjects on 4 blocks of equal frequency 4pairs/trial, or 3,6,9x freq 3 or 4 pairs per trial
-asym <- raw %>% group_by(Condition, CondNum, Subject) %>%
-  summarise(perf = mean(Correct)) %>%
-  group_by(Condition, CondNum) %>% summarise(Nsubj=n())
+#asym <- raw %>% group_by(Condition, CondNum, Subject) %>%
+#  summarise(perf = mean(Correct)) %>%
+#  group_by(Condition, CondNum) %>% summarise(Nsubj=n())
 ```
 
-For each condition, need an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
+Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
 We also require a test function--often presenting each word a single time along *m*AFC of objects, where *m* is the number of objects seen during the training, but sometimes a subset of the objects are tested.
 
-### Model Descriptions
+## Model Descriptions
 
-Each model accepts a condition's list of training trials, as well as 2 or 3 parameters.
+We fit the following associative models: Fazly [@fazly2010], Kachergis [@kachergis2012], ... and a baseline co-occurrence counting model.
+We also fit two hypothesis-testing models: guess-and-test [@trueswell2011,@blythe2010] and propose-but-verify [@trueswell2013].
+Finally, we fit two hybrid models, that store multiple, graded hypotheses--but only a subset of all possible assoociations: pursuit [@stevens2017], and a stochastic version of the Kachergis model.
+These models and their free parameters are described below.
+
+### Propose-but-verify
+In the propose-but-verify hypothesis testing model @trueswell2013, one of the presented referents is selected at random for any word heard that has no remembered referent. 
+The next time that word occurs, the previously-proposed referent is remembered with probability $\alpha$, a free parameter. 
+If the remembered referent is verified to be present, the future probability of recalling the word is increased by $\epsilon$ (another free parameter). 
+If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
+This model implements trial-level mutual exclusivity by selecting new proposals only from among the referents that are not yet part of a hypothesis.
+
+### Guess-and-test
+The guess-and-test hypothesis testing model is based on the description given by @medina2011 of a one-shot (i.e. "fast mapping") learning, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
+In summary, guess-and-test learners do *not* reach a final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses.
+We give this model two free parameters: a probability of successful encoding ($s$, hypothesis formation), and a probability $f$ of forgetting a hypothesis at retrieval. 
+This model is quite similar to the guess-and-test model formally analyzed by @blythe2010 to determine the theoretical long-term efficacy of cross-situational word learning.
 
 ```{r, model-list}
 # need to be run >100 times per given parameter values
@@ -115,8 +145,8 @@ cvg_fit_tab <- cvg %>% group_by(Model) %>%
 
 ## Model Fitting Procedure
 
-We will fit each model with two different cross-validation methods.
-First, data from all 46 conditions
+We will fit each model with five-fold cross-validation method, leaving out 9 of the `r length(combined_data)` conditions in each of 4 folds, and 8 in the final.
+The 2 or 3 free parameters for each model were optimized using diffential evolution [@DEoptim], a global optimization algorithm that requires no assumptions about a differentiable fitness landscape (which may not be met here) and works well when there may be many local minima.
 
 # Results
 
@@ -255,8 +285,8 @@ for(model_name in names(group_fits)[1:6]) {
   gen_exps = bind_rows(gen_exps, tibble(exp="Koehne et al.", model=model_name, SSE=sse))
 }
 
-# run_Koehne_exp("kachergis", c(0.1077372, 14.99996, 1), Koehne[["pppaaa"]]$train)
-
+#run_Koehne_exp("kachergis", group_fits$kachergis$optim$bestmem, Koehne[["pppaaa"]]$train)
+# Error in 1:nrow(ord$words) : argument of length 0
 
 # the model predicts the same ordering as humans out of the box -- PPPAAA is best, AAAPPP is worst
 # contradicts Koehne et al.'s interpretation: "This finding is inconsistent with a standard cross-situational
@@ -277,7 +307,7 @@ load("other_exps/Medina2013orders.RData")
 # they don't list the means per cond/vignette, except in Fig2. 
 # I tried to read off the performance from the Figure...
 Medina[["HIfirst"]]$HumAcc = c(.66, .33, .39, .46, .41) # final: .37
-Medina[["HImid"]]$HumAcc = c()
+Medina[["HImid"]]$HumAcc = c(.14, .14, .39, .30, .16) # final: .09
 Medina[["HIlast"]]$HumAcc = c()
 Medina[["HIabsent"]]$HumAcc = c()
   
@@ -314,7 +344,7 @@ run_Medina_exp <- function(model_name, pars, plot=T) {
 }
 
 run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
-run_Medina_exp("fazly", c(0.4695008, 3.690278)) # Error in rowSums(modperf$traj[[i]]) : 'x' must be an array of at least two dimensions
+#run_Medina_exp("fazly", c(0.4695008, 3.690278)) # Error in rowSums(modperf$traj[[i]]) : 'x' must be an array of at least two dimensions
 
 # ToDo: write evalSSE_Medina()
 ```
@@ -328,7 +358,7 @@ Yu, Zhong, and Fricker (2012) pre-trained adult participants with three word-obj
 # and accuracy on the other 15 is .5812 
 # How variable is this effect based on selecting different 3 items for retraining?)
 yuzhong_emp = c(.9187, .5812)
-yuzhong_ord = orders[["orig_4x4"]]$train
+yuzhong_ord = combined_data[["orig_4x4"]]$train
 
 # pre-train a random subset of n_pretrained word-object pairs
 run_pretrain_experiment <- function(parms, n_pretrained=3, start_val=1) {
@@ -354,17 +384,15 @@ run_pretrain_experiment_batch <- function(model_name, parms, n_pretrained=3, sta
   return(dat)
 }
 
-source("models/kachergis.R")
-
-pt3 = run_pretrain_experiment_batch(c(.1, 2, .92), n_pretrained=3, start_val=1.6, Nsim=200)
+pt3 = run_pretrain_experiment_batch("kachergis", c(.1, 2, .92), n_pretrained=3, start_val=1.6, Nsim=200)
 colMeans(pt3) # pretrained = .89, other = .55
 
 sum((colMeans(pt3) - yuzhong_emp)^2) # .002
 
-pt6 = run_pretrain_experiment_batch(c(.1, 2, .92), n_pretrained=6, start_val=1.6, Nsim=200)
+pt6 = run_pretrain_experiment_batch("kachergis", c(.1, 2, .92), n_pretrained=6, start_val=1.6, Nsim=200)
 colMeans(pt6) # pretrained = .89, other = .66
 
-pt9 = run_pretrain_experiment_batch(c(.1, 2, .92), n_pretrained=9, start_val=1.6, Nsim=200)
+pt9 = run_pretrain_experiment_batch("kachergis", c(.1, 2, .92), n_pretrained=9, start_val=1.6, Nsim=200)
 colMeans(pt9) # pretrained = .89, other = .76
 
 ```
@@ -393,7 +421,7 @@ evalSSE_orders <- function(model_name, par, orders, verbose=F) {
   return(sum((df$Human-df$Model)^2)/length(orders))
 }
 
-for(model_name in names(group_fits)[1:6]) {
+for(model_name in names(group_fits)[1]) { # [1:6]
   pars = group_fits[[model_name]]$optim$bestmem
   sse = evalSSE_orders(model_name, pars, Suanda, verbose=F) # 
   gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, SSE=sse))
@@ -414,13 +442,25 @@ vlach_ord <- read.csv("other_exps/VlachDeBrock2017_2019.txt", header=F, sep='\t'
 # 2019 paper introduced a 5-minute delay between learning and test phases (children aged 25-58 mos), M=.57
 #  - sig. higher performance on the interleaved word-object mappings
 
+mAFC_test <- function(mat, m) {
+  perf = rep(0, nrow(mat))
+  for(i in 1:nrow(mat)) {
+    # sample m-1 incorrect referents
+    alts = sample(setdiff(1:ncol(mat), i), m-1)
+    perf[i] = mat[i,i] / sum(mat[i,c(alts, i)])
+  }
+  return(perf)
+}
+
+vlach = list(train = list(words = vlach_ord, objs = vlach_ord))
+
 massed = c(1, 8, 9, 10, 11, 12)
 spaced = setdiff(1:12, massed)
 # 2AFC test, overall M=6.81 words learned (better with age: only 47-58 mos / 50-70 mos groups above chance
 # Exp1: massed M=3.17, interleaved M=3.64 
 # Exp2: massed M=3.00, interleaved M=3.48
 
-mp = model(c(.003, 2, .97), vlach_ord)
+mp = model(c(.003, 2, .97), vlach$train)
 mperf = mAFC_test(mp$matrix, 2)
 massed_perf = sum(mperf[massed]) 
 spaced_perf = sum(mperf[spaced]) 
@@ -432,22 +472,16 @@ spaced_perf = sum(mperf[spaced])
 
 ```{r}
 sy_ord <- read.csv("other_exps/smithYu2008-2x2-6w.txt", header=F, sep='\t')
+smith_yu = list(train=list(words=sy_ord, objs=sy_ord))
 
 
-mAFC_test <- function(mat, m) {
-  perf = rep(0, nrow(mat))
-  for(i in 1:nrow(mat)) {
-    # sample m-1 incorrect referents
-    alts = sample(setdiff(1:ncol(mat), i), m-1)
-    perf[i] = mat[i,i] / sum(mat[i,c(alts, i)])
-  }
-  return(perf)
-}
+# with adult parameters, learns 5.76 words
+#mp = model(group_fits$kachergis$optim$bestmem, smith_yu$train)
 
-mp = model(c(.0015, 2, .97), sy)
-sum(mAFC_test(mp$matrix, 2)) # 3.57 words learned
+#mp = model(c(.0015, 2, .97), smith_yu$train)
+#sum(mAFC_test(mp$matrix, 2)) # 3.57 words learned
 
-mp = model(c(.003, 1, .97), sy)
-sum(mAFC_test(mp$matrix, 2)) # 4.00 words learned
+#mp = model(c(.003, 1, .97), smith_yu$train)
+#sum(mAFC_test(mp$matrix, 2)) # 4.00 words learned
 ```
 

@@ -24,7 +24,7 @@
 
 #params = c(.2, .6, .05)
 
-model <- function(params, ord=c(), verbose=F) {
+model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
   gamma = params[1] # learning rate
   thresh = params[2] # threshold (prob) to move an association to the known lexicon 
   lambda = params[3] # smoothing prob
@@ -32,7 +32,11 @@ model <- function(params, ord=c(), verbose=F) {
   voc_sz = max(unlist(ord$words), na.rm=TRUE)  # vocabulary size
   ref_sz = max(unlist(ord$objs), na.rm=TRUE)
   
-  m <- matrix(0, voc_sz, ref_sz) # association matrix A(w,h)
+  if(is.matrix(start_matrix)) {
+    m <- start_matrix
+  } else {
+    m <- matrix(0, voc_sz, ref_sz) # association matrix A(w,h)
+  }
   lexicon <- matrix(0, voc_sz, ref_sz) # for any association that reaches threshold
   compScore = rep(0, nrow(ord$words))
   freq = rep(0,voc_sz) # number of occurrences per pair, so far (to index the resps matrix)

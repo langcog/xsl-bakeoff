@@ -32,7 +32,7 @@ update_known <- function(m, tr_w, tr_o, startval = .01) {
   return(m)
 }
 
-model <- function(params, ord=c(), reps=1, test_noise=0) {
+model <- function(params, ord=c(), start_matrix=c(), reps=1, test_noise=0) {
 	X <- params[1] # associative weight to distribute
 	B <- params[2] # weighting of uncertainty vs. familiarity
 	C <- params[3] # decay
@@ -40,7 +40,11 @@ model <- function(params, ord=c(), reps=1, test_noise=0) {
 	voc_sz = max(unlist(ord$words), na.rm=TRUE) # vocabulary size
 	ref_sz = max(unlist(ord$objs), na.rm=TRUE) # number of objects
 	traj = list()
-	m <- matrix(0, voc_sz, ref_sz) # association matrix
+	if(is.matrix(start_matrix)) {
+	  m <- start_matrix
+	} else {
+	  m <- matrix(0, voc_sz, ref_sz) # association matrix
+	}
 	perf = matrix(0, reps, voc_sz) # a row for each block
 	# training
 	for(rep in 1:reps) { # for trajectory experiments, train multiple times
