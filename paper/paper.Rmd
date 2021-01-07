@@ -1,0 +1,118 @@
+---
+title: "A large-scale comparison of several cross-situational word learning models"
+bibliography: refs.bib
+csl: apa6.csl
+document-params: "10pt, letterpaper"
+
+author-information: > 
+    \author{{\large \bf George Kachergis (kachergis@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA
+    \AND {\large \bf Michael C.~Frank (mcfrank@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA}
+
+abstract: >
+    How people learn word meanings from ambiguous situations has been a 
+    frequent target of empirical work as well as numerous computational models, 
+    and yet there is little consensus on the main mechanisms underpinning cross-
+    situational word learning. The lack of consensus is in part due to the large 
+    number of disparate studies and models, and lack of systematic model comparisons
+    across a wide range of studies. This study seeks to remedy this, comparing the 
+    performance of several extant cross-situational word learning models on a 
+    dataset consisting of 1,696 participants spread across 44 experimental conditions.
+    Using cross-validated parameters, we fit multiple models representing theories of both
+    associative learning and hypothesis-testing theories of word learning, and discuss
+    which models mimic each other, and which mechanisms are overall best able to account 
+    for the data. Finally, we test the models' best-fitting parameters ability to generalize
+    to a set of additional experiments, including developmental data.
+    
+keywords: >
+    cross-situational word learning; model comparison; language learning
+    
+output: cogsci2016::cogsci_paper
+#final-submission: \cogscifinalcopy
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=3, fig.height=3, fig.crop = F, 
+                      fig.pos = "tb", fig.path='figs/',
+                      echo=F, warning=F, cache=F, 
+                      message=F, sanitize = T)
+```
+
+```{r, libraries}
+library(png)
+library(grid)
+library(ggplot2)
+library(xtable)
+```
+
+# Introduction
+
+
+
+
+# First-Level Headings
+
+First level headings should be in 12 point , initial caps, bold and
+centered. Leave one line space above the heading and 1/4~line space
+below the heading.
+
+
+## Two-column images
+
+
+You might want to display a wide figure across both columns. To do this, you change the `fig.env` chunk option to `figure*`. To align the image in the center of the page, set `fig.align` option to `center`. To format the width of your caption text, you set the `num.cols.cap` option to `2`.
+
+```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=4, fig.height=2, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "This image spans both columns. And the caption text is limited to 0.8 of the width of the document."}
+img <- png::readPNG("figs/walrus.png")
+grid::grid.raster(img)
+```
+
+## One-column images
+
+Single column is the default option, but if you want set it explicitly, set `fig.env` to `figure`. Notice that the `num.cols` option for the caption width is set to `1`.
+
+```{r image, fig.env = "figure", fig.pos = "H", fig.align='center', fig.width=2, fig.height=2, set.cap.width=T, num.cols.cap=1, fig.cap = "One column image."}
+img <- png::readPNG("figs/lab_logo_stanford.png")
+grid::grid.raster(img)
+```
+
+
+```{r plot, fig.env="figure", fig.pos = "H", fig.align = "center", fig.width=2, fig.height=2, fig.cap = "R plot" }
+x <- 0:100
+y <- 2 * (x + rnorm(length(x), sd = 3) + 3)
+
+ggplot2::ggplot(data = data.frame(x, y), 
+                aes(x = x, y = y)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+```
+
+
+## Tables
+
+
+```{r xtable, results="asis"}
+n <- 100
+x <- rnorm(n)
+y <- 2*x + rnorm(n)
+out <- lm(y ~ x)
+
+tab1 <- xtable::xtable(summary(out)$coef, digits=c(0, 2, 2, 1, 2), 
+                       caption = "This table prints across one column.")
+
+print(tab1, type="latex", comment = F, table.placement = "H")
+```
+
+# Acknowledgements
+
+Thanks to Chen Yu for allowing us to include data from several experimental conditions.
+
+# References 
+
+```{r}
+# References will be generated automatically by Pandoc and included here.
+# The following code is some latex to format the bibliography. Do not remove it.
+```
+
+\setlength{\parindent}{-0.1in} 
+\setlength{\leftskip}{0.125in}
+\noindent
