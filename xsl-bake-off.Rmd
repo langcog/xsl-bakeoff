@@ -54,7 +54,7 @@ The modeled data are average accuracies from `r totItems` word-object pairs in `
 Most of these data have been previously published: 
 
 We will first optimize each model's parameters with 5-fold cross-validation, leaving out data from 20% of the conditions to test generalization from optimizing to the remaining 80%.
-We will then optimize each model's parameterss to the entire dataset, and use these parameters to test generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
+We will then optimize each model's parameters to the entire dataset, and use these parameters to test generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
 
 
 ```{r, load-trajectory-data, include=F}
@@ -146,7 +146,7 @@ cvg_fit_tab <- cvg %>% group_by(Model) %>%
 ## Model Fitting Procedure
 
 We will fit each model with five-fold cross-validation method, leaving out 9 of the `r length(combined_data)` conditions in each of 4 folds, and 8 in the final.
-The 2 or 3 free parameters for each model were optimized using diffential evolution [@DEoptim], a global optimization algorithm that requires no assumptions about a differentiable fitness landscape (which may not be met here) and works well when there may be many local minima.
+The 2 or 3 free parameters for each model were optimized using differential evolution [@DEoptim], a global optimization algorithm that requires no assumptions about a differentiable fitness landscape (which may not be met here) and works well when there may be many local minima.
 
 # Results
 

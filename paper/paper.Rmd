@@ -38,23 +38,80 @@ knitr::opts_chunk$set(fig.width=3, fig.height=3, fig.crop = F,
 ```
 
 ```{r, libraries}
-library(png)
+library(tidyverse)
 library(grid)
 library(ggplot2)
 library(xtable)
+library(kableExtra)
+library(here)
 ```
 
 # Introduction
 
+Learning word meanings is a difficult aspect of mastering a language, since learners often face a high degree of ambiguity about what aspect(s) of a scene (if any) the word refers to.
+And yet the vocabularies of young children grow surprisingly quickly, inviting the question of how their still-developing cognitive processes are able to support such rapid word learning with apparent ease and robustness.
+Language learning researchers have pointed out that the difficulty of the word learning problem might dissolve if learners are able to *somehow* cross-reference which referents each word has consistently appeared with across multiple situations (i.e., cross-situationally; @Gleitman1990; @Carey1978).
+This idea of cross-situational word learning has been widely adopted as a paradigm for testing the word learning ability of infants [e.g., @Smith2008vg; @Vlach2013], children [e.g., @Akhtar1999; @Suanda2012; @Vlach2012eq], and adults' [e.g., @Yu2007; @Smith2010th].
+In such experiments, participants are typically presented a series of training trials comprised of multiple possible referents (e.g., an array of 2-4 novel objects) and 
+learn the meaning of novel words when presented with a series of individually-ambiguous scenes containing multiple possible referents.
+
+Corresponding to the great experimental interest in the phenomenon of cross-situational word learning, there has also been great interest in creating and testing formal computational models of *how* learners select, store, and recall knowledge of word meanings.
 
 
+The goal of this study is to test the ability of a variety of cross-situational word learning models to account for a wide range of experimental data. 
+Many models for cross-situational word learning have been proposed, and yet most of these models have only been tested on a few different experiments--often distinct ones, and only with one or two other models for comparison. 
+Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) modeled, recognizing that the plurality of models and the theories and intuitions they represent can only be winnowed down via rigorous comparison.
+We will find best-fitting parameters for associative models, hypothesis-testing models, and a few hybrid models, and will quantify generalization on held-out data, as well as qualitatively in other experiments.
+Finally, we will interpret the results, and what they entail for theories of cross-situational word learning.
 
-# First-Level Headings
+# Method
 
-First level headings should be in 12 point , initial caps, bold and
-centered. Leave one line space above the heading and 1/4~line space
-below the heading.
+## Models
 
+We fit the following associative models: Fazly [@Fazly2010], Kachergis [@Kachergis2012gi,Kachergis2012vc], ... and a baseline co-occurrence counting model.
+We also fit two hypothesis-testing models: guess-and-test [@Medina2011,@Blythe2010] and propose-but-verify [@Trueswell2013].
+Finally, we fit two hybrid models, that store multiple, graded hypotheses--but only a subset of all possible assoociations: pursuit [@Stevens2017pursuit], and a stochastic version of the Kachergis model.
+These models and their free parameters are described below.
+
+### Propose-but-verify
+In the propose-but-verify hypothesis testing model @Trueswell2013, one of the presented referents is selected at random for any word heard that has no remembered referent. 
+The next time that word occurs, the previously-proposed referent is remembered with probability $\alpha$, a free parameter. 
+If the remembered referent is verified to be present, the future probability of recalling the word is increased by $\epsilon$ (another free parameter). 
+If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
+This model implements trial-level mutual exclusivity by selecting new proposals only from among the referents that are not yet part of a hypothesis.
+
+### Guess-and-test
+The guess-and-test hypothesis testing model is based on the description given by @Medina2011 of a one-shot (i.e. "fast mapping") learning, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
+In summary, guess-and-test learners do *not* reach a final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses.
+We give this model two free parameters: a probability of successful encoding ($s$, hypothesis formation), and a probability $f$ of forgetting a hypothesis at retrieval. 
+This model is quite similar to the guess-and-test model formally analyzed by @Blythe2010 to determine the theoretical long-term efficacy of cross-situational word learning.
+
+## Data
+
+```{r load-data}
+load(here("data/combined_data.RData"))
+
+tab <- tibble()
+
+totSs = 0
+totItems = 0
+for(c in 1:length(combined_data)) { 
+  totSs = totSs + combined_data[[c]]$Nsubj 
+  totItems = totItems + length(combined_data[[c]]$HumanItemAcc)
+}
+
+```
+
+The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
+Table 1 shows a variety of characteristics of each condition's training and test procedures, including the number of trial trials, the number of words and referents presented per training trial, the number of total to-be-learned pairs, the number of participants per condition, and the average accuracy.
+Most of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat.
+
+Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
+
+## Procedure
+
+We will first optimize each model's parameters with 5-fold cross-validation, leaving out data from 20% of the conditions to test generalization from optimizing to the remaining 80%.
+We will then optimize each model's parameterss to the entire dataset, and use these parameters to test generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
 
 ## Two-column images
 
@@ -62,8 +119,8 @@ below the heading.
 You might want to display a wide figure across both columns. To do this, you change the `fig.env` chunk option to `figure*`. To align the image in the center of the page, set `fig.align` option to `center`. To format the width of your caption text, you set the `num.cols.cap` option to `2`.
 
 ```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=4, fig.height=2, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "This image spans both columns. And the caption text is limited to 0.8 of the width of the document."}
-img <- png::readPNG("figs/walrus.png")
-grid::grid.raster(img)
+#img <- png::readPNG("figs/walrus.png")
+#grid::grid.raster(img)
 ```
 
 ## One-column images
@@ -71,8 +128,8 @@ grid::grid.raster(img)
 Single column is the default option, but if you want set it explicitly, set `fig.env` to `figure`. Notice that the `num.cols` option for the caption width is set to `1`.
 
 ```{r image, fig.env = "figure", fig.pos = "H", fig.align='center', fig.width=2, fig.height=2, set.cap.width=T, num.cols.cap=1, fig.cap = "One column image."}
-img <- png::readPNG("figs/lab_logo_stanford.png")
-grid::grid.raster(img)
+#img <- png::readPNG("figs/lab_logo_stanford.png")
+#grid::grid.raster(img)
 ```
 
 
