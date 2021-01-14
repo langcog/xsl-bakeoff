@@ -74,7 +74,6 @@ It is unknown which of these models -- or even which broad class of models -- be
 While most models of cross-situational learning have typically been tested against at least a few datasets, to our knowledge there has been no systematic comparison of models across a wide variety of experimental conditions. 
 Identifying the model or models that best predict human performance is thus an important goal for consolidating this broad literature. 
 More broadly, identifying such models could be an important step in assessing the contribution of cross-situational learning to word learning more generally.
-<!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill posed altogether [@Yu2012hyp]. -->
 
 <!-- However, we believe that comparing a large selection of models fitted jointly to a wide variety of experimental conditions may reveal which model(s, classes, mechanism) are most promising for explaining human word learning behavior. -->
 
@@ -227,6 +226,9 @@ Each condition consists of an ordered list of training trials consisting of 1-4 
 
 # Results
 
+Group fits are presented in Table 
+
+Correlations between data and models are presented in Figure. 
 ```{r load-cv-fits}
 
 load(here("fits/cv_group_fits.Rdata"))
@@ -297,6 +299,15 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf,
 
 # Discussion
 
+* Restate general goal in a few sentences
+
+* Pursuit et al. doesn't work. 
+* Fazly and associative both do quite well - why? what's similar what's differnet
+  * correlations between those, where do they diverge maximally (what condition)? 
+  * how could we design an experiment to decide? 
+  * Hendrickson paper
+
+<!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill posed altogether [@Yu2012hyp]. -->
 
 
 # Acknowledgements
