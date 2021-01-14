@@ -222,7 +222,7 @@ print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "
 ```
 
 
-```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=6, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model performance with a single best-fitting set of parameters for all conditions."}
+```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=6.5, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model performance with a single best-fitting set of parameters for all conditions."}
 
 # each model jointly fit to all conditions
 load(here("fits/group_fits.Rdata"))
@@ -254,9 +254,14 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf,
   facet_wrap(vars(Model)) + 
   theme_bw() +
   geom_abline(intercept=0, slope=1, linetype="dashed") + 
-  theme(legend.position = "bottom", 
-        legend.text = element_text(size = 6), 
-        legend.spacing = unit(.5, "points"))
+  theme(#legend.title = element_blank(),
+        legend.margin = margin(0, 0, 0, 0, "cm"),
+        legend.box.margin = margin(0, 0, 0, 0, "cm"), 
+        legend.box.spacing = unit(0.1, "cm"),
+        legend.position = "bottom", 
+        legend.text = element_text(size = 7, margin = margin(t=2)), 
+        legend.spacing.x = unit(.1, 'cm'),
+        legend.spacing.y = unit(.1, 'cm'))
 ```
 
 
