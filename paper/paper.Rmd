@@ -1,4 +1,5 @@
 ---
+# title: "Let me count the ways to decompose a contingency table"
 title: "A large-scale comparison of several cross-situational word learning models"
 bibliography: refs.bib
 csl: apa6.csl
@@ -48,18 +49,25 @@ library(here)
 
 # Introduction
 
-Learning word meanings is a difficult aspect of mastering a language, since learners often face a high degree of ambiguity about what aspect(s) of a scene (if any) the word refers to.
+Learning word meanings is a crucial aspect of mastering a language that is theorized to be quite difficult, since learners often face a high degree of ambiguity about what aspect(s) of a scene (if any) each uttered word refers to.
 And yet the vocabularies of young children grow surprisingly quickly, inviting the question of how their still-developing cognitive processes are able to support such rapid word learning with apparent ease and robustness.
-Language learning researchers have pointed out that the difficulty of the word learning problem might dissolve if learners are able to *somehow* cross-reference which referents each word has consistently appeared with across multiple situations (i.e., cross-situationally; @Gleitman1990; @Carey1978).
-This idea of cross-situational word learning has been widely adopted as a paradigm for testing the word learning ability of infants [e.g., @Smith2008vg; @Vlach2013], children [e.g., @Akhtar1999; @Suanda2012; @Vlach2012eq], and adults' [e.g., @Yu2007; @Smith2010th].
-In such experiments, participants are typically presented a series of training trials comprised of multiple possible referents (e.g., an array of 2-4 novel objects) and 
-learn the meaning of novel words when presented with a series of individually-ambiguous scenes containing multiple possible referents.
+While an array of social [@yurovsky2017beyond], pragmatic [@Clark1987; Markman1992], and linguistic [/other? @Merriman1989; CITE] cues are often available to direct attention which may reduce a learner's uncertainty, language learning researchers have pointed out that the difficulty of the word learning problem might dissolve if learners are able to *somehow* cross-reference which referents each word has consistently appeared with across multiple situations (i.e., cross-situationally; @Gleitman1990; @Carey1978), as the learner may then be able to correctly map the word to its highest-frequency referent.
+This general idea of cross-situational word learning has been adopted into a variety of experimental paradigms for testing the word learning ability of infants [e.g., @Smith2008vg; @Vlach2013], children [e.g., @Akhtar1999; @Suanda2012; @Vlach2012eq], and adults' [e.g., @Yu2007; @Smith2010th].
+In such experiments, participants are typically presented with a series of training trials comprised of multiple possible referents (e.g., an array of 2-4 novel objects) and one or more spoken nonce words, and (when possible) instructed to learn the meaning(s) of the presented words.
+These training trials typically present 10-20 distinct word-referent pairs to be learned across 10-50 trials, presenting each word/referent 3-10 times across a total span of <10 minutes.
+After a training procedure, knowledge is typically tested by presenting each word, and asking learners to choose the best referent, either from the entire set or from a small subset of referents (e.g., 4-alternative forced choice; 4AFC).
+On the whole, these paradigms have found that people of all ages are able to learn the meanings of novel words from the series of individually-ambiguous scenes at a level significantly above chance, but far from perfect.
+Numerous training manipulations have been found to influence performance: e.g., how often pairs are presented [although this is modulated by the diversity of the contexts in which the pairs appear; @Suanda2012; @Kachergis2016], the inter-trial lag between a pair's appearance [@Vlach2012eq; @Vlach2013], and the number of pairs presented per trial [@Yu2008] all predict learning performance to some extent.
+In sum, the evidence is strong that people can learn word cross-situationally: we are somehow able to integrate evidence (co-occurrence of words and objects) across trials and use that evidence to learn and remember new word meanings.
+But *how* do people carry out such learning? 
 
-Corresponding to the great experimental interest in the phenomenon of cross-situational word learning, there has also been great interest in creating and testing formal computational models of *how* learners select, store, and recall knowledge of word meanings.
+Along with the great experimental interest in the phenomenon of cross-situational word learning, there has also been great interest in creating and testing formal computational models of *how* learners selectively attend to, store, and recall knowledge of word meanings.
+These models often represent distinct intuitions of how learning operates, variously representing the learning problem as one of logical inference [e.g., @Siskind1996], as one of proposing and testing hypotheses [e.g., @Trueswell2013], as one of accumulating graded associations [e.g., @Fazly2010; @Kachergis2012gi; @tilles2012minimal]. <!-- or as a blend of the former -->
+The extant cross-situational word learning models are too numerous to exhaustively cite here, and while each has been tested against at least a few datasets, it is unclear which of these models--or even a broad class of them, or one component mechanism--are best fit to explain the wide variety of findings.
+There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making the models unidentifiable [@Yu2012hyp].
+However, we believe that comparing a large selection of models fitted jointly to a wide variety of experimental conditions may reveal which model(s, classes, mechanism) are most promising for explaining human word learning behavior.
 
-
-The goal of this study is to test the ability of a variety of cross-situational word learning models to account for a wide range of experimental data. 
-Many models for cross-situational word learning have been proposed, and yet most of these models have only been tested on a few different experiments--often distinct ones, and only with one or two other models for comparison. 
+Thus, the goal of this study is to test the ability of several cross-situational word learning models to account for a wide range of experimental data using cross-validated parameter fits.
 Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) modeled, recognizing that the plurality of models and the theories and intuitions they represent can only be winnowed down via rigorous comparison.
 We will find best-fitting parameters for associative models, hypothesis-testing models, and a few hybrid models, and will quantify generalization on held-out data, as well as qualitatively in other experiments.
 Finally, we will interpret the results, and what they entail for theories of cross-situational word learning.
@@ -68,9 +76,17 @@ Finally, we will interpret the results, and what they entail for theories of cro
 
 ## Models
 
+```{r, model-list}
+# need to be run >100 times per given parameter values
+stochastic_models = list.files(here("models/stochastic/"))
+# assoc models need to be run only once per given parameter values
+assoc_models = list.files(here("models/"))
+assoc_models = assoc_models[assoc_models!="stochastic"]
+```
+
 We fit the following associative models: Fazly [@Fazly2010], Kachergis [@Kachergis2012gi,Kachergis2012vc], ... and a baseline co-occurrence counting model.
 We also fit two hypothesis-testing models: guess-and-test [@Medina2011,@Blythe2010] and propose-but-verify [@Trueswell2013].
-Finally, we fit two hybrid models, that store multiple, graded hypotheses--but only a subset of all possible assoociations: pursuit [@Stevens2017pursuit], and a stochastic version of the Kachergis model.
+Finally, we fit two hybrid models, that store multiple, graded hypotheses--but only a subset of all possible associations: pursuit [@Stevens2017pursuit], and a stochastic version of the Kachergis model.
 These models and their free parameters are described below.
 
 ### Propose-but-verify
@@ -91,20 +107,32 @@ This model is quite similar to the guess-and-test model formally analyzed by @Bl
 ```{r load-data}
 load(here("data/combined_data.RData"))
 
-tab <- tibble()
+tab <- tibble("Name"=NA, "Trials"=NA, "Words/Tr"=NA, "Objs/Tr"=NA, "Items"=NA, "Accuracy"=NA, "SD"=NA, "N"=NA) 
 
 totSs = 0
 totItems = 0
 for(c in 1:length(combined_data)) { 
   totSs = totSs + combined_data[[c]]$Nsubj 
   totItems = totItems + length(combined_data[[c]]$HumanItemAcc)
+  tab <- bind_rows(tab, c("Name" = combined_data[[c]]$Condition, 
+                          "Trials" = nrow(combined_data[[c]]$train$words), # trials
+                          "Words/Tr" = ncol(combined_data[[c]]$train$words), # words
+                          "Objs/Tr" = ncol(combined_data[[c]]$train$objs), # objs
+                          "Items" =length(combined_data[[c]]$HumanItemAcc),
+                          "Accuracy" = mean(combined_data[[c]]$HumanItemAcc),
+                          "SD" = sd(combined_data[[c]]$HumanItemAcc),
+                          "N" = combined_data[[c]]$Nsubj
+                          ))
 }
 
+tab = na.omit(tab)
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
-Table 1 shows a variety of characteristics of each condition's training and test procedures, including the number of trial trials, the number of words and referents presented per training trial, the number of total to-be-learned pairs, the number of participants per condition, and the average accuracy.
-Most of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat.
+Table 1 shows a variety of characteristics of each condition's training and test procedures, including the number of trials, the number of words and referents presented per training trial, the number of total to-be-learned pairs, the number of participants per condition, and the average accuracy.
+Most of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from four conditions are from @Kachergis2012gi, and from another four conditions are from @Kachergis2016.
+
+
 
 Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
 
@@ -113,8 +141,30 @@ Each condition consists of an ordered list of training trials consisting of 1-4 
 We will first optimize each model's parameters with 5-fold cross-validation, leaving out data from 20% of the conditions to test generalization from optimizing to the remaining 80%.
 We will then optimize each model's parameterss to the entire dataset, and use these parameters to test generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
 
-## Two-column images
+## Results
 
+```{r load-cv-fits}
+
+load(here("fits/cv_group_fits.Rdata"))
+cvg <- tibble()
+for(m in names(cv_group_fits)) {
+  cvg <- rbind(cvg, cv_group_fits[[m]]$testdf)
+}
+
+cvg_fit_tab <- cvg %>% group_by(Model) %>% 
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+            r = cor(ModelPerf, HumanPerf)) %>%
+  arrange(SSE)
+```
+
+
+```{r cv-fits-table, results="asis"}
+# how to do 2-col table? , fig.env = "figure*" 
+tab2 <- xtable::xtable(cvg_fit_tab, digits=3, 
+                       caption = "Cross-validated group fits.")
+
+print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "p")
+```
 
 You might want to display a wide figure across both columns. To do this, you change the `fig.env` chunk option to `figure*`. To align the image in the center of the page, set `fig.align` option to `center`. To format the width of your caption text, you set the `num.cols.cap` option to `2`.
 
@@ -133,31 +183,11 @@ Single column is the default option, but if you want set it explicitly, set `fig
 ```
 
 
-```{r plot, fig.env="figure", fig.pos = "H", fig.align = "center", fig.width=2, fig.height=2, fig.cap = "R plot" }
-x <- 0:100
-y <- 2 * (x + rnorm(length(x), sd = 3) + 3)
-
-ggplot2::ggplot(data = data.frame(x, y), 
-                aes(x = x, y = y)) + 
-  geom_point() + 
-  geom_smooth(method = "lm")
-```
 
 
-## Tables
+# Discussion
 
 
-```{r xtable, results="asis"}
-n <- 100
-x <- rnorm(n)
-y <- 2*x + rnorm(n)
-out <- lm(y ~ x)
-
-tab1 <- xtable::xtable(summary(out)$coef, digits=c(0, 2, 2, 1, 2), 
-                       caption = "This table prints across one column.")
-
-print(tab1, type="latex", comment = F, table.placement = "H")
-```
 
 # Acknowledgements
 
@@ -173,3 +203,6 @@ Thanks to Chen Yu for allowing us to include data from several experimental cond
 \setlength{\parindent}{-0.1in} 
 \setlength{\leftskip}{0.125in}
 \noindent
+
+```{r, child = "appendix.Rmd"}
+```

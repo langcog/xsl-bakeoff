@@ -109,7 +109,6 @@ stochastic_models = list.files("models/stochastic/")
 # assoc models need to be run only once per given parameter values
 assoc_models = list.files("models/") 
 assoc_models = assoc_models[assoc_models!="stochastic"]
-
 ```
 
 ```{r, load-fits}

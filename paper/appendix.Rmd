@@ -1,0 +1,12 @@
+---
+title: "Appendix"
+output: pdf_document
+---
+
+```{r conditions-table, results="asis"}
+
+tab1 <- xtable::xtable(tab, digits=3, 
+                       caption = "Experimental conditions.")
+
+print(tab1, type="latex", comment = F, include.rownames = F, table.placement = "H")
+```
