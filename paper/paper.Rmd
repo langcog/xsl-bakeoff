@@ -49,16 +49,16 @@ library(here)
 
 # Introduction
 
-Learning word meanings is a crucial aspect of the process of language acquisition. If a learner's task is to connect the words they hear to the potential referents and eventually to generalizable meanings, the challenge appears formidable [@quine1960]: words are heard in rich and cluttered contexts. Yet children learn very quickly. How do they do this? 
+Learning word meanings is a crucial aspect of the process of language acquisition. If a learner's task is to connect the words they hear to the potential referents and eventually to generalizable meanings, the challenge appears formidable [@Quine1960]: words are heard in rich and cluttered contexts. Yet children learn very quickly. How do they do this? 
 
-An array of social [@yurovsky2017beyond], pragmatic [@Clark1987; @Markman1992], and linguistic [@gleitman1990] cues are often available to reduce a learner's uncertainty. Yet at its heart, these information sources can be seen as reducing the uncertainty inherent in the task of *cross-situational mapping* [@frank2009]: that is, cross-referencing which referents a word has consistently appeared with across multiple uses [@Gleitman1990; @Carey1978]. If learners are able to learn cross-situationally, then they might be able to pool information about reference (and hence about word meaning) over time and learn even in the absence of perfectly disambiguated input in any particular situation. Can children (or even adults) learn in this way? 
+An array of social [@yurovsky2017beyond], pragmatic [@Clark1987; @Markman1992], and linguistic [@Gleitman1990] cues are often available to reduce a learner's uncertainty. Yet at its heart, these information sources can be seen as reducing the uncertainty inherent in the task of *cross-situational mapping* [@Frank2009]: that is, cross-referencing which referents a word has consistently appeared with across multiple uses [@Gleitman1990; @Carey1978]. If learners are able to learn cross-situationally, then they might be able to pool information about reference (and hence about word meaning) over time and learn even in the absence of perfectly disambiguated input in any particular situation. Can children (or even adults) learn in this way? 
 
 The general idea of cross-situational word learning has been adopted into a variety of experimental paradigms for testing the word learning ability of infants [e.g., @Smith2008vg; @Vlach2013], children [e.g., @Akhtar1999; @Suanda2012; @Vlach2012eq], and adults [e.g., @Yu2007; @Smith2010th].
 In such experiments, participants are typically presented with a series of training trials comprised of multiple possible referents (e.g., an array of 2-4 novel objects) and one or more spoken nonce words, and (when possible) instructed to learn the meaning(s) of the presented words.
 These training trials typically present 10--20 distinct word-referent pairs to be learned across 10--50 trials, presenting each word/referent 3--10 times across a total span of $<10$ minutes.
 Learning is then typically assessed by presenting each word and asking learners to make a forced choice of the best referent, either from the entire set or from a small subset of referents.
 
-People of all ages are able to learn word-object mappings in such paradigms at a level significantly above chance, but their performance is typically far from perfect in all but the most trivial versions of the task [@yurovsky2015].
+People of all ages are able to learn word-object mappings in such paradigms at a level significantly above chance, but their performance is typically far from perfect in all but the most trivial versions of the task [@yurovsky2017beyond].
 Numerous training manipulations have been found to influence performance. How often mappings are presented  [@Suanda2012;@Kachergis2016], the  interval between appearances of a mapping [@Vlach2012eq; @Vlach2013], and the number of mapppings presented per trial [@Yu2008] all have been shown to affect learning performance.
 In sum, the evidence is strong that people can learn word cross-situationally: we are somehow able to integrate evidence (co-occurrence of words and objects) across trials and use that evidence to learn and remember new word meanings in cross-situational learning experiments.
 But what are the psychological mechanisms supporting this process? 
@@ -87,6 +87,26 @@ We end by examining qualititive results from true out of sample generalization o
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
 # Method
+
+## Procedure
+
+In a nutshell, our goal is to fit a set of models to a set of datasets; members of each of these sets are enumerated below.  
+Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
+Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
+Our primary outcome measure is the correlation between model average performance on a specific experimental condition and human performance on that same experimental condition. 
+
+Although input data and test trials are features of specific experimental tests, each  model has parameters that must be specified. 
+Typically the settings of these parameters are critical to the predictive performance of the model. 
+Hence, to ensure a fair comparison between models, these parameters must be fit to data. 
+In all cases, we optimize parameter values to minimize the sum of squared error between model and human performance.
+
+We conducted two evaluations of models. 
+First, we use cross-validation across conditions to reduce overfitting. 
+We optimize each model's parameters by leaving out data from 20% of conditions to test generalization via optimization on the initial 80% (5-fold cross-validation).
+Second, we fit each model to all conditions and datasets. 
+We then evaluated the correlation between these fitted models and the same data they were fit to. 
+This evaluation thus makes maximal use of our data but incorporates some amount of overfitting.
+However, it allows us to make the best test of generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
 
 ## Models
 
@@ -205,12 +225,7 @@ However, data from several conditions have never been published, but were shared
 Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
 
 
-## Procedure
-
-We will first optimize each model's parameters with 5-fold cross-validation, leaving out data from 20% of the conditions to test generalization from optimizing to the remaining 80%.
-We will then optimize each model's parameterss to the entire dataset, and use these parameters to test generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
-
-## Results
+# Results
 
 ```{r load-cv-fits}
 
