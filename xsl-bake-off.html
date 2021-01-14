@@ -11,7 +11,7 @@
 
 <meta name="author" content="George Kachergis &amp; Michael C. Frank" />
 
-<meta name="date" content="2020-12-07" />
+<meta name="date" content="2021-01-14" />
 
 <title>A large-scale comparison of several cross-situational word learning models</title>
 
@@ -365,7 +365,7 @@ summary {
 
 <h1 class="title toc-ignore">A large-scale comparison of several cross-situational word learning models</h1>
 <h4 class="author">George Kachergis &amp; Michael C. Frank</h4>
-<h4 class="date">2020-12-07</h4>
+<h4 class="date">2021-01-14</h4>
 
 </div>
 
@@ -395,7 +395,7 @@ summary {
 <div id="the-data" class="section level2">
 <h2>The Data</h2>
 <p>The modeled data are average accuracies from 726 word-object pairs in 44 experimental conditions, in which a total of 1696 subjects participated. Most of these data have been previously published:</p>
-<p>We will first optimize each model’s parameters with 5-fold cross-validation, leaving out data from 20% of the conditions to test generalization from optimizing to the remaining 80%. We will then optimize each model’s parameterss to the entire dataset, and use these parameters to test generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.</p>
+<p>We will first optimize each model’s parameters with 5-fold cross-validation, leaving out data from 20% of the conditions to test generalization from optimizing to the remaining 80%. We will then optimize each model’s parameters to the entire dataset, and use these parameters to test generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.</p>
 <p>Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial. We also require a test function–often presenting each word a single time along <em>m</em>AFC of objects, where <em>m</em> is the number of objects seen during the training, but sometimes a subset of the objects are tested.</p>
 </div>
 <div id="model-descriptions" class="section level2">
@@ -412,7 +412,7 @@ summary {
 </div>
 <div id="model-fitting-procedure" class="section level2">
 <h2>Model Fitting Procedure</h2>
-<p>We will fit each model with five-fold cross-validation method, leaving out 9 of the 44 conditions in each of 4 folds, and 8 in the final. The 2 or 3 free parameters for each model were optimized using diffential evolution <span class="citation">[@DEoptim]</span>, a global optimization algorithm that requires no assumptions about a differentiable fitness landscape (which may not be met here) and works well when there may be many local minima.</p>
+<p>We will fit each model with five-fold cross-validation method, leaving out 9 of the 44 conditions in each of 4 folds, and 8 in the final. The 2 or 3 free parameters for each model were optimized using differential evolution <span class="citation">[@DEoptim]</span>, a global optimization algorithm that requires no assumptions about a differentiable fitness landscape (which may not be met here) and works well when there may be many local minima.</p>
 </div>
 </div>
 <div id="results" class="section level1">
@@ -848,12 +848,12 @@ rescorla-wagner
 <h3>Yu, Zhong, and Fricker (2012)</h3>
 <p>Yu, Zhong, and Fricker (2012) pre-trained adult participants with three word-object associations and found higher performance on the other 15 words after this pre-training, demonstrating that knowing even a few word meanings can improve learning for other co-occurring words.</p>
 <pre><code>## pretrain    other 
-## 0.819675 0.527990</code></pre>
-<pre><code>## [1] 0.01263725</code></pre>
+## 0.812280 0.526395</code></pre>
+<pre><code>## [1] 0.0143288</code></pre>
 <pre><code>## pretrain    other 
-##  0.82864  0.61774</code></pre>
+##  0.82620  0.61548</code></pre>
 <pre><code>## pretrain    other 
-## 0.849655 0.703090</code></pre>
+## 0.847920 0.700245</code></pre>
 </div>
 <div id="suanda-et-al.-2014" class="section level3">
 <h3>Suanda et al. (2014)</h3>

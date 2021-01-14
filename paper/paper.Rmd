@@ -1,6 +1,6 @@
 ---
 # title: "Let me count the ways to decompose a contingency table"
-title: "A large-scale comparison of several cross-situational word learning models"
+title: "A large-scale comparison of cross-situational word learning models"
 bibliography: refs.bib
 csl: apa6.csl
 document-params: "10pt, letterpaper"
@@ -248,9 +248,15 @@ gcondm <- gfd %>% group_by(Model, Condition, Nsubj) %>%
 #  geom_point(alpha=.7) + facet_wrap(vars(Model)) + theme_bw() +
 #  geom_abline(intercept=0, slope=1, linetype="dashed")
 
-gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) + 
-  geom_point(alpha=.5) + facet_wrap(vars(Model)) + theme_bw() +
-  geom_abline(intercept=0, slope=1, linetype="dashed")
+gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, 
+                   group=Condition, color=Condition)) + 
+  geom_point(alpha=.5) + 
+  facet_wrap(vars(Model)) + 
+  theme_bw() +
+  geom_abline(intercept=0, slope=1, linetype="dashed") + 
+  theme(legend.position = "bottom", 
+        legend.text = element_text(size = 6), 
+        legend.spacing = unit(.5, "points"))
 ```
 
 
