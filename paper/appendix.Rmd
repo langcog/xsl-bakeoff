@@ -3,10 +3,10 @@ title: "Appendix"
 output: pdf_document
 ---
 
-```{r conditions-table, results="asis"}
+```{r conditions-table, results="asis", num.cols.cap=2}
 
-tab1 <- xtable::xtable(tab, digits=3, 
-                       caption = "Experimental conditions.")
+tab1 <- xtable::xtable(tab, digits=2, 
+                       caption = "Summary of modeled datasets.")
 
-print(tab1, type="latex", comment = F, include.rownames = F, table.placement = "H")
+print(tab1, type="latex", comment = F, include.rownames = F, table.placement = "p")
 ```

@@ -84,19 +84,72 @@ assoc_models = list.files(here("models/"))
 assoc_models = assoc_models[assoc_models!="stochastic"]
 ```
 
-We fit the following associative models: Fazly [@Fazly2010], Kachergis [@Kachergis2012gi,Kachergis2012vc], ... and a baseline co-occurrence counting model.
+We fit the following associative models: @Fazly2010, @Kachergis2012gi, ... and a baseline co-occurrence counting model.
 We also fit two hypothesis-testing models: guess-and-test [@Medina2011,@Blythe2010] and propose-but-verify [@Trueswell2013].
 Finally, we fit two hybrid models, that store multiple, graded hypotheses--but only a subset of all possible associations: pursuit [@Stevens2017pursuit], and a stochastic version of the Kachergis model.
 These models and their free parameters are described below.
 
-### Propose-but-verify
+### Fazly et al. Model
+INSERT DESCRIPTION HERE
+
+### Kachergis et al. Model
+The @Kachergis2012gi associative model assumes that learners selectively attend more to some of the presented word-object pairings. 
+Thus, although all co-occurrences are registered to some extent in associative memory (a word $\times$ object association matrix), greater attention is directed to pairings that have previously co-occurred, resulting in these associations growing more quickly. 
+This bias for familiar pairings competes with a bias to attend to stimuli that have no strong associates (e.g., novel stimuli). 
+That is, attention is pulled individually to novel stimuli because of the high uncertainty of their associations (i.e., they have diffuse associations with several stimuli). 
+Uncertainty is tracked by the entropy of a stimulus' association strengths, and attention is allocated to a stimulus in proportion to this entropy.
+
+Formally, given *n* words and *n* objects to be learned over a series of trials, let \textit{M} be an *n* word $\times$ *n* object association matrix that is built incrementally during training. 
+Cell $M_{w,o}$ will be the strength of association between word *w* and object *o*. 
+Strengths are augmented by viewing the particular stimuli. 
+Before the first trial, \textit{M} is empty. 
+On each training trial \textit{t}, a subset \textit{S} of \textit{m} word-object pairings appears. 
+If there are any new words and objects are seen, new rows and columns are first added. 
+The initial values for these new rows and columns are \textit{k}, a small constant (here, 0.01). 
+
+Association strengths are allowed to decay, and on each new trial a fixed amount of associative weight, $\chi$, is distributed among the associations between words and objects, and added to the strengths. 
+The rule used to distribute $\chi$ (i.e., attention) balances a preference for attending to unknown stimuli with a preference for strengthening already-strong associations. 
+When a word and referent are repeated, extra attention (i.e., $\chi$) is given to this pair---a bias for prior knowledge. 
+Pairs of stimuli with no or weak associates also attract attention, whereas pairings between uncertain objects and known words, or vice-versa, do not attract much attention. 
+To capture stimulus uncertainty, strength is allocated using entropy (\textit{H}), a measure of uncertainty that is 0 when the outcome of a variable is certain (e.g., a word appears with one object, and has never appeared with any other object), and maximal ($log_2 n$) when all of the $n$ possible object (or word) associations are equally likely (e.g., when a stimulus has not been observed before, or if a stimulus were to appear with every other stimulus equally). 
+In the model, on each trial the entropy of each word (and object) is calculated from the normalized row (column) vector of associations for that word (object), \textit{p}(\textit{M$_w,\cdot$}), as follows:
+
+\begin{equation}
+	H(w) = - \sum_{i=1}^{n} p(M_{w,i}) \cdot \textnormal{log}( p(M_{w,i} ) )
+	\label{eqn:entropy}
+\end{equation}
+
+The update rule for adjusting the association between a given word $w$ and object $o$ on a given trial is:
+
+\begin{equation}
+M_{w,o} =  \alpha M_{w,o} + \frac{ \chi \cdot e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o}  }{  \sum_{w\in W} \sum_{o\in O} e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o} }
+\label{eq:fullmodel}
+\end{equation}
+
+In Equation \ref{eq:fullmodel}, $\alpha$ is a parameter governing forgetting, $\chi$ is the weight being distributed, and $\lambda$ is a scaling parameter governing differential weighting of uncertainty ($H(\cdot)$; roughly novelty) and prior knowledge ($M_{w,o}$; familiarity). 
+As $\lambda$ increases, the weight of uncertainty (i.e., the exponentiated entropy term, which includes both the word and object's association entropies) increases relative to familiarity. 
+The denominator normalizes the numerator so that exactly $\chi$ associative weight is distributed among the potential associations on the trial. 
+For stimuli not on a trial, only forgetting operates. 
+As each word $w$ is tested, learners choose referent $o$ from the \textit{m} alternatives in proportion to associative strength $M_{w,o}$. 
+
+### Strength-, Uncertainty-, and Novelty-Biased Models
+We also separately test the components
+
+### Bayesian Decay Model
+
+### Tilles Model
+
+### Rescorla-Wagner Model
+
+
+### Propose-but-verify Model
 In the propose-but-verify hypothesis testing model @Trueswell2013, one of the presented referents is selected at random for any word heard that has no remembered referent. 
 The next time that word occurs, the previously-proposed referent is remembered with probability $\alpha$, a free parameter. 
 If the remembered referent is verified to be present, the future probability of recalling the word is increased by $\epsilon$ (another free parameter). 
 If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
 This model implements trial-level mutual exclusivity by selecting new proposals only from among the referents that are not yet part of a hypothesis.
 
-### Guess-and-test
+### Guess-and-test Model
 The guess-and-test hypothesis testing model is based on the description given by @Medina2011 of a one-shot (i.e. "fast mapping") learning, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
 In summary, guess-and-test learners do *not* reach a final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses.
 We give this model two free parameters: a probability of successful encoding ($s$, hypothesis formation), and a probability $f$ of forgetting a hypothesis at retrieval. 
@@ -126,15 +179,17 @@ for(c in 1:length(combined_data)) {
 }
 
 tab = na.omit(tab)
+tab <- tab %>% mutate(Accuracy = as.numeric(tab$Accuracy),
+               SD = as.numeric(SD))
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
-Table 1 shows a variety of characteristics of each condition's training and test procedures, including the number of trials, the number of words and referents presented per training trial, the number of total to-be-learned pairs, the number of participants per condition, and the average accuracy.
-Most of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from four conditions are from @Kachergis2012gi, and from another four conditions are from @Kachergis2016.
-
-
+Table 2 in the Appendix shows a variety of characteristics of each experimental condition, including the number of trials, the number of words and referents presented per training trial, the number of total to-be-learned pairs, the number of participants per condition, and the average accuracy and SD of performance.
+Most of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from four conditions are from @Kachergis2012gi, and data from another four conditions are from @Kachergis2016.
+However, data from several conditions have never been published, but were shared Chen Yu's lab at Indiana University.
 
 Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
+
 
 ## Procedure
 
@@ -163,25 +218,40 @@ cvg_fit_tab <- cvg %>% group_by(Model) %>%
 tab2 <- xtable::xtable(cvg_fit_tab, digits=3, 
                        caption = "Cross-validated group fits.")
 
-print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "p")
+print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "H")
 ```
 
-You might want to display a wide figure across both columns. To do this, you change the `fig.env` chunk option to `figure*`. To align the image in the center of the page, set `fig.align` option to `center`. To format the width of your caption text, you set the `num.cols.cap` option to `2`.
 
-```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=4, fig.height=2, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "This image spans both columns. And the caption text is limited to 0.8 of the width of the document."}
-#img <- png::readPNG("figs/walrus.png")
-#grid::grid.raster(img)
+```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=6, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model performance with a single best-fitting set of parameters for all conditions."}
+
+# each model jointly fit to all conditions
+load(here("fits/group_fits.Rdata"))
+#for(m in names(group_fits)) { 
+#  print(paste(m, round(group_fits[[m]]$optim$bestval, 2)))
+#}
+# each model separately fit to each condition (should try cross-validation approach?)
+
+#load(here("fits/cond_fits.Rdata"))
+
+gcondm <- gfd %>% group_by(Model, Condition, Nsubj) %>%
+  summarise(HumanPerf=mean(HumanPerf), 
+            ModelPerf = mean(ModelPerf))
+
+# condition-level (above is item-level)
+#gcondm %>% group_by(Model) %>% 
+#  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+#            r = cor(ModelPerf, HumanPerf)) %>% 
+#  arrange(SSE)
+
+#gcondm %>%
+#  ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition, size=Nsubj)) + 
+#  geom_point(alpha=.7) + facet_wrap(vars(Model)) + theme_bw() +
+#  geom_abline(intercept=0, slope=1, linetype="dashed")
+
+gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) + 
+  geom_point(alpha=.5) + facet_wrap(vars(Model)) + theme_bw() +
+  geom_abline(intercept=0, slope=1, linetype="dashed")
 ```
-
-## One-column images
-
-Single column is the default option, but if you want set it explicitly, set `fig.env` to `figure`. Notice that the `num.cols` option for the caption width is set to `1`.
-
-```{r image, fig.env = "figure", fig.pos = "H", fig.align='center', fig.width=2, fig.height=2, set.cap.width=T, num.cols.cap=1, fig.cap = "One column image."}
-#img <- png::readPNG("figs/lab_logo_stanford.png")
-#grid::grid.raster(img)
-```
-
 
 
 
@@ -191,7 +261,7 @@ Single column is the default option, but if you want set it explicitly, set `fig
 
 # Acknowledgements
 
-Thanks to Chen Yu for allowing us to include data from several experimental conditions.
+Thanks to Chen Yu for allowing us to include data from several previously-unpublished experimental conditions.
 
 # References 
 
@@ -199,6 +269,8 @@ Thanks to Chen Yu for allowing us to include data from several experimental cond
 # References will be generated automatically by Pandoc and included here.
 # The following code is some latex to format the bibliography. Do not remove it.
 ```
+
+<div id="refs"></div>
 
 \setlength{\parindent}{-0.1in} 
 \setlength{\leftskip}{0.125in}
