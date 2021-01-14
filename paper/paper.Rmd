@@ -49,28 +49,42 @@ library(here)
 
 # Introduction
 
-Learning word meanings is a crucial aspect of mastering a language that is theorized to be quite difficult, since learners often face a high degree of ambiguity about what aspect(s) of a scene (if any) each uttered word refers to.
-And yet the vocabularies of young children grow surprisingly quickly, inviting the question of how their still-developing cognitive processes are able to support such rapid word learning with apparent ease and robustness.
-While an array of social [@yurovsky2017beyond], pragmatic [@Clark1987; Markman1992], and linguistic [/other? @Merriman1989; CITE] cues are often available to direct attention which may reduce a learner's uncertainty, language learning researchers have pointed out that the difficulty of the word learning problem might dissolve if learners are able to *somehow* cross-reference which referents each word has consistently appeared with across multiple situations (i.e., cross-situationally; @Gleitman1990; @Carey1978), as the learner may then be able to correctly map the word to its highest-frequency referent.
-This general idea of cross-situational word learning has been adopted into a variety of experimental paradigms for testing the word learning ability of infants [e.g., @Smith2008vg; @Vlach2013], children [e.g., @Akhtar1999; @Suanda2012; @Vlach2012eq], and adults' [e.g., @Yu2007; @Smith2010th].
+Learning word meanings is a crucial aspect of the process of language acquisition. If a learner's task is to connect the words they hear to the potential referents and eventually to generalizable meanings, the challenge appears formidable [@quine1960]: words are heard in rich and cluttered contexts. Yet children learn very quickly. How do they do this? 
+
+An array of social [@yurovsky2017beyond], pragmatic [@Clark1987; @Markman1992], and linguistic [@gleitman1990] cues are often available to reduce a learner's uncertainty. Yet at its heart, these information sources can be seen as reducing the uncertainty inherent in the task of *cross-situational mapping* [@frank2009]: that is, cross-referencing which referents a word has consistently appeared with across multiple uses [@Gleitman1990; @Carey1978]. If learners are able to learn cross-situationally, then they might be able to pool information about reference (and hence about word meaning) over time and learn even in the absence of perfectly disambiguated input in any particular situation. Can children (or even adults) learn in this way? 
+
+The general idea of cross-situational word learning has been adopted into a variety of experimental paradigms for testing the word learning ability of infants [e.g., @Smith2008vg; @Vlach2013], children [e.g., @Akhtar1999; @Suanda2012; @Vlach2012eq], and adults [e.g., @Yu2007; @Smith2010th].
 In such experiments, participants are typically presented with a series of training trials comprised of multiple possible referents (e.g., an array of 2-4 novel objects) and one or more spoken nonce words, and (when possible) instructed to learn the meaning(s) of the presented words.
-These training trials typically present 10-20 distinct word-referent pairs to be learned across 10-50 trials, presenting each word/referent 3-10 times across a total span of <10 minutes.
-After a training procedure, knowledge is typically tested by presenting each word, and asking learners to choose the best referent, either from the entire set or from a small subset of referents (e.g., 4-alternative forced choice; 4AFC).
-On the whole, these paradigms have found that people of all ages are able to learn the meanings of novel words from the series of individually-ambiguous scenes at a level significantly above chance, but far from perfect.
-Numerous training manipulations have been found to influence performance: e.g., how often pairs are presented [although this is modulated by the diversity of the contexts in which the pairs appear; @Suanda2012; @Kachergis2016], the inter-trial lag between a pair's appearance [@Vlach2012eq; @Vlach2013], and the number of pairs presented per trial [@Yu2008] all predict learning performance to some extent.
-In sum, the evidence is strong that people can learn word cross-situationally: we are somehow able to integrate evidence (co-occurrence of words and objects) across trials and use that evidence to learn and remember new word meanings.
-But *how* do people carry out such learning? 
+These training trials typically present 10--20 distinct word-referent pairs to be learned across 10--50 trials, presenting each word/referent 3--10 times across a total span of $<10$ minutes.
+Learning is then typically assessed by presenting each word and asking learners to make a forced choice of the best referent, either from the entire set or from a small subset of referents.
 
-Along with the great experimental interest in the phenomenon of cross-situational word learning, there has also been great interest in creating and testing formal computational models of *how* learners selectively attend to, store, and recall knowledge of word meanings.
-These models often represent distinct intuitions of how learning operates, variously representing the learning problem as one of logical inference [e.g., @Siskind1996], as one of proposing and testing hypotheses [e.g., @Trueswell2013], as one of accumulating graded associations [e.g., @Fazly2010; @Kachergis2012gi; @tilles2012minimal]. <!-- or as a blend of the former -->
-The extant cross-situational word learning models are too numerous to exhaustively cite here, and while each has been tested against at least a few datasets, it is unclear which of these models--or even a broad class of them, or one component mechanism--are best fit to explain the wide variety of findings.
-There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making the models unidentifiable [@Yu2012hyp].
-However, we believe that comparing a large selection of models fitted jointly to a wide variety of experimental conditions may reveal which model(s, classes, mechanism) are most promising for explaining human word learning behavior.
+People of all ages are able to learn word-object mappings in such paradigms at a level significantly above chance, but their performance is typically far from perfect in all but the most trivial versions of the task [@yurovsky2015].
+Numerous training manipulations have been found to influence performance. How often mappings are presented  [@Suanda2012;@Kachergis2016], the  interval between appearances of a mapping [@Vlach2012eq; @Vlach2013], and the number of mapppings presented per trial [@Yu2008] all have been shown to affect learning performance.
+In sum, the evidence is strong that people can learn word cross-situationally: we are somehow able to integrate evidence (co-occurrence of words and objects) across trials and use that evidence to learn and remember new word meanings in cross-situational learning experiments.
+But what are the psychological mechanisms supporting this process? 
+And critically, do these mechanisms support naturalistic word learning?
 
-Thus, the goal of this study is to test the ability of several cross-situational word learning models to account for a wide range of experimental data using cross-validated parameter fits.
-Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) modeled, recognizing that the plurality of models and the theories and intuitions they represent can only be winnowed down via rigorous comparison.
-We will find best-fitting parameters for associative models, hypothesis-testing models, and a few hybrid models, and will quantify generalization on held-out data, as well as qualitatively in other experiments.
-Finally, we will interpret the results, and what they entail for theories of cross-situational word learning.
+Computational models provide one strategy for instantiating proposals about mechanism. 
+Such models can then be applied to naturalistic data to make a first assessment of whether cross-situational learning could be a viable strategy for word learning "in the wild. 
+Accordingly, there has been great interest in creating and testing computational models of this task. 
+These models often represent distinct intuitions of how learning operates, variously representing the learning problem as logical inferencing [e.g., @Siskind1996], proposing and testing hypotheses [e.g., @Trueswell2013], or  accumulating graded associations [e.g., @Fazly2010; @Kachergis2012gi; @tilles2012minimal]. <!-- or as a blend of the former -->
+Extant cross-situational word learning models are too numerous to review exhaustively here. 
+
+It is unknown which of these models -- or even which broad class of models -- best fits the breadth of experimental data. 
+While most models of cross-situational learning have typically been tested against at least a few datasets, to our knowledge there has been no systematic comparison of models across a wide variety of experimental conditions. 
+Identifying the model or models that best predict human performance is thus an important goal for consolidating this broad literature. 
+More broadly, identifying such models could be an important step in assessing the contribution of cross-situational learning to word learning more generally.
+<!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill posed altogether [@Yu2012hyp]. -->
+
+<!-- However, we believe that comparing a large selection of models fitted jointly to a wide variety of experimental conditions may reveal which model(s, classes, mechanism) are most promising for explaining human word learning behavior. -->
+
+Thus, the goal of our current study is to test the ability of a range of cross-situational word learning models in accounting for a wide range of experimental data. 
+Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) being used for evaluation.
+Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work. 
+Thus, we focus on out-of-sample prediction of human data using cross-validated parameter fits.
+<!-- , recognizing that the plurality of models and the theories and intuitions they represent can only be winnowed down via rigorous comparison. -->
+We end by examining qualititive results from true out of sample generalization of models to experiments not included in the initial evaluation and parameter fitting. 
+<!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
 # Method
 
