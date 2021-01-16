@@ -64,15 +64,16 @@ These training trials typically present 10--20 distinct word-referent pairs to b
 Learning is then typically assessed by presenting each word and asking learners to make a forced choice of the best referent, either from the entire set or from a small subset of referents.
 
 People of all ages are able to learn word-object mappings in such paradigms at a level significantly above chance, but their performance is typically far from perfect in all but the most trivial versions of the task [@yurovsky2017beyond].
-Numerous training manipulations have been found to influence performance. How often mappings are presented  [@Suanda2012;@Kachergis2016], the  interval between appearances of a mapping [@Vlach2012eq; @Vlach2013], and the number of mapppings presented per trial [@Yu2008] all have been shown to affect learning performance.
+Numerous training manipulations have been found to influence performance. 
+How often mappings are presented  [@Suanda2012; @Kachergis2016], the  interval between appearances of a mapping [@Vlach2012eq; @Vlach2013], and the number of mappings presented per trial [@Yu2008] all have been shown to affect learning performance.
 In sum, the evidence is strong that people can learn word cross-situationally: we are somehow able to integrate evidence (co-occurrence of words and objects) across trials and use that evidence to learn and remember new word meanings in cross-situational learning experiments.
 But what are the psychological mechanisms supporting this process? 
 And critically, do these mechanisms support naturalistic word learning?
 
 Computational models provide one strategy for instantiating proposals about mechanism. 
-Such models can then be applied to naturalistic data to make a first assessment of whether cross-situational learning could be a viable strategy for word learning "in the wild. 
+Such models can then be applied to naturalistic data to make a first assessment of whether cross-situational learning could be a viable strategy for word learning "in the wild". 
 Accordingly, there has been great interest in creating and testing computational models of this task. 
-These models often represent distinct intuitions of how learning operates, variously representing the learning problem as logical inferencing [e.g., @Siskind1996], proposing and testing hypotheses [e.g., @Trueswell2013], or  accumulating graded associations [e.g., @Fazly2010; @Kachergis2012gi; @tilles2012minimal]. <!-- or as a blend of the former -->
+These models often represent distinct intuitions of how learning operates, variously representing the learning problem as logical inferencing [e.g., @Siskind1996], proposing and testing hypotheses [e.g., @Trueswell2013], or accumulating graded associations [e.g., @Fazly2010; @Kachergis2012gi; @tilles2012minimal]. <!-- or as a blend of the former -->
 Extant cross-situational word learning models are too numerous to review exhaustively here. 
 
 It is unknown which of these models -- or even which broad class of models -- best fits the breadth of experimental data. 
@@ -87,7 +88,7 @@ Our goal is to scale up both the number of models evaluated and the number of ex
 Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work. 
 Thus, we focus on out-of-sample prediction of human data using cross-validated parameter fits.
 <!-- , recognizing that the plurality of models and the theories and intuitions they represent can only be winnowed down via rigorous comparison. -->
-We end by examining qualititive results from true out of sample generalization of models to experiments not included in the initial evaluation and parameter fitting. 
+We end by examining qualitative results from true out of sample generalization of models to experiments not included in the initial evaluation and parameter fitting. 
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
 # Method
@@ -97,17 +98,18 @@ We end by examining qualititive results from true out of sample generalization o
 In a nutshell, our goal is to fit a set of models to a set of datasets; members of each of these sets are enumerated below.  
 Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
-Our primary outcome measure is the correlation between model average performance on a specific experimental condition and human performance on that same experimental condition. 
+Our primary outcome measure is the correlation between model average performance for each item in a specific experimental condition and item-level human performance on that same experimental condition. 
 
 Although input data and test trials are features of specific experimental tests, each  model has parameters that must be specified. 
 Typically the settings of these parameters are critical to the predictive performance of the model. 
 Hence, to ensure a fair comparison between models, these parameters must be fit to data. 
 In all cases, we optimize parameter values to minimize the sum of squared error between model and human performance.
+We use the DEoptim R package [@DEoptim] to optimize parameters via differential evolution.
 
 We conducted two evaluations of models. 
 First, we use cross-validation across conditions to reduce overfitting. 
 We optimize each model's parameters by leaving out data from 20% of conditions to test generalization via optimization on the initial 80% (5-fold cross-validation).
-Second, we fit each model to all conditions and datasets. 
+Second, we fit each model to all conditions and datasets to produce a single best-fitting parameter set per model. 
 We then evaluated the correlation between these fitted models and the same data they were fit to. 
 This evaluation thus makes maximal use of our data but incorporates some amount of overfitting.
 However, it allows us to make the best test of generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
@@ -125,38 +127,23 @@ assoc_models = assoc_models[assoc_models!="stochastic"]
 We fit the following associative models: @Fazly2010, @Kachergis2012gi, ... and a baseline co-occurrence counting model.
 We also fit two hypothesis-testing models: guess-and-test [@Medina2011,@Blythe2010] and propose-but-verify [@Trueswell2013].
 Finally, we fit two hybrid models, that store multiple, graded hypotheses--but only a subset of all possible associations: pursuit [@Stevens2017pursuit], and a stochastic version of the Kachergis model.
-These models and their free parameters are described below.
+These models and their free parameters are briefly described below.
+
+### Baseline Co-occurrence Model
+The baseline model simply tallies the co-occurrences of any words and objects appearing together on each trial, accumulating the counts in a word $\times$ object matrix.
 
 ### Fazly et al. Model
-INSERT DESCRIPTION HERE
+The @Fazly2010 model represents the meaning of each word *w* as a probability distribution $p(\cdot | w)$ over the objects appearing across the trials, and incrementally learns these distributions trial-by-trial.
+The association between a given *w* and *o* grows more quickly if $p(w|o)$ is already high (a familiarity bias), unless some other word has a strong association with *o*; thus, associations are competitive.
+A parameter $\lambda$ is a small smoothing constant added to both the numerator and denominator of each $p(w|o)$, further adjusted in the denominator by a $\beta$ parameter representing the upper bound on the number of symbol types.
 
 ### Kachergis et al. Model
-The @Kachergis2012gi associative model assumes that learners selectively attend more to some of the presented word-object pairings. 
-Thus, although all co-occurrences are registered to some extent in associative memory (a word $\times$ object association matrix), greater attention is directed to pairings that have previously co-occurred, resulting in these associations growing more quickly. 
-This bias for familiar pairings competes with a bias to attend to stimuli that have no strong associates (e.g., novel stimuli). 
-That is, attention is pulled individually to novel stimuli because of the high uncertainty of their associations (i.e., they have diffuse associations with several stimuli). 
-Uncertainty is tracked by the entropy of a stimulus' association strengths, and attention is allocated to a stimulus in proportion to this entropy.
+The @Kachergis2012gi associative model assumes that learners associate all presented words with all visible objects to some extent, but that they selectively attend more to some of the presented word-object pairings. 
+Specifically, greater attention is directed to pairings that have previously co-occurred (a familiarity bias), but is also directed to stimuli that have no strong associates, tracked via the entropy of their association strengths (e.g., novel stimuli, or stimuli that have diffuse associations with several stimuli). 
+Thus, the model grows its association matrix as it experiences each trial, dynamically apportioning a fixed amount of associative weight (learning rate $\chi$) among the possible word-object associations, with the relative weight of the familiarity bias and the uncertainty bias determined by parameter $\lambda$.
+Finally, all association strengths decay from trial to trial at a rate controlled by parameter $\alpha$.
 
-Formally, given *n* words and *n* objects to be learned over a series of trials, let \textit{M} be an *n* word $\times$ *n* object association matrix that is built incrementally during training. 
-Cell $M_{w,o}$ will be the strength of association between word *w* and object *o*. 
-Strengths are augmented by viewing the particular stimuli. 
-Before the first trial, \textit{M} is empty. 
-On each training trial \textit{t}, a subset \textit{S} of \textit{m} word-object pairings appears. 
-If there are any new words and objects are seen, new rows and columns are first added. 
-The initial values for these new rows and columns are \textit{k}, a small constant (here, 0.01). 
-
-Association strengths are allowed to decay, and on each new trial a fixed amount of associative weight, $\chi$, is distributed among the associations between words and objects, and added to the strengths. 
-The rule used to distribute $\chi$ (i.e., attention) balances a preference for attending to unknown stimuli with a preference for strengthening already-strong associations. 
-When a word and referent are repeated, extra attention (i.e., $\chi$) is given to this pair---a bias for prior knowledge. 
-Pairs of stimuli with no or weak associates also attract attention, whereas pairings between uncertain objects and known words, or vice-versa, do not attract much attention. 
-To capture stimulus uncertainty, strength is allocated using entropy (\textit{H}), a measure of uncertainty that is 0 when the outcome of a variable is certain (e.g., a word appears with one object, and has never appeared with any other object), and maximal ($log_2 n$) when all of the $n$ possible object (or word) associations are equally likely (e.g., when a stimulus has not been observed before, or if a stimulus were to appear with every other stimulus equally). 
-In the model, on each trial the entropy of each word (and object) is calculated from the normalized row (column) vector of associations for that word (object), \textit{p}(\textit{M$_w,\cdot$}), as follows:
-
-\begin{equation}
-	H(w) = - \sum_{i=1}^{n} p(M_{w,i}) \cdot \textnormal{log}( p(M_{w,i} ) )
-	\label{eqn:entropy}
-\end{equation}
-
+<!--
 The update rule for adjusting the association between a given word $w$ and object $o$ on a given trial is:
 
 \begin{equation}
@@ -165,10 +152,8 @@ M_{w,o} =  \alpha M_{w,o} + \frac{ \chi \cdot e^{ \lambda \cdot (H(w) + H(o)) } 
 \end{equation}
 
 In Equation \ref{eq:fullmodel}, $\alpha$ is a parameter governing forgetting, $\chi$ is the weight being distributed, and $\lambda$ is a scaling parameter governing differential weighting of uncertainty ($H(\cdot)$; roughly novelty) and prior knowledge ($M_{w,o}$; familiarity). 
-As $\lambda$ increases, the weight of uncertainty (i.e., the exponentiated entropy term, which includes both the word and object's association entropies) increases relative to familiarity. 
-The denominator normalizes the numerator so that exactly $\chi$ associative weight is distributed among the potential associations on the trial. 
-For stimuli not on a trial, only forgetting operates. 
 As each word $w$ is tested, learners choose referent $o$ from the \textit{m} alternatives in proportion to associative strength $M_{w,o}$. 
+-->
 
 ### Strength-, Uncertainty-, and Novelty-Biased Models
 We also separately test the components
