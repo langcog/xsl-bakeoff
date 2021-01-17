@@ -21,14 +21,14 @@ abstract: >
     Using cross-validated parameters, we fit multiple models representing theories of both
     associative learning and hypothesis-testing theories of word learning, and discuss
     which models mimic each other, and which mechanisms are overall best able to account 
-    for the data. Finally, we test the models' best-fitting parameters ability to generalize
-    to a set of additional experiments, including developmental data.
+    for the data. 
     
 keywords: >
     cross-situational word learning; model comparison; language learning
     
 output: cogsci2016::cogsci_paper
 #final-submission: \cogscifinalcopy
+# Finally, we test the models' best-fitting parameters ability to generalize to a set of additional experiments, including developmental data.
 ---
 
 ```{r global_options, include=FALSE}
@@ -88,8 +88,8 @@ Our goal is to scale up both the number of models evaluated and the number of ex
 Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work. 
 Thus, we focus on out-of-sample prediction of human data using cross-validated parameter fits.
 <!-- , recognizing that the plurality of models and the theories and intuitions they represent can only be winnowed down via rigorous comparison. -->
-We end by examining qualitative results from true out of sample generalization of models to experiments not included in the initial evaluation and parameter fitting. 
-<!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
+<!-- We end by examining qualitative results from true out of sample generalization of models to experiments not included in the initial evaluation and parameter fitting.  -->
+Finally, we will interpret the results, and what they entail for theories of cross-situational word learning.
 
 # Method
 
@@ -200,7 +200,7 @@ A given word-object association only enters the lexicon if $p(o|w) > \theta$, a 
 ```{r load-data}
 load(here("data/combined_data.RData"))
 
-tab <- tibble("Name"=NA, "Trials"=NA, "Words/Tr"=NA, "Objs/Tr"=NA, "Items"=NA, "Accuracy"=NA, "SD"=NA, "N"=NA) 
+tab <- tibble("Name"=NA, "Trials"=NA, "W/Tr"=NA, "O/Tr"=NA, "Items"=NA, "Acc"=NA, "SD"=NA, "N"=NA) 
 
 totSs = 0
 totItems = 0
@@ -209,26 +209,25 @@ for(c in 1:length(combined_data)) {
   totItems = totItems + length(combined_data[[c]]$HumanItemAcc)
   tab <- bind_rows(tab, c("Name" = combined_data[[c]]$Condition, 
                           "Trials" = nrow(combined_data[[c]]$train$words), # trials
-                          "Words/Tr" = ncol(combined_data[[c]]$train$words), # words
-                          "Objs/Tr" = ncol(combined_data[[c]]$train$objs), # objs
+                          "W/Tr" = ncol(combined_data[[c]]$train$words), # words
+                          "O/Tr" = ncol(combined_data[[c]]$train$objs), # objs
                           "Items" =length(combined_data[[c]]$HumanItemAcc),
-                          "Accuracy" = mean(combined_data[[c]]$HumanItemAcc),
+                          "Acc" = mean(combined_data[[c]]$HumanItemAcc),
                           "SD" = sd(combined_data[[c]]$HumanItemAcc),
                           "N" = combined_data[[c]]$Nsubj
                           ))
 }
 
 tab = na.omit(tab)
-tab <- tab %>% mutate(Accuracy = as.numeric(tab$Accuracy),
+tab <- tab %>% mutate(Acc = as.numeric(tab$Acc),
                SD = as.numeric(SD))
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
-Table 2 shows a variety of characteristics of each experimental condition, including the number of trials (range: 18-108), the number of words and referents presented per training trial (1-4), the number of total to-be-learned pairs (12-24), the number of participants per condition, and the average accuracy and SD of performance.
+Table 3 shows a variety of characteristics of each experimental condition, including the number of trials (range: 18-108), the number of words and referents presented per training trial (1-4), the number of total to-be-learned pairs (12-24), the number of participants per condition, and the average accuracy and SD of performance.
 Most of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
-However, data from several conditions have never been published, but were shared by Chen Yu's lab at Indiana University.
+However, data from several conditions run in Chen Yu's lab at Indiana University have never before been published.
 Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
-
 
 # Results
 
@@ -264,10 +263,31 @@ cvg_fit_tab$Model = c("Kachergis samp", "Fazly", "Kachergis", "Novelty", "Uncert
 cvg_fit_tab$P = c(3, 2, 3, 2, 3, 3, 3, 2, 2, 2, 3)
 ```
 
-Table 1 shows the sum of squared error (SSE) and correlation ($r$) for each model's best-fitting parameters vs. average human performance on the `r totItems` items, both for the CV fits and for the group fits, along with the number of fitted parameters in each model (P).
-For comparison, the 0-parameter baseline co-occurrence model had SSE = 32.0 and $r = 0.53$.
+Table 1 shows the sum of squared error (SSE) and correlation ($r$) for each model's best-fitting parameters vs. average human performance on the `r totItems` items, both for the CV fits and for the all-condition fits, along with the number of fitted parameters in each model (P).
+The results of the two fitting procedures yielded fairly similar SSEs and correlations, and a consistent rank-ordering of the models, with the Kachergis sampling model performing best, followed closely by the Fazly et al. model and then the associative Kachergis et al. model.
+The hypothesis testing models (Propose-but-Verify and Guess-and-Test) and the Pursuit model fit less well than the 0-parameter baseline co-occurrence counting model (not in the table), which had SSE = 32.0 and $r = 0.53$.
 Correlations between data and models are presented in Figure 1. 
 
+```{r model-correlations}
+# remove leading 0. to make table fit in 1 column
+numformat <- function(val) { sub("^(-?)0.", "\\1.", sprintf("%.2f", val)) }
+
+mod_names <- group_fit_tab$Model
+mod_cors <- matrix('-', nrow=length(mod_names), ncol=length(mod_names))
+for(r in 1:nrow(mod_cors)) {
+  for(c in 1:ncol(mod_cors)) {
+    if(r>c) mod_cors[r,c] = numformat(round(cor(subset(cvg, Model==mod_names[r])$ModelPerf,
+                                subset(cvg, Model==mod_names[c])$ModelPerf), 2))
+  }
+}
+mod_names_short = c("Ks","F","K","N","U","B","R","S","V","G","P")
+rownames(mod_cors) = mod_names_short
+colnames(mod_cors) = mod_names_short
+```
+
+How related to each other are these models?
+Table 2 shows the correlations between model predictions made using the group-optimized parameters, with the names of the models abbreviated for space (*Ks*: Kachergis sampling, *F*azly, *K*achergis, *N*ovelty, *U*ncertainty, *B*ayesian decay, *R*escorla-Wagner, *S*trength, Propose-but-*V*erify, *G*uess-and-Test, *P*ursuit).
+These results are discussed below.
 
 ```{r cv-fits-table, results="asis"}
 # how to do 2-col table? , fig.env = "figure*" 
@@ -277,8 +297,13 @@ tab2 <- xtable::xtable(cvg_fit_tab, digits=c(0,0, 2, 2, 2, 2, 0),
 print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "H")
 ```
 
+```{r model-cors-table, results="asis"}
+tab3 <- xtable::xtable(mod_cors[2:nrow(mod_cors),1:(ncol(mod_cors)-1)],  caption = "Correlations of models' predictions.")
 
-```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=6.5, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model performance with a single best-fitting set of parameters for all conditions."}
+print(tab3, type="latex", comment = F, include.rownames = T, table.placement = "h")
+```
+
+```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=6.0, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model performance with a single best-fitting set of parameters for all conditions."}
 
 gcondm <- gfd %>% group_by(Model, Condition, Nsubj) %>%
   summarise(HumanPerf=mean(HumanPerf), 
@@ -297,7 +322,7 @@ gcondm <- gfd %>% group_by(Model, Condition, Nsubj) %>%
 
 gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf, 
                    group=Condition, color=Condition)) + 
-  geom_point(alpha=.5) + 
+  geom_point(alpha=.3) + 
   facet_wrap(vars(Model)) + 
   theme_bw() +
   geom_abline(intercept=0, slope=1, linetype="dashed") + 
@@ -311,18 +336,26 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf,
         legend.spacing.y = unit(0, 'cm'))
 ```
 
-
-
 # Discussion
+We set out to conduct a systematic comparison of several models of cross-situational word learning models across a wide variety of experimental conditions. 
+Using a database of `r totSs` participants in `r length(combined_data)` conditions, we found best-fitting parameters for 11 different models under two different regimes: 1) simultaneously fitting all of the data, and 2) 5-fold cross-validation, testing generalization to the final 20% of conditions after training on 80% of them.
+The results of both fitting regimes were consistent and clear: shown in Table 1, the associative models achieved much better fits (lower SSE and higher correlation) than the hypothesis-testing models (Guess-and-Test; @Medina2011 and Propose-but-Verify; @Trueswell2013), which made strongly-correlated predictions (see Table 2: .95).
+The hybrid Pursuit model [@Stevens2017pursuit] fared even more poorly, in part because it often outperformed humans ($M_{mod} =$ `r round(mean(subset(gfd, Model=="pursuit_detailed")$ModelPerf), 2)`), $M_{hum} = 0.48).
 
-Restate general goal in a few sentences
+Among the associative models, the @Fazly2010 model and the @Kachergis2012gi model both fare quite well, and the sampling version of the Kachergis et al. model performs slightly better, albeit with 3 free parameters compared to 2 in the Fazly et al. model.
+The predictions of the top three models are more correlated with each other than with the human data (see Table 2): Fazly vs. Kachergis sampling: .87, Fazly vs. Kachergis: .84, Kachergis vs. sampling: .92.
+But the Fazly model also showed a .84 correlation with the Rescorla-Wagner model, and both Kachergis models showed a .87 correlation with the simpler novelty-biased associative model--stronger than for the uncertainty-bias mechanism used by these models.
 
-Pursuit et al. doesn't work. 
+```{r models-diverge}
+k <- subset(gfd, Model=="kachergis")
+f <- subset(gfd, Model=="fazly")
 
-Fazly and associative both do quite well - why? what's similar what's differnet
-correlations between those, where do they diverge maximally (what condition)? 
-how could we design an experiment to decide? 
-In three cross-situational learning experiments, Hendrickson gave participants word-object pairs occurring with Zipf (power-law) frequency distribution, and then compared two models: Fazly and Kachergis.
+```
+
+
+For which condition do these models make maximally divergent predictions?
+This might help us design an experiment to best distinguish the models.
+<!-- In three cross-situational learning experiments, Hendrickson gave participants word-object pairs occurring with Zipf (power-law) frequency distribution, and then compared two models:  -->
 
 <!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill posed altogether [@Yu2012hyp]. -->
 
