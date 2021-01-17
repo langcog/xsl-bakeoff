@@ -6,8 +6,7 @@ csl: apa6.csl
 document-params: "10pt, letterpaper"
 
 author-information: > 
-    \author{{\large \bf George Kachergis (kachergis@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA
-    \AND {\large \bf Michael C.~Frank (mcfrank@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA}
+    \author{{\large \bf George Kachergis (kachergis@stanford.edu)} \and {\large \bf Michael C.~Frank (mcfrank@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA}
 
 abstract: >
     How people learn word meanings from ambiguous situations has been a 
@@ -172,7 +171,7 @@ At test, this model uses a softmax choice rule with parameter $\tau$.
 <!-- ### Tilles Model -->
 
 ### Rescorla-Wagner Model
-
+This model is inspired by the prediction-error-based learning model of @Rescorla1972. (FINISH WRITING)
 
 ### Propose-but-verify Model
 In the propose-but-verify hypothesis testing model [@Trueswell2013], one of the presented referents is selected at random for any word heard that has no remembered referent. 
@@ -300,7 +299,7 @@ print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "
 ```{r model-cors-table, results="asis"}
 tab3 <- xtable::xtable(mod_cors[2:nrow(mod_cors),1:(ncol(mod_cors)-1)],  caption = "Correlations of models' predictions.")
 
-print(tab3, type="latex", comment = F, include.rownames = T, table.placement = "h")
+print(tab3, type="latex", comment = F, include.rownames = T, table.placement = "H")
 ```
 
 ```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=6.0, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model performance with a single best-fitting set of parameters for all conditions."}
@@ -340,21 +339,43 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf,
 We set out to conduct a systematic comparison of several models of cross-situational word learning models across a wide variety of experimental conditions. 
 Using a database of `r totSs` participants in `r length(combined_data)` conditions, we found best-fitting parameters for 11 different models under two different regimes: 1) simultaneously fitting all of the data, and 2) 5-fold cross-validation, testing generalization to the final 20% of conditions after training on 80% of them.
 The results of both fitting regimes were consistent and clear: shown in Table 1, the associative models achieved much better fits (lower SSE and higher correlation) than the hypothesis-testing models (Guess-and-Test; @Medina2011 and Propose-but-Verify; @Trueswell2013), which made strongly-correlated predictions (see Table 2: .95).
-The hybrid Pursuit model [@Stevens2017pursuit] fared even more poorly, in part because it often outperformed humans ($M_{mod} =$ `r round(mean(subset(gfd, Model=="pursuit_detailed")$ModelPerf), 2)`), $M_{hum} = 0.48).
+The hybrid Pursuit model [@Stevens2017pursuit] fared even more poorly, in part because it often outperformed humans ($M_{mod} =$ `r round(mean(subset(gfd, Model=="pursuit_detailed")$ModelPerf), 2)`), $M_{hum} = 0.48$).
 
 Among the associative models, the @Fazly2010 model and the @Kachergis2012gi model both fare quite well, and the sampling version of the Kachergis et al. model performs slightly better, albeit with 3 free parameters compared to 2 in the Fazly et al. model.
 The predictions of the top three models are more correlated with each other than with the human data (see Table 2): Fazly vs. Kachergis sampling: .87, Fazly vs. Kachergis: .84, Kachergis vs. sampling: .92.
 But the Fazly model also showed a .84 correlation with the Rescorla-Wagner model, and both Kachergis models showed a .87 correlation with the simpler novelty-biased associative model--stronger than for the uncertainty-bias mechanism used by these models.
 
 ```{r models-diverge}
-k <- subset(gfd, Model=="kachergis")
-f <- subset(gfd, Model=="fazly")
+mw <- gfd %>% mutate(ID = rep(1:726, 11)) %>%
+  pivot_wider(names_from=Model, values_from=ModelPerf)
 
+divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) %>%
+  mutate(kf_div = (kachergis-fazly)^2,
+         ksf_div = (kachergis_sampling-fazly)^2,
+         ksk_div = (kachergis_sampling-kachergis)^2) %>%
+  group_by(Condition) %>%
+  summarise(kf_div = sum(kf_div),
+            ksf_div = sum(ksf_div),
+            ksk_div = sum(ksk_div)) %>%
+  arrange(desc(kf_div), desc(ksk_div))
+# maximally divergent in 1x3 - combined_data[[12]]
+# and 1x3 6/18 4AFC - combined_data[[8]]
+
+
+#mean(subset(gfd, Model=="fazly" & Condition=="1x3")$ModelPerf) # .34
+#mean(subset(gfd, Model=="kachergis" & Condition=="1x3")$ModelPerf) # .48
+#mean(subset(gfd, Model=="fazly" & Condition=="1x3")$HumanPerf) # 57
+
+#mean(subset(gfd, Model=="fazly" & Condition=="1x4")$ModelPerf) # .27
+#mean(subset(gfd, Model=="kachergis" & Condition=="1x4")$ModelPerf) # .40
+#mean(subset(gfd, Model=="fazly" & Condition=="1x4")$HumanPerf) # .19
 ```
 
+The Kachergis and Fazly models make maximally divergent predictions in the conditions with fewer words than objects per trial (esp. 1x3, 1x3 6/18 4AFC, and 1x4), which hints at a difference in mechanism for these models and may guide the design of a new experiment to diagnose which is better able to account for human behavior.
 
-For which condition do these models make maximally divergent predictions?
-This might help us design an experiment to best distinguish the models.
+In summary, we have shown not only how a large model comparison can help rank models from most to least able to account for human data, but also how such comparisons can identify models that mimic each other, as well as identifying experimental designs that might aid in distinguishing models.
+Future work should extend this comparison to models and datasets beyond those tested here, and in particular to developmental experiments in order to test the models' generality for explaining word learning across a lifetime.
+
 <!-- In three cross-situational learning experiments, Hendrickson gave participants word-object pairs occurring with Zipf (power-law) frequency distribution, and then compared two models:  -->
 
 <!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill posed altogether [@Yu2012hyp]. -->
