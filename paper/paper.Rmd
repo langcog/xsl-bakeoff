@@ -97,7 +97,7 @@ Finally, we will interpret the results, and what they entail for theories of cro
 In a nutshell, our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
 Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
-Our primary outcome measure is the correlation between model average performance for each item in a specific experimental condition and item-level human performance on that same experimental condition. 
+Our primary outcome measure is the correlation between each model's performance for each item in a specific experimental condition and item-level human performance on that same experimental condition. 
 
 Although input data and test trials are features of specific experimental tests, each  model has parameters that must be specified. 
 Typically the settings of these parameters are critical to the predictive performance of the model. 
@@ -153,7 +153,7 @@ M_{w,o} =  \alpha M_{w,o} + \frac{ \chi \cdot e^{ \lambda \cdot (H(w) + H(o)) } 
 At test, given word $w$ learners choose referent $o$ from the \textit{m} given alternatives in proportion to associative strength $M_{w,o}$ (i.e. Luce's choice rule). 
 
 We also fit a stochastic *sampling* version of this model [see @Kachergis2017], which uses the same update equation, but instead of updating all possible word-object associations samples only a single presented object for each word on a trial. 
-This sampling version of the Kachergis et al. model thus can still build multiple graded associations for each word (or object), but on any given run will accumulate only a sparse, randomized version of what the full associative model would build.
+This sampling version of the Kachergis model can still build multiple graded associations for each word (or object), but on any given run will accumulate only a sparse, randomized version of what the full associative model would build.
 
 ### Strength-, Uncertainty-, and Novelty-Biased Models
 We also test three variations on the Kachergis et al. model that use only a subset of the mechanisms of the full model in order to understand the contributions of each mechanism.
@@ -345,6 +345,7 @@ Among the associative models, the @Fazly2010 model and the @Kachergis2012gi mode
 The predictions of the top three models are more correlated with each other than with the human data (see Table 2): Fazly vs. Kachergis sampling: .87, Fazly vs. Kachergis: .84, Kachergis vs. sampling: .92.
 But the Fazly model also showed a .84 correlation with the Rescorla-Wagner model, and both Kachergis models showed a .87 correlation with the simpler novelty-biased associative model--stronger than for the uncertainty-bias mechanism used by these models.
 
+
 ```{r models-diverge}
 mw <- gfd %>% mutate(ID = rep(1:726, 11)) %>%
   pivot_wider(names_from=Model, values_from=ModelPerf)
@@ -383,7 +384,7 @@ Future work should extend this comparison to models and datasets beyond those te
 
 # Acknowledgements
 
-Thanks to Chen Yu for allowing us to include data from several previously-unpublished experimental conditions.
+We thank Chen Yu for allowing us to include data from several previously-unpublished experimental conditions.
 
 # References 
 
