@@ -95,7 +95,7 @@ We end by examining qualitative results from true out of sample generalization o
 
 ## Procedure
 
-In a nutshell, our goal is to fit a set of models to a set of datasets; members of each of these sets are enumerated below.  
+In a nutshell, our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
 Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
 Our primary outcome measure is the correlation between model average performance for each item in a specific experimental condition and item-level human performance on that same experimental condition. 
@@ -103,13 +103,13 @@ Our primary outcome measure is the correlation between model average performance
 Although input data and test trials are features of specific experimental tests, each  model has parameters that must be specified. 
 Typically the settings of these parameters are critical to the predictive performance of the model. 
 Hence, to ensure a fair comparison between models, these parameters must be fit to data. 
-In all cases, we optimize parameter values to minimize the sum of squared error between model and human performance.
-We use the DEoptim R package [@DEoptim] to optimize parameters via differential evolution.
+In all cases, we optimize parameter values to minimize the sum of squared error (SSE) between model and human performance, weighting the contribution of each condition's SSE by the number of participants in that condition.
+We optimize parameters using differential evolution via the DEoptim R package [@DEoptim].
 
 We conducted two evaluations of models. 
 First, we use cross-validation across conditions to reduce overfitting. 
 We optimize each model's parameters by leaving out data from 20% of conditions to test generalization via optimization on the initial 80% (5-fold cross-validation).
-Second, we fit each model to all conditions and datasets to produce a single best-fitting parameter set per model. 
+Second, in the *group fit* regime we fit each model to all conditions and datasets to produce a single best-fitting parameter set per model. 
 We then evaluated the correlation between these fitted models and the same data they were fit to. 
 This evaluation thus makes maximal use of our data but incorporates some amount of overfitting.
 However, it allows us to make the best test of generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
@@ -124,13 +124,14 @@ assoc_models = list.files(here("models/"))
 assoc_models = assoc_models[assoc_models!="stochastic"]
 ```
 
-We fit the following associative models: @Fazly2010, @Kachergis2012gi, ... and a baseline co-occurrence counting model.
-We also fit two hypothesis-testing models: guess-and-test [@Medina2011,@Blythe2010] and propose-but-verify [@Trueswell2013].
+We fit the following associative models: @Fazly2010, @Kachergis2012gi, three simplified variations of that model, a Bayesian decay model, and a baseline co-occurrence counting model.
+We also fit two hypothesis-testing models: guess-and-test [@Medina2011; @Blythe2010] and propose-but-verify [@Trueswell2013].
 Finally, we fit two hybrid models, that store multiple, graded hypotheses--but only a subset of all possible associations: pursuit [@Stevens2017pursuit], and a stochastic version of the Kachergis model.
 These models and their free parameters are briefly described below.
 
 ### Baseline Co-occurrence Model
 The baseline model simply tallies the co-occurrences of any words and objects appearing together on each trial, accumulating the counts in a word $\times$ object matrix.
+<!-- tried adding a softmax parameter but it didn't help --> 
 
 ### Fazly et al. Model
 The @Fazly2010 model represents the meaning of each word *w* as a probability distribution $p(\cdot | w)$ over the objects appearing across the trials, and incrementally learns these distributions trial-by-trial.
@@ -139,34 +140,42 @@ A parameter $\lambda$ is a small smoothing constant added to both the numerator 
 
 ### Kachergis et al. Model
 The @Kachergis2012gi associative model assumes that learners associate all presented words with all visible objects to some extent, but that they selectively attend more to some of the presented word-object pairings. 
-Specifically, greater attention is directed to pairings that have previously co-occurred (a familiarity bias), but is also directed to stimuli that have no strong associates, tracked via the entropy of their association strengths (e.g., novel stimuli, or stimuli that have diffuse associations with several stimuli). 
+Specifically, greater attention is directed to pairings that have previously co-occurred (a familiarity bias), but is also directed to stimuli that have no strong associates, tracked via the entropy (*H*) of their association strengths (e.g., novel stimuli, or stimuli that have diffuse associations with several stimuli). 
 Thus, the model grows its association matrix as it experiences each trial, dynamically apportioning a fixed amount of associative weight (learning rate $\chi$) among the possible word-object associations, with the relative weight of the familiarity bias and the uncertainty bias determined by parameter $\lambda$.
 Finally, all association strengths decay from trial to trial at a rate controlled by parameter $\alpha$.
 
-<!--
-The update rule for adjusting the association between a given word $w$ and object $o$ on a given trial is:
+The update rule for adjusting the association $M_{w,o}$ between a given word $w$ and object $o$ on a given trial is:
 
 \begin{equation}
 M_{w,o} =  \alpha M_{w,o} + \frac{ \chi \cdot e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o}  }{  \sum_{w\in W} \sum_{o\in O} e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o} }
 \label{eq:fullmodel}
 \end{equation}
 
-In Equation \ref{eq:fullmodel}, $\alpha$ is a parameter governing forgetting, $\chi$ is the weight being distributed, and $\lambda$ is a scaling parameter governing differential weighting of uncertainty ($H(\cdot)$; roughly novelty) and prior knowledge ($M_{w,o}$; familiarity). 
-As each word $w$ is tested, learners choose referent $o$ from the \textit{m} alternatives in proportion to associative strength $M_{w,o}$. 
--->
+At test, given word $w$ learners choose referent $o$ from the \textit{m} given alternatives in proportion to associative strength $M_{w,o}$ (i.e. Luce's choice rule). 
+
+We also fit a stochastic *sampling* version of this model [see @Kachergis2017], which uses the same update equation, but instead of updating all possible word-object associations samples only a single presented object for each word on a trial. 
+This sampling version of the Kachergis et al. model thus can still build multiple graded associations for each word (or object), but on any given run will accumulate only a sparse, randomized version of what the full associative model would build.
 
 ### Strength-, Uncertainty-, and Novelty-Biased Models
-We also separately test the components
+We also test three variations on the Kachergis et al. model that use only a subset of the mechanisms of the full model in order to understand the contributions of each mechanism.
+The *strength-biased model* lacks the uncertainty bias term, and thus only implements a bias for familiar (i.e., already-strong) associations, with learning rate ($\chi$) and decay $\alpha$ parameters.
+
+The *uncertainty-biased model* lacks the strength bias term, and thus only implements a bias for stimuli with uncertain (high-entropy) associations.
+The *novelty-biased model* lacks the strength bias term, and substitutes novelty for the entropy terms (e.g., 1/(frequency(*w*)+1) instead of $H(w)$.
+These models still have all three parameters of the original Kachergis et al. model, although $\chi$ and $\beta$ likely trade off.
 
 ### Bayesian Decay Model
+This previously-unpublished model updates the $p(w|o)$ and the joint probability $p(w,o)$ from trial to trial according to a likelihood function that reinforces the association between *w* and *o* when they co-occur (scaled by parameter $\delta$), and penalizes all associations that are not occurring on the trial (scaled by parameter $\alpha$).
+Thus, in contrast to other incremental associative learning models considered here (e.g., Fazly and the Kachergis class of models), this model globally updates the entire association matrix on each trial -- both co-occurring pairs and non-co-occurring pairs, and re-normalizes the tracked probabilities at each time step.
+At test, this model uses a softmax choice rule with parameter $\tau$. 
 
-### Tilles Model
+<!-- ### Tilles Model -->
 
 ### Rescorla-Wagner Model
 
 
 ### Propose-but-verify Model
-In the propose-but-verify hypothesis testing model @Trueswell2013, one of the presented referents is selected at random for any word heard that has no remembered referent. 
+In the propose-but-verify hypothesis testing model [@Trueswell2013], one of the presented referents is selected at random for any word heard that has no remembered referent. 
 The next time that word occurs, the previously-proposed referent is remembered with probability $\alpha$, a free parameter. 
 If the remembered referent is verified to be present, the future probability of recalling the word is increased by $\epsilon$ (another free parameter). 
 If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
@@ -177,6 +186,14 @@ The guess-and-test hypothesis testing model is based on the description given by
 In summary, guess-and-test learners do *not* reach a final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses.
 We give this model two free parameters: a probability of successful encoding ($s$, hypothesis formation), and a probability $f$ of forgetting a hypothesis at retrieval. 
 This model is quite similar to the guess-and-test model formally analyzed by @Blythe2010 to determine the theoretical long-term efficacy of cross-situational word learning.
+
+
+### Pursuit Model
+The pursuit model [@Stevens2017pursuit] represents a hybrid approach, potentially storing graded associations involving a given word and multiple referents (or vice-versa), while on a given trial greedily pursuing the single strongest association for each presented word.
+If the strongest associated referent for a given word $w$ is present on the trial, the association is strengthened at a rate determined by $\gamma$.
+If the strongest referent for $w$ is not present, the association is weakened (scaled down by ($1-\gamma$)) and the association with a random other available referent is strengthened.
+Novel words are given an initial association of strength $\gamma$ with the available referent whose strongest association is the smallest, implementing an uncertainty bias in forming associations for novel words.
+A given word-object association only enters the lexicon if $p(o|w) > \theta$, a threshold parameter.
 
 ## Data
 
@@ -207,18 +224,25 @@ tab <- tab %>% mutate(Accuracy = as.numeric(tab$Accuracy),
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
-Table 2 in the Appendix shows a variety of characteristics of each experimental condition, including the number of trials, the number of words and referents presented per training trial, the number of total to-be-learned pairs, the number of participants per condition, and the average accuracy and SD of performance.
-Most of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from four conditions are from @Kachergis2012gi, and data from another four conditions are from @Kachergis2016.
-However, data from several conditions have never been published, but were shared Chen Yu's lab at Indiana University.
-
+Table 2 shows a variety of characteristics of each experimental condition, including the number of trials (range: 18-108), the number of words and referents presented per training trial (1-4), the number of total to-be-learned pairs (12-24), the number of participants per condition, and the average accuracy and SD of performance.
+Most of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
+However, data from several conditions have never been published, but were shared by Chen Yu's lab at Indiana University.
 Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
 
 
 # Results
 
-Group fits are presented in Table 
+```{r load-group-fits}
+load(here("fits/group_fits.Rdata"))
+Nitems = nrow(gfd) / length(unique(gfd$Model)) # MSE per item? per condition?
+group_fit_tab <- gfd %>% filter(!is.na(HumanPerf)) %>%
+  group_by(Model) %>% 
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2), #/ Nitems,
+            r = cor(ModelPerf, HumanPerf)) %>%
+  arrange(SSE)
+```
 
-Correlations between data and models are presented in Figure. 
+
 ```{r load-cv-fits}
 
 load(here("fits/cv_group_fits.Rdata"))
@@ -228,31 +252,33 @@ for(m in names(cv_group_fits)) {
 }
 
 cvg_fit_tab <- cvg %>% group_by(Model) %>% 
-  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2), #  / Nitems,
             r = cor(ModelPerf, HumanPerf)) %>%
-  arrange(SSE)
+  arrange(SSE) %>%
+  rename(`CV SSE` = SSE,
+         ` r` = r) %>% left_join(group_fit_tab) %>%
+  rename(`All SSE` = SSE) 
+
+cvg_fit_tab$Model = c("Kachergis samp", "Fazly", "Kachergis", "Novelty", "Uncertainty", "Bayes decay", "Rescorla-Wagner", "Strength", "Propose-Verify", "Guess-Test", "Pursuit")
+
+cvg_fit_tab$P = c(3, 2, 3, 2, 3, 3, 3, 2, 2, 2, 3)
 ```
+
+Table 1 shows the sum of squared error (SSE) and correlation ($r$) for each model's best-fitting parameters vs. average human performance on the `r totItems` items, both for the CV fits and for the group fits, along with the number of fitted parameters in each model (P).
+For comparison, the 0-parameter baseline co-occurrence model had SSE = 32.0 and $r = 0.53$.
+Correlations between data and models are presented in Figure 1. 
 
 
 ```{r cv-fits-table, results="asis"}
 # how to do 2-col table? , fig.env = "figure*" 
-tab2 <- xtable::xtable(cvg_fit_tab, digits=3, 
-                       caption = "Cross-validated group fits.")
+tab2 <- xtable::xtable(cvg_fit_tab, digits=c(0,0, 2, 2, 2, 2, 0), 
+                       caption = "Cross-validated and group model fits.")
 
 print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "H")
 ```
 
 
 ```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=6.5, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model performance with a single best-fitting set of parameters for all conditions."}
-
-# each model jointly fit to all conditions
-load(here("fits/group_fits.Rdata"))
-#for(m in names(group_fits)) { 
-#  print(paste(m, round(group_fits[[m]]$optim$bestval, 2)))
-#}
-# each model separately fit to each condition (should try cross-validation approach?)
-
-#load(here("fits/cond_fits.Rdata"))
 
 gcondm <- gfd %>% group_by(Model, Condition, Nsubj) %>%
   summarise(HumanPerf=mean(HumanPerf), 
@@ -278,11 +304,11 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf,
   theme(#legend.title = element_blank(),
         legend.margin = margin(0, 0, 0, 0, "cm"),
         legend.box.margin = margin(0, 0, 0, 0, "cm"), 
-        legend.box.spacing = unit(0.1, "cm"),
+        legend.box.spacing = unit(0.0, "cm"),
         legend.position = "bottom", 
         legend.text = element_text(size = 7, margin = margin(t=2)), 
         legend.spacing.x = unit(.1, 'cm'),
-        legend.spacing.y = unit(.1, 'cm'))
+        legend.spacing.y = unit(0, 'cm'))
 ```
 
 
