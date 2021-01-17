@@ -2,7 +2,6 @@
 # adapted for cross-situational word learning by
 # George Kachergis  george.kachergis@gmail.com
 
-# simple matrix version (must be consistent nubmers of words per trial and objects per trial)
 #ord = list(trialsc(1,2,3, 1,4,5, 2,3,4, 5,6,1), nrow=4, ncol=3, byrow=T)
 
 #get_test_study_ord = function() {
@@ -52,7 +51,7 @@ model <- function(params, ord=c(), reps=1, test_noise=0) {
 		# if objects are cues that predict words, then we want colSums;
 		# if words are cues, use rowSums--but only of the currently-presented stimuli
 		if(length(tr_w)==1) {
-		  pred = m[tr_w,tr_o]
+		  pred = m[tr_w,tr_o] # should prediction be based on entire col of obj assocs?
 		} else if(length(tr_o)==1) {
 		  pred = sum(m[tr_w,tr_o])
 		} else {

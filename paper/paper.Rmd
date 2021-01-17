@@ -91,9 +91,9 @@ Thus, we focus on out-of-sample prediction of human data using cross-validated p
 Finally, we will interpret the results, and what they entail for theories of cross-situational word learning.
 
 # Method
-
+\vspace{-6pt}
 ## Procedure
-
+\vspace{-6pt}
 In a nutshell, our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
 Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
@@ -114,7 +114,7 @@ This evaluation thus makes maximal use of our data but incorporates some amount 
 However, it allows us to make the best test of generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
 
 ## Models
-
+\vspace{-8pt}
 ```{r, model-list}
 # need to be run >100 times per given parameter values
 stochastic_models = list.files(here("models/stochastic/"))
@@ -122,7 +122,6 @@ stochastic_models = list.files(here("models/stochastic/"))
 assoc_models = list.files(here("models/"))
 assoc_models = assoc_models[assoc_models!="stochastic"]
 ```
-
 We fit the following associative models: @Fazly2010, @Kachergis2012gi, three simplified variations of that model, a Bayesian decay model, and a baseline co-occurrence counting model.
 We also fit two hypothesis-testing models: guess-and-test [@Medina2011; @Blythe2010] and propose-but-verify [@Trueswell2013].
 Finally, we fit two hybrid models, that store multiple, graded hypotheses--but only a subset of all possible associations: pursuit [@Stevens2017pursuit], and a stochastic version of the Kachergis model.
@@ -144,7 +143,7 @@ Thus, the model grows its association matrix as it experiences each trial, dynam
 Finally, all association strengths decay from trial to trial at a rate controlled by parameter $\alpha$.
 
 The update rule for adjusting the association $M_{w,o}$ between a given word $w$ and object $o$ on a given trial is:
-
+\vspace{-6pt}
 \begin{equation}
 M_{w,o} =  \alpha M_{w,o} + \frac{ \chi \cdot e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o}  }{  \sum_{w\in W} \sum_{o\in O} e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o} }
 \label{eq:fullmodel}
@@ -157,11 +156,11 @@ This sampling version of the Kachergis model can still build multiple graded ass
 
 ### Strength-, Uncertainty-, and Novelty-Biased Models
 We also test three variations on the Kachergis et al. model that use only a subset of the mechanisms of the full model in order to understand the contributions of each mechanism.
-The *strength-biased model* lacks the uncertainty bias term, and thus only implements a bias for familiar (i.e., already-strong) associations, with learning rate ($\chi$) and decay $\alpha$ parameters.
+The *strength model* lacks the uncertainty bias term, and thus only implements a bias for familiar (i.e., already-strong) associations, with learning rate ($\chi$) and decay $\alpha$ parameters.
 
-The *uncertainty-biased model* lacks the strength bias term, and thus only implements a bias for stimuli with uncertain (high-entropy) associations.
-The *novelty-biased model* lacks the strength bias term, and substitutes novelty for the entropy terms (e.g., 1/(frequency(*w*)+1) instead of $H(w)$.
-These models still have all three parameters of the original Kachergis et al. model, although $\chi$ and $\beta$ likely trade off.
+The *uncertainty model* lacks the strength bias term, and thus only implements a bias for stimuli with uncertain (high-entropy) associations.
+The *novelty model* lacks the strength bias term, and substitutes novelty for the entropy terms (e.g., 1/(frequency(*w*)+1) instead of $H(w)$.
+These models still have all three parameters of the original Kachergis model. <!--, although $\chi$ and $\beta$ likely trade off.-->
 
 ### Bayesian Decay Model
 This previously-unpublished model updates the $p(w|o)$ and the joint probability $p(w,o)$ from trial to trial according to a likelihood function that reinforces the association between *w* and *o* when they co-occur (scaled by parameter $\delta$), and penalizes all associations that are not occurring on the trial (scaled by parameter $\alpha$).
@@ -171,7 +170,10 @@ At test, this model uses a softmax choice rule with parameter $\tau$.
 <!-- ### Tilles Model -->
 
 ### Rescorla-Wagner Model
-This model is inspired by the prediction-error-based learning model of @Rescorla1972. (FINISH WRITING)
+This associative model is inspired by the prediction-error-based learning model of @Rescorla1972. 
+Objects on each trial serve as cues to predict which words will be heard.
+When a given word is heard, the associations between that word and each object on the trial are scaled at a learning rate $\beta$ in proportion to the magnitude of the difference between the prediction and the maximum association value ($\lambda$). 
+Each trial, the association matrix is subject to decay (parameter $\alpha$).
 
 ### Propose-but-verify Model
 In the propose-but-verify hypothesis testing model [@Trueswell2013], one of the presented referents is selected at random for any word heard that has no remembered referent. 
@@ -195,7 +197,7 @@ Novel words are given an initial association of strength $\gamma$ with the avail
 A given word-object association only enters the lexicon if $p(o|w) > \theta$, a threshold parameter.
 
 ## Data
-
+\vspace{-9pt}
 ```{r load-data}
 load(here("data/combined_data.RData"))
 
