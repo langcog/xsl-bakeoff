@@ -337,6 +337,12 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf,
         legend.spacing.y = unit(0, 'cm'))
 ```
 
+## Generalization Experiment Results
+
+Using the parameters optimized to each model for all of the conditions, we simulate model performance for a selection of published experiments and compare to participants' group-level performance for these conditions. 
+
+
+
 # Discussion
 We set out to conduct a systematic comparison of several models of cross-situational word learning models across a wide variety of experimental conditions. 
 Using a database of `r totSs` participants in `r length(combined_data)` conditions, we found best-fitting parameters for 11 different models under two different regimes: 1) simultaneously fitting all of the data, and 2) 5-fold cross-validation, testing generalization to the final 20% of conditions after training on 80% of them.

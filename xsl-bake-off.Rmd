@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = F, warning=F, message=F)
 require(tidyverse)
 require(ggplot2)
+require(here)
 library(knitr)
 library(kableExtra)
 ```
@@ -241,22 +242,28 @@ The first three studies are of adult participants, and include two experiments t
 
 ### Koehne, Trueswell & Gleitman (2013)
 For example, Koehne, Trueswell & Gleitman (2013), in which each of 16 novel nouns was assigned two meanings with different co-occurrence frequencies: 
-One referent was present whenever the noun was present (six times, 100% referent), the other referent was present in only half of the cases the noun was (three times, 50% referent). All other objects co-occurred only once with a noun (17%). 
+One referent was present whenever the noun was present (six times, 100% referent), the other referent was present in only half of the cases the noun was (three times, 50% referent). 
+All other objects co-occurred only once with a noun (17%). 
 Training trial order was manipulated: including and excluding the 50% referent were presented within four levels (within participants): 
 Firstly, the 50%-present (P) and 50%-absent (A) trials could be either blocked (AAAPPP and PPPAAA) or not blocked (APAPAP and PAPAPA); secondly, the first encounter of a noun could be either an A trial (AAAPPP and APAPAP) or a P trial (PPPAAA and PAPAPA).
 
 ```{r}
-load("other_exps/KoehneTrueswellGleitman2013orders.RData")
+source(here("fitting_functions.R"))
+load(here("other_exps/KoehneTrueswellGleitman2013orders.RData"))
 
-# ToDo: modify to work for stochastic models, too
 run_Koehne_exp <- function(model_name, par, ord) {
-  source(paste0("models/",model_name,".R"))
-  mp = model(par, ord)$matrix
-  diag(mp[,1:8])/rowSums(mp[,1:8]) # 100% referents: ~60% perf
+  if(is.element(model_name, stochastic_models)) {
+    #source(paste0(here("models/stochastic/",model_name,".R")))
+    mp <- run_stochastic_model(ord, model_name, par, get_resp_matrix = T)
+  } else {
+    source(paste0("models/",model_name,".R"))
+    mp = model(par, ord$train)$matrix
+  }
+  diag(mp[,1:8])/rowSums(mp) # 100% referents: ~60% perf
   diag(mp) = 0
   perf = c()
   for(w in 1:nrow(mp)) {
-    perf[w] = mp[w,w+1]/sum(mp[w,1:9])
+    perf[w] = mp[w,w+1]/sum(mp[w,])
   }
   return(perf) 
 }
@@ -266,9 +273,7 @@ evalSSE_Koehne <- function(model_name, par, orders, verbose=F) {
   df = tibble(Cond = names(Koehne), Human=rep(0.0, 4), Model=rep(0.0, 4), Model_sd=rep(0.0, 4))
   for(i in 1:length(Koehne)) {
     cond = names(Koehne)[i]
-    # words needs to be an Nx1 matrix
-    Koehne[[cond]]$train$words = matrix(Koehne[[cond]]$train$words, ncol=1)
-    mperf = run_Koehne_exp(model_name, par, Koehne[[cond]]$train)
+    mperf = run_Koehne_exp(model_name, par, Koehne[[cond]]) 
     df[i,]$Model = mean(mperf)
     df[i,]$Model_sd = sd(mperf)
     df[i,]$Human = Koehne[[cond]]$HumanAcc
@@ -278,18 +283,16 @@ evalSSE_Koehne <- function(model_name, par, orders, verbose=F) {
 }
 
 gen_exps = tibble(exp=character(), model=character(), SSE=numeric())
-for(model_name in names(group_fits)[1:6]) {
+for(model_name in names(group_fits)) {
   pars = group_fits[[model_name]]$optim$bestmem
   sse = evalSSE_Koehne(model_name, pars, Koehne, verbose=F) # 
   gen_exps = bind_rows(gen_exps, tibble(exp="Koehne et al.", model=model_name, SSE=sse))
 }
 
-#run_Koehne_exp("kachergis", group_fits$kachergis$optim$bestmem, Koehne[["pppaaa"]]$train)
-# Error in 1:nrow(ord$words) : argument of length 0
-
 # the model predicts the same ordering as humans out of the box -- PPPAAA is best, AAAPPP is worst
 # contradicts Koehne et al.'s interpretation: "This finding is inconsistent with a standard cross-situational
 # account because all conditions should have been above chance independent of presentation order.
+
 
 ```
 
@@ -307,8 +310,8 @@ load("other_exps/Medina2013orders.RData")
 # I tried to read off the performance from the Figure...
 Medina[["HIfirst"]]$HumAcc = c(.66, .33, .39, .46, .41) # final: .37
 Medina[["HImid"]]$HumAcc = c(.14, .14, .39, .30, .16) # final: .09
-Medina[["HIlast"]]$HumAcc = c()
-Medina[["HIabsent"]]$HumAcc = c()
+Medina[["HIlast"]]$HumAcc = c(.07, .09, .14, .08, .21) # final: .09
+Medina[["HIabsent"]]$HumAcc = c(.16, .20, .21, .18, .21) # final: .18
   
 # graph performance per block (1-5)
 get_block_perf <- function(modperf) {
@@ -342,8 +345,15 @@ run_Medina_exp <- function(model_name, pars, plot=T) {
   return(mdat)
 }
 
-run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
-#run_Medina_exp("fazly", c(0.4695008, 3.690278)) # Error in rowSums(modperf$traj[[i]]) : 'x' must be an array of at least two dimensions
+#run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
+#run_Medina_exp("fazly", c(0.4695008, 3.690278)) 
+
+for(model_name in names(group_fits)) {
+  pars = group_fits[[model_name]]$optim$bestmem
+  #sse = evalSSE_Medina(model_name, pars, Koehne, verbose=F) # 
+  #gen_exps = bind_rows(gen_exps, tibble(exp="Medina et al.", model=model_name, SSE=sse))
+}
+
 
 # ToDo: write evalSSE_Medina()
 ```

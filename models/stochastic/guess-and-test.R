@@ -47,7 +47,7 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 			  need_hypoths = tr_w[which(rowSums(m[tr_w,])==0)]
 			}
 			store = need_hypoths[which(runif(length(need_hypoths)) < sa)]
-			new_hyps = sample(store, length(store), replace=FALSE)
+			new_hyps = sample(tr_o, length(store), replace=FALSE) 
 			for(w in 1:length(store)) {
 				m[need_hypoths[w], new_hyps[w]] = 1 # was m[need_hypoths[w], store[w]]
 			}

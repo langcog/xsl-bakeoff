@@ -76,34 +76,47 @@ stochastic_matrix_dummy <- function(n, parameters, ord) {
 }
 
 
-run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F, Nsim=200) {
+run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F, get_resp_matrix=F, Nsim=200) {
   source(paste0(model_dir,"stochastic/",model_name,".R"))
   # fitting a single condition
   if(!is.null(conds$train)) {
-    mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds$train)
-    mod = rowSums(mp) / ncol(mp)
-    SSE = sum( (mod - conds$HumanItemAcc)^2 )
+    if(get_resp_matrix) {
+      mp = lapply(1:Nsim, stochastic_matrix_dummy, parameters=parameters, 
+                  ord=conds$train)
+      mod = Reduce('+', mp)
+    } else {
+      mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds$train)
+      mod = rowSums(mp) / ncol(mp)
+      SSE = sum( (mod - conds$HumanItemAcc)^2 )
+    }
   } else {
     mod = list()
     SSE = 0
     totSs = 0
     for(i in 1:length(conds)) {
-      #print(conds[[i]]$Condition)
-      # 4AFC conditions use different testing
-      if(!is.null(conds[[i]]$test)) {
+      # just want response matrix, not AFC performance / SSE
+      if(get_resp_matrix) {
         mp = lapply(1:Nsim, stochastic_matrix_dummy, parameters=parameters, 
                     ord=conds[[i]]$train)
-        mperf = Reduce('+', mp)
-        mperf = mafc_test(mperf, conds[[i]]$test)
+        mod[[names(conds)[i]]] = Reduce('+', mp)
       } else {
-        mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds[[i]]$train)
-        mperf = rowSums(mp) / ncol(mp)
+      #print(conds[[i]]$Condition)
+      # 4AFC conditions use different testing
+        if(!is.null(conds[[i]]$test)) {
+          mp = lapply(1:Nsim, stochastic_matrix_dummy, parameters=parameters, 
+                      ord=conds[[i]]$train)
+          mperf = Reduce('+', mp)
+          mperf = mafc_test(mperf, conds[[i]]$test)
+        } else {
+          mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds[[i]]$train)
+          mperf = rowSums(mp) / ncol(mp)
+        }
+        mod[[names(conds)[i]]] = mperf
+        SSE = SSE + conds[[i]]$Nsubj * sum( (mperf - conds[[i]]$HumanItemAcc)^2 )
+        totSs = totSs + conds[[i]]$Nsubj
+        SSE = SSE / totSs
       }
-      mod[[names(conds)[i]]] = mperf
-      SSE = SSE + conds[[i]]$Nsubj * sum( (mperf - conds[[i]]$HumanItemAcc)^2 )
-      totSs = totSs + conds[[i]]$Nsubj
-    }
-    SSE = SSE / totSs
+    
   }
   if(print_perf) {
     print(mod)
@@ -113,8 +126,9 @@ run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, prin
   
   if(SSE_only) return(SSE)
   return(mod)
+  }
 }
-
+  
 fit_stochastic_model <- function(model_name, conds, lower, upper) {
   fit = DEoptim(run_stochastic_model, lower=lower, upper=upper, DEoptim.control(reltol=.001, NP=100, itermax=30), 
                 model_name=model_name, conds=conds, SSE_only=T)

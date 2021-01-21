@@ -51,19 +51,18 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 			# throw out inconsistent hyps
 			for(w in have_hypoths) {
 				hypo = which(m[w,]>0)
-				if(!is.element(hypo, tr_o)) { 
-					m[w,] = 0 # disconfirmed
-				} else {
-					m[w,hypo] = m[w,hypo] + alpha_increase # strengthen
-				}
+				consistent = intersect(hypo, tr_o) # hyp on trial, strengthen
+				m[w,consistent] = m[w,consistent] + alpha_increase
+				inconsistent = setdiff(hypo, tr_o) # hyp not on trial, disconfirmed
+				m[w,inconsistent] = 0
 			}
 			if(length(tr_w)>1) {
-			  need_hypoths = tr_w[which(rowSums(m[tr_w,])==0)]
-			} else if(sum(m[tr_w,]==0)) {
+			  need_hypoths = tr_w[which(rowSums(m[tr_w,])==0)] # any words that don't have a hyp
+			} else if(sum(m[tr_w,]==0)) { # no hyp exists for this word
 			  need_hypoths = tr_w
 			}
 			store = need_hypoths
-			new_hyps = sample(store, length(store), replace=FALSE)
+			new_hyps = sample(tr_o, length(store), replace=FALSE) # select new random refs from trial
 			for(w in 1:length(store)) {
 				m[need_hypoths[w], new_hyps[w]] = alpha
 			}

@@ -53,7 +53,7 @@ model <- function(params, ord=c(), reps=1) {
         }
       #index = (rep-1)*nrow(ord$trials$words) + t # index for learning trajectory
       index = t
-      traj[[index]] = diag(probs) + 1e-9
+      traj[[index]] = probs
     }
     perf[rep,] = diag(probs)
   }    
