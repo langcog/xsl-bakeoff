@@ -430,12 +430,11 @@ evalSSE_orders <- function(model_name, par, orders, verbose=F) {
   return(sum((df$Human-df$Model)^2)/length(orders))
 }
 
-for(model_name in names(group_fits)[1]) { # [1:6]
+for(model_name in names(group_fits)[1:6]) { # [1:6]
   pars = group_fits[[model_name]]$optim$bestmem
   sse = evalSSE_orders(model_name, pars, Suanda, verbose=F) # 
   gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, SSE=sse))
 }
-# fazly: Error in if (min(p) < 0 || sum(p) <= 0) return(NA) : missing value where TRUE/FALSE needed
 ```
 
 
