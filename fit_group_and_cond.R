@@ -11,13 +11,16 @@ group_fits <- function() {
   group_fits[["rescorla-wagner"]] = fit_model("rescorla-wagner", combined_data, c(1e-5,1e-5,1e-5), c(1,1,1))
   #group_fits[["decay"]] = fit_model("decay", combined_data, .01, 1) # barely better than baseline
   
+  # Fazly with threshold parameter
+  group_fits[["fazlyt"]] = fit_model("fazlyt", combined_data, c(1e-10,2,.001), c(2,20000,1))
+  
   # ToDo: merge these in from group_stochastic_fits.Rdata
   # load("fits/group_stochastic_fits.Rdata")
   group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
   # bestvalit: 0.779708 bestmemit:    0.061586    0.339723
   group_fits[["guess-and-test"]] = fit_stochastic_model("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
   # bestvalit: 0.787930 bestmemit:    0.843235    0.993573
-  group_fits[["pursuit_detailed"]] = fit_stochastic_model("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
+  group_fits[["pursuit"]] = fit_stochastic_model("pursuit", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
   # bestvalit: 1.009069 bestmemit:    0.167124    0.842535    0.001001
   group_fits[["kachergis_sampling"]] = fit_stochastic_model("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
   # bestvalit: 0.356301 bestmemit:    0.152348   11.209949    0.999401

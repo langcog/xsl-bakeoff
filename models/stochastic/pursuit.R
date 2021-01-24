@@ -55,7 +55,7 @@ model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
         # find max assoc for each referent (including to words not on trial?)
         max_assoc = apply(m[,tr_o], 2, max)
         # select one referent with minimum maximum association
-        min_ref = tr_o[which(max_assoc==min(max_ref))]
+        min_ref = tr_o[which(max_assoc==min(max_assoc))]
         if(length(min_ref)>1) min_ref = sample(min_ref, 1) # break ties 
         m[novel[w], min_ref] = gamma 
       }
