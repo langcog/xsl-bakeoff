@@ -18,10 +18,6 @@
 # reward: p(h) = p(h) + gamma*(1-p(h)) and reduce all h'!=h: p(h') = p(h')*(1-gamma)
 # penalty: p(h) = p(h)*(1-gamma)
 
-### where did i get the following??
-#	for all h'!=h, p(h') = gamma/(n-1) + p(h')*(1-gamma) where n=# of hypotheses being considered
-
-
 #params = c(.2, .6, .05)
 
 model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
@@ -45,7 +41,7 @@ model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
       tr_w = as.integer(ord$words[t,])
       tr_o = as.integer(ord$objs[t,])
       novel = tr_w[which(freq[tr_w]==0)] # novel words
-      freq[tr_w] = freq[tr_w] + 1 
+      freq[tr_w] = freq[tr_w] + 1 # tracks word freq
       if(length(tr_w)==1) {
         have_hypoths = tr_w[which(sum(m[tr_w,1:ref_sz])!=0)]
       } else {
@@ -54,38 +50,27 @@ model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
       #need_hypoths = tr_w[which(rowSums(m[tr_w,1:ref_sz])==0)] # words with zero 
       
       # initialize...
-      # 1) if w is novel, select one from available refs with minimum strength
+      # 1) if w is novel, select one from available refs with minimum assoc to any other word
       for(w in 1:length(novel)) {
-        if(length(tr_w)==1) {
-          max_ref = max(m[tr_w, tr_o]) 
-        } else {
-          max_ref = apply(m[tr_w, tr_o], 1, max) # max association for each referent on trial
-        }
+        # find max assoc for each referent (including to words not on trial?)
+        max_assoc = apply(m[,tr_o], 2, max)
         # select one referent with minimum maximum association
-        min_ref = sample(tr_o[which(max_ref == min(max_ref))], 1)
+        min_ref = tr_o[which(max_assoc==min(max_ref))]
+        if(length(min_ref)>1) min_ref = sample(min_ref, 1) # break ties 
         m[novel[w], min_ref] = gamma 
       }
       
-      need_hypoths = c() # for any disconfirmed words that need a new referent
       for(w in have_hypoths) {
         hypo = which(m[w,]==max(m[w,1:ref_sz])) # strongest one
         if(length(hypo)>1) hypo = sample(hypo, 1) # (choose one if >1 strongest)
         if(!is.element(hypo, tr_o)) { # not on trial, so weaken:
           m[w,hypo] = m[w,hypo]*(1-gamma) # disconfirmed
-          need_hypoths = c(need_hypoths, w) # not on trial, so choose a new hypothesized referent
+          # not on trial, so random new hypothesized referent
+          new_hyp = sample(tr_o, 1)
+          m[w,new_hyp] = m[w,new_hyp] + gamma * (1 - m[w,new_hyp])
         } else {
-          m[w,hypo] = m[w,hypo] + gamma*(1-m[w,hypo]) # confirmed: strengthen
-          m[w,which(1:voc_sz!=hypo)] = m[w,which(1:voc_sz!=hypo)] * (1-gamma) # weaken others
+          m[w,hypo] = m[w,hypo] + gamma * (1 - m[w,hypo]) # confirmed: strengthen
         }
-      }
-      store = need_hypoths # reward A(w,h') for a randomly selected new referent (from trial)
-      if(length(store)==1) {
-        new_hyps = store
-      } else {
-        new_hyps = sample(store, length(store), replace=FALSE)
-      }
-      for(w in 1:length(store)) {
-        m[need_hypoths[w], new_hyps[w]] = gamma*(1-m[need_hypoths[w],new_hyps[w]])
       }
       
       Pm_w = m+lambda
