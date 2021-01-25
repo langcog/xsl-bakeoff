@@ -142,7 +142,7 @@ The association between a given *w* and *o* grows more quickly if $p(w|o)$ is al
 A parameter $\lambda$ is a small smoothing constant added to both the numerator and denominator of each $p(w|o)$, further adjusted in the denominator by a $\beta$ parameter representing the upper bound on the number of symbol types.
 At test, the correct referent for each word *w* is chosen according to Luce choice from the probability distribution over the objects that appeared with that word $p(\cdot | w)$.[^1]
 
-[^1]: The original model implemented a $\theta$-thresholded lexicon that discretized the probability matrix, but we found that including this mechanism (and additional parameter) resulted in a worse fit to the data.
+[^1]: The original model implemented a $\theta$-thresholded lexicon that discretized the probability matrix, but we found that including this mechanism resulted in a worse fit to the data.
 
 ### Familiarity- and Uncertainty- Biased Model (FU)
 The familiarity- and uncertainty-biased associative model [@Kachergis2012gi] assumes that learners associate all presented words with all visible objects to some extent, but that they selectively attend more to some of the presented word-object pairings. 
@@ -197,8 +197,7 @@ The guess-and-test hypothesis testing model is based on the description given by
 <!-- In summary, guess-and-test learners do *not* reach a final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses. -->
 We give this model two free parameters: a probability of successful encoding ($s$, hypothesis formation), and a probability $f$ of forgetting a hypothesis at retrieval. 
 At test, for each word the model chooses the currently hypothesized referent for that word.
-<!-- , or chooses at random if no referent is stored.
-This model is quite similar to the guess-and-test model formally analyzed by @Blythe2010 to determine the theoretical long-term efficacy of cross-situational word learning. -->
+<!-- This model is quite similar to the guess-and-test model formally analyzed by @Blythe2010 to determine the theoretical long-term efficacy of cross-situational word learning. -->
 
 
 ### Pursuit Model (P)
@@ -237,13 +236,6 @@ At test, participants heard each word and were asked to select the best referent
 
 ```{r load-group-fits}
 load(here("fits/group_fits.Rdata"))
-group_fits$fazlyt = NULL # thresholded Fazly model
-
-group_fits$pursuit_detailed = NULL # old pursuit version
-
-group_fits$trueswell2012$optim$bestmem = c(0.41895326, 0.02030728) # SSE=.00239
-group_fits$pursuit$optim$bestmem = c(0.119080, 0.692228, 0.000502) # SSE=.0039
-group_fits$`guess-and-test`$optim$bestmem = c(0.4670804, 0.9600860) # SSE=.0028
 
 #gfd = get_model_dataframe(group_fits, combined_data)
 
@@ -264,6 +256,9 @@ for(m in names(cv_group_fits)) {
   cvg <- rbind(cvg, cv_group_fits[[m]]$testdf)
 }
 
+# until new pursuit CV fits done
+cvg <- cvg %>% mutate(Model = replace(Model, Model=="pursuit_detailed", "pursuit")) 
+
 cvg_fit_tab <- cvg %>% group_by(Model) %>% 
   summarise(SSE = sum((ModelPerf-HumanPerf)^2), #  / Nitems,
             r = cor(ModelPerf, HumanPerf)) %>%
@@ -273,7 +268,8 @@ cvg_fit_tab <- cvg %>% group_by(Model) %>%
   rename(`All SSE` = SSE) 
 
 # ToDo CHECK THESE, maybe use 2-letter code?
-cvg_fit_tab$Model = c("Kachergis samp", "Fazly", "Kachergis", "Novelty", "Uncertainty", "Bayes decay", "Rescorla-Wagner", "Strength", "Propose-Verify", "Guess-Test", "Pursuit")
+cvg_fit_tab$Model = c("FUs", "PA", "FU", "Nov", "Unc", "BD", "PbV", "GnT", "R-W", "Str", "Pur") 
+# c("FUs","PA","FU","N","U","BD","PV","GT","RW","S","P")
 
 cvg_fit_tab$P = c(3, 2, 3, 2, 3, 3, 3, 2, 2, 2, 3)
 ```
@@ -295,15 +291,10 @@ for(r in 1:nrow(mod_cors)) {
                                 subset(cvg, Model==mod_names[c])$ModelPerf), 2))
   }
 }
-mod_names_short = c("Ks","PA","FU","N","U","BD","RW","S","PV","GT","P")
+mod_names_short = c("FUs","PA","FU","N","U","BD","PV","GT","RW","S","P")
 rownames(mod_cors) = mod_names_short
 colnames(mod_cors) = mod_names_short
 ```
-
-How related to each other are these models?
-Table 2 shows the correlations between model predictions made using the group-optimized parameters. 
-<!-- with the names of the models abbreviated for space (*Ks*: Kachergis sampling, *F*azly, *K*achergis, *N*ovelty, *U*ncertainty, *B*ayesian decay, *R*escorla-Wagner, *S*trength, Propose-but-*V*erify, *G*uess-and-Test, *P*ursuit). -->
-These results are discussed below.
 
 ```{r cv-fits-table, results="asis"}
 # how to do 2-col table? , fig.env = "figure*" 
@@ -313,11 +304,17 @@ tab2 <- xtable::xtable(cvg_fit_tab, digits=c(0,0, 2, 2, 2, 2, 0),
 print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "H")
 ```
 
+How related to each other are these models?
+Table 2 shows the correlations between model predictions made using the group-optimized parameters, and these relations are discussed below. 
+<!-- with the names of the models abbreviated for space (*Ks*: Kachergis sampling, *F*azly, *K*achergis, *N*ovelty, *U*ncertainty, *B*ayesian decay, *R*escorla-Wagner, *S*trength, Propose-but-*V*erify, *G*uess-and-Test, *P*ursuit). -->
+
+
+
 ```{r model-cors-table, results="asis"}
 tab3 <- xtable::xtable(mod_cors[2:nrow(mod_cors),1:(ncol(mod_cors)-1)],  caption = "Correlations of models' predictions.")
 
 #print(tab3, type="latex", comment = F, include.rownames = T, table.placement = "H")
-kable(tab3, "latex", booktabs = T) %>%
+kable(tab3, "latex", booktabs = T, digits = 3, caption="Correlations of models' predictions.") %>%
   kable_styling(latex_options = "scale_down")
 # ToDo: bold maximum correlation per model (column)
 ```
@@ -377,10 +374,10 @@ The pattern of results from both of these experiments were seen as evidence that
 @Suanda2012 tested X-year-old children in three conditions with varying contextual diversity.
 
 ```{r gen-exp-table, results="asis"}
-gen_tab <- xtable::xtable(gen_tab,  caption = "Generalization experiment results.")
+#gen_tab <- xtable::xtable(gen_tab,  caption = "Generalization experiment results.")
 
 #print(tab3, type="latex", comment = F, include.rownames = T, table.placement = "H")
-kable(gen_tab, "latex", booktabs = T) %>%
+kable(gen_tab, "latex", booktabs = T, digits=3, caption = "Generalization experiment results.") %>%
   kable_styling(latex_options = "scale_down")
 # ToDo: bold minimum per exp (column)
 ```
