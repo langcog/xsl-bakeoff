@@ -224,17 +224,29 @@ for(c in 1:length(combined_data)) {
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
-Table 3 shows a variety of characteristics of each experimental condition, including the number of trials (range: 18-108), the number of words and referents presented per training trial (1-4), the number of total to-be-learned pairs ($m=$12-24), the number of participants per condition, and the average accuracy and SD of performance.
-Most of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
+A table containing details of each condition is available on OSF[^2]. 
+The number of trials per condition ranged from 18 to 108, with 1-4 words and objects presented per trial, and a total of 12-24 pairs to be learned per condition.
+The bulk of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
 However, data from several conditions are contributed by Chen Yu's lab at Indiana University, and have never before been published.
 Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
 At test, participants heard each word and were asked to select the best referent from either all $m$ presented objects (*m*-alternative forced choice; AFC), or from a subset (e.g., 4AFC).
-A table containing details of each condition is available on OSF: [https://osf.io/s2aty/](https://osf.io/s2aty/).
+
+[^2]: Information about the dataset: [https://osf.io/s2aty/](https://osf.io/s2aty/)
 
 # Results
 
 ```{r load-group-fits}
 load(here("fits/group_fits.Rdata"))
+group_fits$fazlyt = NULL # thresholded Fazly model
+
+group_fits$pursuit_detailed = NULL # old pursuit version
+
+group_fits$trueswell2012$optim$bestmem = c(0.41895326, 0.02030728) # SSE=.00239
+group_fits$pursuit$optim$bestmem = c(0.119080, 0.692228, 0.000502) # SSE=.0039
+group_fits$`guess-and-test`$optim$bestmem = c(0.4670804, 0.9600860) # SSE=.0028
+
+#gfd = get_model_dataframe(group_fits, combined_data)
+
 Nitems = nrow(gfd) / length(unique(gfd$Model)) # MSE per item? per condition?
 group_fit_tab <- gfd %>% filter(!is.na(HumanPerf)) %>%
   group_by(Model) %>% 
@@ -260,6 +272,7 @@ cvg_fit_tab <- cvg %>% group_by(Model) %>%
          ` r` = r) %>% left_join(group_fit_tab) %>%
   rename(`All SSE` = SSE) 
 
+# ToDo CHECK THESE, maybe use 2-letter code?
 cvg_fit_tab$Model = c("Kachergis samp", "Fazly", "Kachergis", "Novelty", "Uncertainty", "Bayes decay", "Rescorla-Wagner", "Strength", "Propose-Verify", "Guess-Test", "Pursuit")
 
 cvg_fit_tab$P = c(3, 2, 3, 2, 3, 3, 3, 2, 2, 2, 3)
@@ -344,9 +357,33 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf,
 
 ## Generalization Experiment Results
 
-Using the parameters optimized to each model for all of the conditions, we simulate model performance for a selection of published experiments and compare to participants' group-level performance for these conditions. 
+```{r gen-exps}
+load(here("fits/generalization_exp_results.RData"))
+
+# make a table of MSEs, model x exp?
+gen_tab <- gen_exps %>% mutate(RMSE = sqrt(MSE)) %>% select(-MSE) %>%
+  pivot_wider(names_from = exp, values_from = RMSE) %>%
+  mutate(Total = rowSums(.[2:5])) %>% 
+  arrange(Total)
+```
 
 
+Using the optimal parameters found for each model in the group fit, we simulate model performance for two other published adult studies and two developmental studies for which we only have participants' average performance. 
+@Koehne2013 manipulated the temporal order with which words were assigned two meanings of different strengths across four conditions given to adults.
+@Medina2011 manipulated the informativeness (number of referents per trial) and order of trials across four conditions, again with adult learners.
+The pattern of results from both of these experiments were seen as evidence that people learn via hypothesis testing, but we find that the Koehne et al. data is best accounted for by the novelty-biased model, and the Medina et al. data is best predicted by the Rescorla-Wagner model.
+
+@Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words repeated across 30 trials, and found that infants learned 4 of the 6 words on average.
+@Suanda2012 tested X-year-old children in three conditions with varying contextual diversity.
+
+```{r gen-exp-table, results="asis"}
+gen_tab <- xtable::xtable(gen_tab,  caption = "Generalization experiment results.")
+
+#print(tab3, type="latex", comment = F, include.rownames = T, table.placement = "H")
+kable(gen_tab, "latex", booktabs = T) %>%
+  kable_styling(latex_options = "scale_down")
+# ToDo: bold minimum per exp (column)
+```
 
 # Discussion
 We set out to conduct a systematic comparison of several models of cross-situational word learning models across a wide variety of experimental conditions. 
@@ -357,7 +394,6 @@ The hybrid Pursuit model [@Stevens2017pursuit] fared even more poorly, in part b
 Among the associative models, the @Fazly2010 model and the @Kachergis2012gi model both fare quite well, and the sampling version of the Kachergis et al. model performs slightly better, albeit with 3 free parameters compared to 2 in the Fazly et al. model.
 The predictions of the top three models are more correlated with each other than with the human data (see Table 1): Fazly vs. Kachergis sampling: .87, Fazly vs. Kachergis: .84, Kachergis vs. sampling: .92.
 But the Fazly model also showed a .84 correlation with the Rescorla-Wagner model, and both Kachergis models showed a .87 correlation with the simpler novelty-biased associative model--stronger than for the uncertainty-bias mechanism used by these models.
-
 
 ```{r models-diverge}
 mw <- gfd %>% mutate(ID = rep(1:726, 11)) %>%

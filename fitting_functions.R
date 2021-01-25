@@ -1,5 +1,7 @@
 require(DEoptim) # pso
 require(caret)
+require(here)
+require(tidyverse)
 
 order_dir = "orders/"
 model_dir = "models/"
@@ -7,9 +9,9 @@ data_dir = "data/"
 
 #source("fit.R")
 
-stochastic_models = c("guess-and-test","pursuit_detailed","trueswell2012","kachergis_sampling")
+stochastic_models = c("guess-and-test","pursuit","trueswell2012","kachergis_sampling")
 
-load("data/combined_data.RData")
+load(here("data/combined_data.RData"))
 
 mafc_test <- function(mperf, test) {
   perf = rep(0, length(test$trials))
@@ -24,7 +26,7 @@ mafc_test <- function(mperf, test) {
 
 # run given model on 1 or more condition 
 run_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F) {
-	source(paste0(model_dir,model_name,".R"))
+	source(here(paste0(model_dir,model_name,".R")))
   if(!is.null(conds$train)) {
     mod = list(perf = model(parameters, ord=conds$train)$perf)
     SSE = sum( (mod$perf - conds$HumanItemAcc)^2 )
@@ -75,9 +77,12 @@ stochastic_matrix_dummy <- function(n, parameters, ord) {
   return(model(parameters, ord)$matrix)
 }
 
+stochastic_traj_dummy <- function(n, parameters, ord) {
+  return(model(parameters, ord)$traj)
+}
 
 run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F, get_resp_matrix=F, Nsim=200) {
-  source(paste0(model_dir,"stochastic/",model_name,".R"))
+  source(here(paste0(model_dir,"stochastic/",model_name,".R")))
   # fitting a single condition
   if(!is.null(conds$train)) {
     if(get_resp_matrix) {

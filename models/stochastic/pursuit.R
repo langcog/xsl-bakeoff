@@ -36,7 +36,8 @@ model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
   lexicon <- matrix(0, voc_sz, ref_sz) # for any association that reaches threshold
   compScore = rep(0, nrow(ord$words))
   freq = rep(0,voc_sz) # number of occurrences per pair, so far (to index the resps matrix)
-
+  traj = list()
+  
   for(t in 1:nrow(ord$words)) {
       tr_w = as.integer(ord$words[t,])
       tr_o = as.integer(ord$objs[t,])
@@ -76,14 +77,15 @@ model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
       Pm_w = m+lambda
       Pm_w = Pm_w / rowSums(Pm_w) # Eq 1
       lexicon[which(Pm_w>thresh)] = 1 # add to lexicon
+      traj[[t]] = lexicon
       #compScore[t] = sum(diag(lexicon) / rowSums(lexicon+1e-9)) # should use index
       compScore[t] = sum(diag(Pm_w))
     }
   resp_prob = diag(lexicon) / rowSums(lexicon+1e-12) 
-
+  
   if(verbose) print(m)
   #want = list(perf=diag(Pm_w), matrix=Pm_w, compScore=compScore) 
-  want = list(perf=as.numeric(resp_prob), matrix=lexicon+1e-12, compScore=as.numeric(compScore))
+  want = list(perf=as.numeric(resp_prob), matrix=lexicon+1e-12, compScore=as.numeric(compScore), traj=traj)
   return(want)
 }
 

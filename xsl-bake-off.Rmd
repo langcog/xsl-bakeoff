@@ -269,7 +269,7 @@ run_Koehne_exp <- function(model_name, par, ord) {
 }
 
 
-evalSSE_Koehne <- function(model_name, par, orders, verbose=F) {
+evalMSE_Koehne <- function(model_name, par, orders, verbose=F) {
   df = tibble(Cond = names(Koehne), Human=rep(0.0, 4), Model=rep(0.0, 4), Model_sd=rep(0.0, 4))
   for(i in 1:length(Koehne)) {
     cond = names(Koehne)[i]
@@ -282,11 +282,11 @@ evalSSE_Koehne <- function(model_name, par, orders, verbose=F) {
   return(sum((df$Human-df$Model)^2)/4)
 }
 
-gen_exps = tibble(exp=character(), model=character(), SSE=numeric())
+gen_exps = tibble(exp=character(), model=character(), MSE=numeric())
 for(model_name in names(group_fits)) {
   pars = group_fits[[model_name]]$optim$bestmem
-  sse = evalSSE_Koehne(model_name, pars, Koehne, verbose=F) # 
-  gen_exps = bind_rows(gen_exps, tibble(exp="Koehne et al.", model=model_name, SSE=sse))
+  mse = evalMSE_Koehne(model_name, pars, Koehne, verbose=F) # 
+  gen_exps = bind_rows(gen_exps, tibble(exp="Koehne et al.", model=model_name, MSE=mse))
 }
 
 # the model predicts the same ordering as humans out of the box -- PPPAAA is best, AAAPPP is worst
@@ -308,59 +308,76 @@ load("other_exps/Medina2013orders.RData")
 # HIfirst: 66% accuracy on vignette 1; 41% accuracy by the fifth vignette; offer this guess as “the meaning of the word” at experiment’s end (37% accuracy on the Final Guess)
 # they don't list the means per cond/vignette, except in Fig2. 
 # I tried to read off the performance from the Figure...
-Medina[["HIfirst"]]$HumAcc = c(.66, .33, .39, .46, .41) # final: .37
-Medina[["HImid"]]$HumAcc = c(.14, .14, .39, .30, .16) # final: .09
-Medina[["HIlast"]]$HumAcc = c(.07, .09, .14, .08, .21) # final: .09
-Medina[["HIabsent"]]$HumAcc = c(.16, .20, .21, .18, .21) # final: .18
-  
+Medina[["HIfirst"]]$HumBlockAcc = c(.66, .33, .39, .46, .41) # final: .37
+Medina[["HImid"]]$HumBlockAcc = c(.14, .14, .39, .30, .16) # final: .09
+Medina[["HIlast"]]$HumBlockAcc = c(.07, .09, .14, .08, .21) # final: .09
+Medina[["HIabsent"]]$HumBlockAcc = c(.16, .20, .21, .18, .21) # final: .18
+
 # graph performance per block (1-5)
 get_block_perf <- function(modperf) {
   perf_inds = seq(12,60,12)
   perf = c()
   for(i in perf_inds) {
-    perf = c(perf, mean(diag(modperf$traj[[i]]) / rowSums(modperf$traj[[i]])))
+    perf = c(perf, mean(diag(modperf[[i]]) / rowSums(modperf[[i]])))
   }
+  perf[which(is.nan(perf))] = 0 # if there was division by zero
   return(perf)
 }
 
-run_Medina_exp <- function(model_name, pars, plot=T) {
-  source(paste0("models/",model_name,".R"))
-  HI1 = model(pars, Medina[["HIfirst"]]$train)
-  HIm = model(pars, Medina[["HImid"]]$train)
-  HIl = model(pars, Medina[["HIlast"]]$train)
-  HIabs = model(pars, Medina[["HIabsent"]]$train)
-
-  mdat = data.frame(rbind(cbind(Condition="HI first", Vignette=1:5, Performance=get_block_perf(HI1)),
-        cbind(Condition="HI middle", Vignette=1:5, Performance=get_block_perf(HIm)),
-        cbind(Condition="HI last", Vignette=1:5, Performance=get_block_perf(HIl)),
-        cbind(Condition="HI absent", Vignette=1:5, Performance=get_block_perf(HIabs)) ))
-  mdat$Performance = as.numeric(as.character(mdat$Performance))
-  mdat$Model = model_name
+run_Medina_exp <- function(model_name, pars, plot=F) {
+  df = tibble()
+  for(i in 1:length(Medina)) {
+    if(is.element(model_name, stochastic_models)) {
+      source(here(paste0(model_dir,"stochastic/",model_name,".R")))
+      mp = model(pars, Medina[[i]]$train)$traj
+      tmp = lapply(1:200, stochastic_traj_dummy, parameters=pars, 
+                  ord=Medina[[i]]$train)
+      for(s in 1:200) {
+        for(t in 1:60) { # so bad, but couldn't get lapply/Reduce working
+          mp[[t]] = mp[[t]] + tmp[[s]][[t]]
+        }
+      }
+      
+    } else {
+      source(here(paste0(model_dir,model_name,".R")))
+      mp <- model(pars, Medina[[i]]$train)$traj
+    }
+    df <- bind_rows(df, bind_cols(Condition = rep(names(Medina)[i],5),
+                              Vignette = 1:5,
+                              ModAcc = get_block_perf(mp),
+                              HumAcc = Medina[[i]]$HumBlockAcc))
+  }
+  df$Model = model_name
   
   if(plot) {
-    p <- ggplot(mdat, aes(x=Vignette, y=Performance, group=Condition, shape=Condition, color=Condition)) + 
+    p <- ggplot(df, aes(x=Vignette, y=Performance, group=Condition, shape=Condition, color=Condition)) + 
       geom_point() + geom_line() + theme_bw() + ylim(c(0,1.0))
     print(p)
   }
-  return(mdat)
+  return(df)
 }
 
-#run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
+evalMSE_Medina <- function(model_name, pars) {
+  df <- run_Medina_exp(model_name, pars)
+  return( sum((df$HumAcc - df$ModAcc)^2) / nrow(df) )
+}
+
+#me <- run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
 #run_Medina_exp("fazly", c(0.4695008, 3.690278)) 
 
 for(model_name in names(group_fits)) {
   pars = group_fits[[model_name]]$optim$bestmem
-  #sse = evalSSE_Medina(model_name, pars, Koehne, verbose=F) # 
-  #gen_exps = bind_rows(gen_exps, tibble(exp="Medina et al.", model=model_name, SSE=sse))
+  mse = evalMSE_Medina(model_name, pars) # 
+  gen_exps = bind_rows(gen_exps, tibble(exp="Medina et al.", model=model_name, MSE=mse))
 }
 
-
-# ToDo: write evalSSE_Medina()
 ```
 
 
 ### Yu, Zhong, and Fricker (2012)
 Yu, Zhong, and Fricker (2012) pre-trained adult participants with three word-object associations and found higher performance on the other 15 words after this pre-training, demonstrating that knowing even a few word meanings can improve learning for other co-occurring words. 
+
+NOT DONE WITH THIS ONE
 
 ```{r, pretraining-exp}
 # orig4x4, but 3 pairs (which ones??) are pretrained: accuracy on those is .9187, 
@@ -418,38 +435,43 @@ load("other_exps/Suanda2014orders.RData") # Suanda orders and HumanAcc
 # Medium CD: each pair appears once with two other pairs and twice with another pair
 # High CD: each pair appears with 4 other pairs
 
-evalSSE_orders <- function(model_name, par, orders, verbose=F) {
-  df = tibble(Cond = character(), Human=numeric(), Model=numeric(), Model_sd=numeric())
+evalMSE_orders <- function(model_name, par, orders, verbose=F) {
+  if(is.element(model_name, stochastic_models)) {
+    source(here(paste0(model_dir,"stochastic/",model_name,".R")))
+    mp = run_stochastic_model(orders, model_name, pars)
+  } else {
+    source(here(paste0(model_dir,model_name,".R")))
+    mp = run_model(orders, model_name, pars)
+  }
+  
+  df = tibble()
   for(i in 1:length(orders)) {
     cond = names(orders)[i]
-    mperf = model(par, orders[[cond]]$train)$perf
-    df = bind_rows(df, tibble(cond=cond, Model=mean(mperf), Model_sd=sd(mperf), 
+    mperf = mp[[cond]]
+    df = bind_rows(df, tibble(Cond=cond, Model=mean(mperf), Model_sd=sd(mperf), 
                               Human=orders[[cond]]$HumanAcc))
   }
   if(verbose) print(df)
   return(sum((df$Human-df$Model)^2)/length(orders))
 }
 
-for(model_name in names(group_fits)[1:6]) { # [1:6]
+#load(here("fits/generalization_exp_results.RData"))
+for(model_name in names(group_fits)) { 
   pars = group_fits[[model_name]]$optim$bestmem
-  sse = evalSSE_orders(model_name, pars, Suanda, verbose=F) # 
-  gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, SSE=sse))
+  mse = evalMSE_orders(model_name, pars, Suanda, verbose=F) # 
+  gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, MSE=mse))
 }
+
 ```
 
 
-### Vlach & DeBrock (2017, 2019)
-12 word-object pairs, 2 pairs/trial, 36 trials
-6 pairs massed, 6 interleaved
-2AFC testing
+### Smith & Yu 2008 / Yu & Smith (2011)
+6 word-object pairs, 2 pairs/trial, 30 trials
+Each of the 6 words was tested twice (2AFC).
+In Smith & Yu 2008, 12- and 14-month-old infants learned 4 of the 6 words.
+Yu & Smith 2011 again, infants learned 4 of the 6 words.
 
-```{r, vlach-exp}
-vlach_ord <- read.csv("other_exps/VlachDeBrock2017_2019.txt", header=F, sep='\t')
-# 2017 paper had immediate testing: 2–3 year-olds (61% correct responses), 4–5 year-olds (67% correct)
-#  - no diff between interleaved/massed with the immediate test
-# 2019 paper introduced a 5-minute delay between learning and test phases (children aged 25-58 mos), M=.57
-#  - sig. higher performance on the interleaved word-object mappings
-
+```{r}
 mAFC_test <- function(mat, m) {
   perf = rep(0, nrow(mat))
   for(i in 1:nrow(mat)) {
@@ -460,7 +482,32 @@ mAFC_test <- function(mat, m) {
   return(perf)
 }
 
+sy_ord <- read.csv("other_exps/smithYu2008-2x2-6w.txt", header=F, sep='\t')
+smith_yu = list(SmithYu=list(train=list(words=sy_ord, objs=sy_ord), HumanAcc = 2/3))
+# sum(mAFC_test(mp$matrix, 2))
+
+for(model_name in names(group_fits)) { 
+  pars = group_fits[[model_name]]$optim$bestmem
+  mse = evalMSE_orders(model_name, pars, smith_yu, verbose=F) # 
+  gen_exps = bind_rows(gen_exps, tibble(exp="Smith & Yu", model=model_name, MSE=mse))
+}
+
+save(gen_exps, file=here("fits/generalization_exp_results.RData"))
+```
+
+
+### Vlach & DeBrock (2017, 2019)
+12 word-object pairs, 2 pairs/trial, 36 trials
+6 pairs massed, 6 interleaved
+2AFC testing
+
+```{r, vlach-exp}
+vlach_ord <- read.csv("other_exps/VlachDeBrock2017_2019.txt", header=F, sep='\t')
 vlach = list(train = list(words = vlach_ord, objs = vlach_ord))
+# 2017 paper had immediate testing: 2–3 year-olds (61% correct responses), 4–5 year-olds (67% correct)
+#  - no diff between interleaved/massed with the immediate test
+# 2019 paper introduced a 5-minute delay between learning and test phases (children aged 25-58 mos), M=.57
+#  - sig. higher performance on the interleaved word-object mappings
 
 massed = c(1, 8, 9, 10, 11, 12)
 spaced = setdiff(1:12, massed)
@@ -472,24 +519,5 @@ mp = model(c(.003, 2, .97), vlach$train)
 mperf = mAFC_test(mp$matrix, 2)
 massed_perf = sum(mperf[massed]) 
 spaced_perf = sum(mperf[spaced]) 
-```
-
-
-### Smith & Yu 2008 / Yu & Smith (2011)
-6 word-object pairs, 2 pairs/trial, 30 trials
-
-```{r}
-sy_ord <- read.csv("other_exps/smithYu2008-2x2-6w.txt", header=F, sep='\t')
-smith_yu = list(train=list(words=sy_ord, objs=sy_ord))
-
-
-# with adult parameters, learns 5.76 words
-#mp = model(group_fits$kachergis$optim$bestmem, smith_yu$train)
-
-#mp = model(c(.0015, 2, .97), smith_yu$train)
-#sum(mAFC_test(mp$matrix, 2)) # 3.57 words learned
-
-#mp = model(c(.003, 1, .97), smith_yu$train)
-#sum(mAFC_test(mp$matrix, 2)) # 4.00 words learned
 ```
 
