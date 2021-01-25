@@ -12,7 +12,7 @@ group_fits <- function() {
   #group_fits[["decay"]] = fit_model("decay", combined_data, .01, 1) # barely better than baseline
   
   # Fazly with threshold parameter
-  group_fits[["fazlyt"]] = fit_model("fazlyt", combined_data, c(1e-10,2,.001), c(2,20000,1))
+  group_fits[["fazlyt"]] = fit_model("fazlyt", combined_data, c(.01,2,.01), c(2,1000,1)) # .738
   
   # ToDo: merge these in from group_stochastic_fits.Rdata
   # load("fits/group_stochastic_fits.Rdata")
@@ -50,7 +50,7 @@ cond_fits <- function() {
   # stochastic models so far fitted with 20-30 iterations per cond -- should increase this (to 100, and perhaps refit a few times?)
   cond_fits[["trueswell2012"]] = fit_stochastic_by_cond("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
   cond_fits[["guess-and-test"]] = fit_stochastic_by_cond("guess-and-test", combined_data, c(.0001,.0001), c(1,1))
-  cond_fits[["pursuit_detailed"]] = fit_stochastic_by_cond("pursuit_detailed", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
+  cond_fits[["pursuit"]] = fit_stochastic_by_cond("pursuit", combined_data, c(1e-5, 1e-5, 1e-5), c(1,1,1))
   cond_fits[["kachergis_sampling"]] = fit_stochastic_by_cond("kachergis_sampling", combined_data, c(.001,.1,.5), c(5,15,1))
   
   cfd <- get_model_dataframe_cond_fits(cond_fits, combined_data)

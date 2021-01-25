@@ -1,10 +1,37 @@
 ---
-title: "Appendix"
+#title: "Appendix"
 output: pdf_document
 ---
 
-```{r conditions-table, results="asis", num.cols.cap=2}
+```{r, echo=F, warning=F, message=F}
+require(here)
+require(tidyverse)
+```
 
+```{r conditions-table, results="asis", echo=F}
+load(here("data/combined_data.RData"))
+
+tab <- tibble("Condition Name"=NA, "Trials"=NA, "Words/Trial"=NA, "Objects/Trial"=NA, "Items"=NA, "Accuracy"=NA, "SD"=NA, "N"=NA) 
+
+totSs = 0
+totItems = 0
+for(c in 1:length(combined_data)) { 
+  totSs = totSs + combined_data[[c]]$Nsubj 
+  totItems = totItems + length(combined_data[[c]]$HumanItemAcc)
+  tab <- bind_rows(tab, c("Condition Name" = combined_data[[c]]$Condition, 
+                          "Trials" = nrow(combined_data[[c]]$train$words), # trials
+                          "Words/Trial" = ncol(combined_data[[c]]$train$words), # words
+                          "Objects/Trial" = ncol(combined_data[[c]]$train$objs), # objs
+                          "Items" =length(combined_data[[c]]$HumanItemAcc),
+                          "Accuracy" = mean(combined_data[[c]]$HumanItemAcc),
+                          "SD" = sd(combined_data[[c]]$HumanItemAcc),
+                          "N" = combined_data[[c]]$Nsubj
+                          ))
+}
+
+tab = na.omit(tab)
+tab <- tab %>% mutate(Accuracy = as.numeric(tab$Accuracy),
+               SD = as.numeric(SD))
 tab1 <- xtable::xtable(tab, digits=2, 
                        caption = "Summary of modeled datasets.")
 

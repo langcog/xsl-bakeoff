@@ -1,6 +1,10 @@
 # reimplemented following Fazly et al.'s code + paper
 # George Kachergis June 11, 2015
 
+# this version uses a threshold (theta) to determine when associations enter the lexicon,
+# but does not fit as well as using the conditional probabilities to select word meanings (group SSE=.372)
+# (best-fitting pars with threshold: c(0.077884, 5.553602, 0.188449) group SSE=.73)
+
 model <- function(params, ord=c(), reps=1) {
   lambda <- params[1] # small smoothing factor (1e-5)
   beta <- params[2] # upper bound on number of symbol types to expect? (8500)

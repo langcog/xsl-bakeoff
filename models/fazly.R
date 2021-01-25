@@ -4,7 +4,8 @@
 model <- function(params, ord=c(), reps=1) {
   lambda <- params[1] # small smoothing factor (1e-5)
   beta <- params[2] # upper bound on number of symbol types to expect? (8500)
-  #theta <- params[3] # threshold for knowledge (.7)
+  #theta <- params[3] # threshold for knowledge (they used .7)
+  # best-fitting pars with threshold: c(0.077884, 5.553602, 0.188449) group SSE=.72
   
   # for alignment prob calculation Fazly et al use two extra fixed parameters for smoothing:
   # (lines 174-5 learn.py)
@@ -56,8 +57,7 @@ model <- function(params, ord=c(), reps=1) {
       traj[[index]] = probs
     }
     perf[rep,] = diag(probs)
-  }    
-  #perf = diag(m)[1:voc_sz] / rowSums(m)[1:voc_sz] # not using theta threshold, but it only converts to binary know/not (can't help)
+  } 
   want = list(perf=perf, matrix=probs, traj=traj)
   return(want)
 } 
