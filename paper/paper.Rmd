@@ -13,10 +13,9 @@ abstract: >
     situations that often present many possible referents. While a word's meaning  
     may be ambiugous given any one scene, a large body of empirical work has 
     found that people are able to learn cross-situationally across multiple 
-    occurrences of a given word under many experimental manipulations. 
-    There has been correspondingly much interest in modeling such learning, 
-    and yet there is little consensus on the main mechanisms underpinning
-    cross-situational word learning. The lack of consensus is in part due 
+    occurrences of a given word. There has been correspondingly much interest 
+    in modeling such learning, and yet there is little consensus on the main mechanisms 
+    underpinning cross-situational word learning. The lack of consensus is in part due 
     to the large number of disparate studies and models, and lack of systematic model 
     comparisons across a wide range of studies. This study seeks to remedy this,  
     comparing the performance of several extant cross-situational word learning models on a 
@@ -32,7 +31,7 @@ keywords: >
     
 output: cogsci2016::cogsci_paper
 #final-submission: \cogscifinalcopy
-# abstract is a bit long: 188 words
+# abstract is a bit long: 184 words
 ---
 
 ```{r global_options, include=FALSE}
@@ -59,7 +58,7 @@ Yet children learn words very quickly. How do they do this?
 
 An array of social [@yurovsky2017beyond], pragmatic [@Clark1987; @Markman1992], and linguistic [@Gleitman1990] cues are often available to reduce a learner's uncertainty. 
 Yet at its heart, these information sources can be seen as reducing the uncertainty inherent in the task of *cross-situational mapping* [@Frank2009]: that is, cross-referencing which referents a word has consistently appeared with across multiple uses [@Gleitman1990; @Carey1978]. 
-If learners are able to learn cross-situationally, then they might be able to pool information about reference (and hence about word meaning) over time and learn even in the absence of perfectly disambiguated input in any particular situation. 
+If learners can learn cross-situationally, they might be able to pool information about reference (and hence word meaning) over time and learn even absent perfectly disambiguated input in any particular situation. 
 Can children (or even adults) learn in this way? 
 
 The general idea of cross-situational word learning has been adopted into a variety of experimental paradigms for testing the word learning ability of infants [e.g., @Smith2008vg; @Vlach2013], children [e.g., @Akhtar1999; @Suanda2012; @Vlach2012eq], and adults [e.g., @Yu2007; @Smith2010th].
@@ -82,7 +81,7 @@ Extant cross-situational word learning models are too numerous to review exhaust
 
 It is unknown which of these models -- or even which broad class of models -- best fits the breadth of experimental data. 
 While most models of cross-situational learning have typically been tested against at least a few datasets, to our knowledge there has been no systematic comparison of models across a wide variety of experimental conditions. 
-Identifying the model or models that best predict human performance is thus an important goal for consolidating this broad literature. 
+Identifying the model(s) that best predict human performance is thus an important goal for consolidating this broad literature. 
 More broadly, identifying such models could be an important step in assessing the contribution of cross-situational learning to word learning more generally.
 
 <!-- However, we believe that comparing a large selection of models fitted jointly to a wide variety of experimental conditions may reveal which model(s, classes, mechanism) are most promising for explaining human word learning behavior. -->
@@ -119,7 +118,7 @@ This evaluation thus makes maximal use of our data but incorporates some amount 
 However, it allows us to make the best test of generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
 
 ## Models
-\vspace{-8pt}
+\vspace{-6pt}
 ```{r, model-list}
 # need to be run >100 times per given parameter values
 stochastic_models = list.files(here("models/stochastic/"))
@@ -129,12 +128,14 @@ assoc_models = assoc_models[assoc_models!="stochastic"]
 ```
 We fit a baseline co-occurrence model along with six associative models, two hypothesis-testing models, and two hybrid models that store multiple, graded hypotheses--but only a subset of all possible associations.
 These models and their free parameters are briefly described below.
+\vspace{-4pt}
 
 ### Baseline Co-occurrence Model
 The baseline model simply tallies the co-occurrences of any words and objects appearing together on each trial, accumulating the counts in a word $\times$ object matrix $M$.
 At test, for word $w_1$ this model selects the correct referent $o_1$ according to Luce choice from the co-occurrences of $w_1$ with all referents: $P(o_1|w_1) = M_{w_1,o_1} / \sum{M_{w_1,\cdot}}$.
 The model's probability of correctly choosing each word per condition is what is scored against people's average probability of choosing the correct item.
 <!-- tried adding a softmax parameter but it didn't help --> 
+\vspace{-4pt}
 
 ### Probabilistic Associative Model (PA)
 The probabilistic associative model [@Fazly2010] represents the meaning of each word *w* as a probability distribution $p(\cdot | w)$ over the objects appearing across the trials, and incrementally learns these distributions trial-by-trial.
@@ -143,39 +144,41 @@ A parameter $\lambda$ is a small smoothing constant added to both the numerator 
 At test, the correct referent for each word *w* is chosen according to Luce choice from the probability distribution over the objects that appeared with that word $p(\cdot | w)$.[^1]
 
 [^1]: The original model implemented a $\theta$-thresholded lexicon that discretized the probability matrix, but we found that including this mechanism resulted in a worse fit to the data.
+\vspace{-4pt}
 
-### Familiarity- and Uncertainty- Biased Model (FU)
+### Familiarity- and Uncertainty-biased Model (FU)
 The familiarity- and uncertainty-biased associative model [@Kachergis2012gi] assumes that learners associate all presented words with all visible objects to some extent, but that they selectively attend more to some of the presented word-object pairings. 
 Specifically, greater attention is directed to pairings that have previously co-occurred (a familiarity bias), but is also directed to stimuli that have no strong associates, tracked via the entropy (*H*) of their association strengths (e.g., novel stimuli, or stimuli that have diffuse associations with several stimuli). 
 Thus, the model grows its association matrix as it experiences each trial, dynamically apportioning a fixed amount of associative weight (learning rate $\chi$) among the possible word-object associations, with the relative weight of the familiarity bias and the uncertainty bias determined by parameter $\lambda$.
 Finally, all association strengths decay from trial to trial at a rate controlled by parameter $\alpha$.
 
 The update rule for adjusting the association $M_{w,o}$ between a given word $w$ and object $o$ on a given trial is:
-\vspace{-6pt}
+\vspace{-4pt}
 \begin{equation}
 M_{w,o} =  \alpha M_{w,o} + \frac{ \chi \cdot e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o}  }{  \sum_{w\in W} \sum_{o\in O} e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o} }
 \label{eq:fullmodel}
 \end{equation}
-
+\vspace{-2pt}
 At test, given word $w$ learners use Luce choice, choosing referent $o$ from the \textit{m} given alternatives in proportion to associative strength $M_{w,o}$. 
 
-We also fit a stochastic *sampling* version of this model [see @Kachergis2017], which uses the same update equation, but instead of updating all possible word-object associations samples only a single presented object for each word on a trial. 
-This sampling version of the Kachergis model can still build multiple graded associations for each word (or object), but on any given run will accumulate only a sparse, randomized version of what the full associative model would build.
+We also fit a *stochastic sampling* (**FUs**) version of this model [see @Kachergis2017], which uses the same update equation, but samples only a single presented object for each word on a trial instead of updating all possible associations. 
+This FU sampling model can still build multiple graded associations for each word (or object), but on any given run will accumulate only a sparse, randomized version of what the full associative model would build.
+\vspace{-4pt}
 
-### Strength- (S), Uncertainty- (U), and Novelty-Biased (N) Models
+### Strength-, Uncertainty-, & Novelty-biased (S,U,N) Models
 We also test three variations on the Kachergis et al. model that use only a subset of the mechanisms of the full model in order to understand the contributions of each mechanism.
 The *strength model* lacks the uncertainty bias term, and thus only implements a bias for familiar (i.e., already-strong) associations, with learning rate ($\chi$) and decay $\alpha$ parameters.
 
 The *uncertainty model* lacks the strength bias term, and thus only implements a bias for stimuli with uncertain (high-entropy) associations.
 The *novelty model* lacks the strength bias term, and substitutes novelty for the entropy terms (e.g., 1/(frequency(*w*)+1) instead of $H(w)$.
-These models still have all three parameters of the original Kachergis model, and at test operate in the same way as the original model. <!--, although $\chi$ and $\beta$ likely trade off.-->
+These models still have all three parameters of the original FU model, and at test operate in the same way as the original model. <!--, although $\chi$ and $\beta$ likely trade off.-->
+\vspace{-4pt}
 
 ### Bayesian Decay Model (BD)
 This previously-unpublished model updates the $p(w|o)$ and the joint probability $p(w,o)$ from trial to trial according to a likelihood function that reinforces the association between *w* and *o* when they co-occur (scaled by parameter $\delta$), and penalizes all associations that are not occurring on the trial (scaled by parameter $\alpha$).
 Thus, in contrast to other incremental associative learning models considered here (e.g., Fazly and the Kachergis class of models), this model globally updates the entire association matrix on each trial -- both co-occurring pairs and non-co-occurring pairs, and re-normalizes the tracked probabilities at each time step.
 At test, this model uses a softmax choice rule with parameter $\tau$ to select the best referent for each word from the presented alternatives. 
-
-<!-- ### Tilles Model -->
+\vspace{-4pt}
 
 ### Rescorla-Wagner Model (RW)
 This associative model is inspired by the prediction-error-based learning model of @Rescorla1972. 
@@ -183,6 +186,7 @@ Objects on each trial serve as cues to predict which words will be heard.
 When a given word is heard, the associations between that word and each object on the trial are scaled at a learning rate $\beta$ in proportion to the magnitude of the difference between the prediction and the maximum association value ($\lambda$). 
 Each trial, the association matrix is subject to decay (parameter $\alpha$).
 At test, this model uses Luce choice to select the best referent for each word from the presented alternatives.
+\vspace{-4pt}
 
 ### Propose-but-Verify Model (PV)
 In the propose-but-verify hypothesis testing model [@Trueswell2013], one of the presented referents is selected at random for any word heard that has no remembered referent. 
@@ -190,15 +194,15 @@ The next time that word occurs, the previously-proposed referent is remembered w
 If the remembered referent is verified to be present, the future probability of recalling the word is increased by $\epsilon$ (another free parameter). 
 If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
 This model implements trial-level mutual exclusivity by selecting new proposals only from among the referents that are not yet part of a hypothesis.
-
+\vspace{-4pt}
 
 ### Guess-and-Test Model (GT)
 The guess-and-test hypothesis testing model is based on the description given by @Medina2011 of a one-shot (i.e. "fast mapping") learning, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
 <!-- In summary, guess-and-test learners do *not* reach a final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses. -->
 We give this model two free parameters: a probability of successful encoding ($s$, hypothesis formation), and a probability $f$ of forgetting a hypothesis at retrieval. 
-At test, for each word the model chooses the currently hypothesized referent for that word.
+At test, for each word the model chooses the currently hypothesized referent.
 <!-- This model is quite similar to the guess-and-test model formally analyzed by @Blythe2010 to determine the theoretical long-term efficacy of cross-situational word learning. -->
-
+\vspace{-4pt}
 
 ### Pursuit Model (P)
 The pursuit model [@Stevens2017pursuit] represents a hybrid approach, potentially storing graded associations involving a given word and multiple referents (or vice-versa), while on a given trial greedily pursuing the single strongest association for each presented word.
@@ -209,7 +213,7 @@ A given word-object association only enters the lexicon if $p(o|w) > \theta$, a 
 At test, this model chooses the best referent for each word by Luce choice from the lexicon, which may or may not have multiple referents associated with each word.
 
 ## Data
-\vspace{-9pt}
+\vspace{-5pt}
 ```{r load-data}
 load(here("data/combined_data.RData"))
 
@@ -284,13 +288,15 @@ Correlations between data and models are presented in Figure 1.
 numformat <- function(val) { sub("^(-?)0.", "\\1.", sprintf("%.2f", val)) }
 
 mod_names <- group_fit_tab$Model
-mod_cors <- matrix('-', nrow=length(mod_names), ncol=length(mod_names))
+mod_cors <- matrix(0, nrow=length(mod_names), ncol=length(mod_names))
 for(r in 1:nrow(mod_cors)) {
   for(c in 1:ncol(mod_cors)) {
-    if(r>c) mod_cors[r,c] = numformat(round(cor(subset(cvg, Model==mod_names[r])$ModelPerf,
+    #if(r>c) 
+      mod_cors[r,c] = numformat(round(cor(subset(cvg, Model==mod_names[r])$ModelPerf,
                                 subset(cvg, Model==mod_names[c])$ModelPerf), 2))
   }
 }
+diag(mod_cors) = 0
 mod_names_short = c("FUs","PA","FU","N","U","BD","PV","GT","RW","S","P")
 rownames(mod_cors) = mod_names_short
 colnames(mod_cors) = mod_names_short
@@ -311,25 +317,37 @@ Table 2 shows the correlations between model predictions made using the group-op
 
 
 ```{r model-cors-table, results="asis"}
-tab3 <- xtable::xtable(mod_cors[2:nrow(mod_cors),1:(ncol(mod_cors)-1)],  caption = "Correlations of models' predictions.")
+#tab3 <- xtable::xtable(mod_cors[2:nrow(mod_cors),1:(ncol(mod_cors)-1)],  caption = "Correlations of models' predictions.")
+
+# bold max value per row
+for(r in 1:nrow(mod_cors)) {
+  max_col = which(as.numeric(mod_cors[r,])==max(as.numeric(mod_cors[r,])))
+  mod_cors[r,max_col] = cell_spec(mod_cors[r,max_col], "latex", bold = T)
+}
+
+diag(mod_cors) = "-"
+#tab3 <- mod_cors[2:nrow(mod_cors),1:(ncol(mod_cors)-1)]
 
 #print(tab3, type="latex", comment = F, include.rownames = T, table.placement = "H")
-kable(tab3, "latex", booktabs = T, digits = 3, caption="Correlations of models' predictions.") %>%
-  kable_styling(latex_options = "scale_down")
+kable(mod_cors, "latex", booktabs = T, escape=F, digits = 2, caption="Correlations of models' predictions.") %>%
+  kable_styling(latex_options = "scale_down") 
 # ToDo: bold maximum correlation per model (column)
 ```
 
-```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=6.0, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model performance with a single best-fitting set of parameters for all conditions."}
+```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=5.2, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model item-level accuracy using best-fitting parameters per model for all conditions (colored by condition)."}
+# ToDo: relabel models, reorder by fit, and possibly add r or MSE to each plot
 
+
+# condition-level performance: 
+# interesting to look at which conditions are best/worst fit by each model?
 gcondm <- gfd %>% group_by(Model, Condition, Nsubj) %>%
   summarise(HumanPerf=mean(HumanPerf), 
             ModelPerf = mean(ModelPerf))
 
-# condition-level (above is item-level)
-#gcondm %>% group_by(Model) %>% 
-#  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
-#            r = cor(ModelPerf, HumanPerf)) %>% 
-#  arrange(SSE)
+cond_perf <- gcondm %>% group_by(Model) %>% 
+  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
+            r = cor(ModelPerf, HumanPerf)) %>% 
+  arrange(SSE)
 
 #gcondm %>%
 #  ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition, size=Nsubj)) + 
@@ -340,7 +358,8 @@ gfd %>% ggplot(aes(x=ModelPerf, y=HumanPerf,
                    group=Condition, color=Condition)) + 
   geom_point(alpha=.3) + 
   facet_wrap(vars(Model)) + 
-  theme_bw() +
+  theme_bw() + 
+  ylab("Human Proportion Correct") + xlab("Model Proportion Correct") + 
   geom_abline(intercept=0, slope=1, linetype="dashed") + 
   theme(legend.position = "none") # save space for initial submission (maybe put legend at OSF link?)
 #  theme(legend.margin = margin(0, 0, 0, 0, "cm"),

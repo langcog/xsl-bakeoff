@@ -435,7 +435,7 @@ load("other_exps/Suanda2014orders.RData") # Suanda orders and HumanAcc
 # Medium CD: each pair appears once with two other pairs and twice with another pair
 # High CD: each pair appears with 4 other pairs
 
-evalMSE_orders <- function(model_name, par, orders, verbose=F) {
+eval_orders <- function(model_name, par, orders, verbose=F) {
   if(is.element(model_name, stochastic_models)) {
     source(here(paste0(model_dir,"stochastic/",model_name,".R")))
     mp = run_stochastic_model(orders, model_name, pars)
@@ -452,14 +452,16 @@ evalMSE_orders <- function(model_name, par, orders, verbose=F) {
                               Human=orders[[cond]]$HumanAcc))
   }
   if(verbose) print(df)
-  return(sum((df$Human-df$Model)^2)/length(orders))
+  mse = sum((df$Human-df$Model)^2)/length(orders)
+  return(list(MSE=mse, df=df))
 }
 
 #load(here("fits/generalization_exp_results.RData"))
 for(model_name in names(group_fits)) { 
   pars = group_fits[[model_name]]$optim$bestmem
-  mse = evalMSE_orders(model_name, pars, Suanda, verbose=F) # 
-  gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, MSE=mse))
+  mp = evalMSE_orders(model_name, pars, Suanda, verbose) # 
+  # mp$df
+  gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, MSE=mp$MSE))
 }
 
 ```
@@ -488,8 +490,9 @@ smith_yu = list(SmithYu=list(train=list(words=sy_ord, objs=sy_ord), HumanAcc = 2
 
 for(model_name in names(group_fits)) { 
   pars = group_fits[[model_name]]$optim$bestmem
-  mse = evalMSE_orders(model_name, pars, smith_yu, verbose=F) # 
-  gen_exps = bind_rows(gen_exps, tibble(exp="Smith & Yu", model=model_name, MSE=mse))
+  mp = evalMSE_orders(model_name, pars, smith_yu, verbose=T) # 
+  # mp$df
+  gen_exps = bind_rows(gen_exps, tibble(exp="Smith & Yu", model=model_name, MSE=mp$MSE))
 }
 
 save(gen_exps, file=here("fits/generalization_exp_results.RData"))
