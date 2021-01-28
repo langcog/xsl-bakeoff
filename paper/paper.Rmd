@@ -76,8 +76,8 @@ And critically, do these mechanisms support naturalistic word learning?
 Computational models provide one strategy for instantiating proposals about mechanism. 
 Such models can then be applied to naturalistic data to make a first assessment of whether cross-situational learning could be a viable strategy for word learning "in the wild". 
 Accordingly, there has been great interest in creating and testing computational models of this task. 
-These models often represent distinct intuitions of how learning operates, variously representing the learning problem as logical inferencing [e.g., @Siskind1996], proposing and testing hypotheses [e.g., @Trueswell2013], or accumulating graded associations [e.g., @Fazly2010; @Kachergis2012gi; @tilles2012minimal]. <!-- or as a blend of the former -->
-Extant cross-situational word learning models are too numerous to review exhaustively here. 
+These models often represent distinct intuitions of how learning operates, variously representing the problem as logical inferencing [e.g., @Siskind1996], proposing and testing hypotheses [e.g., @Trueswell2013], or accumulating graded associations [e.g., @Fazly2010; @Kachergis2012gi; @tilles2012minimal]. <!-- or as a blend of the former -->
+<!-- Extant cross-situational word learning models are too numerous to review exhaustively here.  -->
 
 It is unknown which of these models -- or even which broad class of models -- best fits the breadth of experimental data. 
 While most models of cross-situational learning have typically been tested against at least a few datasets, to our knowledge there has been no systematic comparison of models across a wide variety of experimental conditions. 
@@ -90,14 +90,14 @@ Thus, the goal of our current study is to test the ability of a range of cross-s
 Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) being used for evaluation.
 Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work, either because the parameters have been allowed to vary freely across multiple conditions, or because models' performance is compared on different datasets. 
 Thus, we focus on out-of-sample prediction of human data using cross-validated parameter fits.
-We end by examining qualitative results from true out of sample generalization of models to experiments not included in the initial evaluation and parameter fitting.
+We end by examining results from generalization of models to other experiments not included in the initial evaluation and parameter fitting.
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
 # Method
 \vspace{-6pt}
 ## Procedure
 \vspace{-6pt}
-In a nutshell, our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
+Our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
 Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
 Our primary outcome measure is the correlation between each model's performance for each item in a specific experimental condition and item-level human performance on that same experimental condition. 
@@ -110,12 +110,8 @@ We optimize parameters using differential evolution via the DEoptim R package [@
 For the stochastic models, each parameter setting was evaluated using a simulated sample of 200 learners.
 
 We conducted two evaluations of models. 
-First, we use cross-validation across conditions to reduce overfitting. 
-We optimize each model's parameters by leaving out data from 20% of conditions to test generalization via optimization on the initial 80% (5-fold cross-validation).
-Second, in the *group fit* regime we fit each model to all conditions and datasets to produce a single best-fitting parameter set per model. 
-We then evaluated the correlation between these fitted models and the same data they were fit to. 
-This evaluation thus makes maximal use of our data but incorporates some amount of overfitting.
-However, it allows us to make the best test of generalization to a selection of other experiments from the literature for which we do not have item-level accuracy.
+First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation) .
+Second, in the *group fit* regime we fit each model to all conditions and datasets and evaluate across all data. Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature.
 
 ## Models
 \vspace{-6pt}
@@ -130,28 +126,27 @@ We fit a baseline co-occurrence model along with six associative models, two hyp
 These models and their free parameters are briefly described below.
 \vspace{-4pt}
 
-### Baseline Co-occurrence Model
+\noindent **Baseline Co-occurrence Model**
 The baseline model simply tallies the co-occurrences of any words and objects appearing together on each trial, accumulating the counts in a word $\times$ object matrix $M$.
 At test, for word $w_1$ this model selects the correct referent $o_1$ according to Luce choice from the co-occurrences of $w_1$ with all referents: $P(o_1|w_1) = M_{w_1,o_1} / \sum{M_{w_1,\cdot}}$.
 The model's probability of correctly choosing each word per condition is what is scored against people's average probability of choosing the correct item.
 <!-- tried adding a softmax parameter but it didn't help --> 
-\vspace{-4pt}
+<!-- \vspace{-4pt} -->
 
-### Probabilistic Associative Model (PA)
+\noindent **Probabilistic Associative Model (PA)**
 The probabilistic associative model [@Fazly2010] represents the meaning of each word *w* as a probability distribution $p(\cdot | w)$ over the objects appearing across the trials, and incrementally learns these distributions trial-by-trial.
 The association between a given *w* and *o* grows more quickly if $p(w|o)$ is already high (a familiarity bias), unless some other word has a strong association with *o*; thus, associations are competitive.
 A parameter $\lambda$ is a small smoothing constant added to both the numerator and denominator of each $p(w|o)$, further adjusted in the denominator by a $\beta$ parameter representing the upper bound on the number of symbol types.
 At test, the correct referent for each word *w* is chosen according to Luce choice from the probability distribution over the objects that appeared with that word $p(\cdot | w)$.[^1]
 
 [^1]: The original model implemented a $\theta$-thresholded lexicon that discretized the probability matrix, but we found that including this mechanism resulted in a worse fit to the data.
-\vspace{-4pt}
+<!-- \vspace{-4pt} -->
 
-### Familiarity- and Uncertainty-biased Model (FU)
-The familiarity- and uncertainty-biased associative model [@Kachergis2012gi] assumes that learners associate all presented words with all visible objects to some extent, but that they selectively attend more to some of the presented word-object pairings. 
+\noindent **Familiarity- and Uncertainty-biased Model (FU)**
+The familiarity- and uncertainty-biased associative model [@Kachergis2012gi] assumes that learners associate all presented words with all visible objects to some extent, but that they selectively attend more to some of the presented word-object pairings.
 Specifically, greater attention is directed to pairings that have previously co-occurred (a familiarity bias), but is also directed to stimuli that have no strong associates, tracked via the entropy (*H*) of their association strengths (e.g., novel stimuli, or stimuli that have diffuse associations with several stimuli). 
 Thus, the model grows its association matrix as it experiences each trial, dynamically apportioning a fixed amount of associative weight (learning rate $\chi$) among the possible word-object associations, with the relative weight of the familiarity bias and the uncertainty bias determined by parameter $\lambda$.
-Finally, all association strengths decay from trial to trial at a rate controlled by parameter $\alpha$.
-
+Association strengths decay at a rate controlled by parameter $\alpha$.
 The update rule for adjusting the association $M_{w,o}$ between a given word $w$ and object $o$ on a given trial is:
 \vspace{-4pt}
 \begin{equation}
@@ -165,7 +160,7 @@ We also fit a *stochastic sampling* (**FUs**) version of this model [see @Kacher
 This FU sampling model can still build multiple graded associations for each word (or object), but on any given run will accumulate only a sparse, randomized version of what the full associative model would build.
 \vspace{-4pt}
 
-### Strength-, Uncertainty-, & Novelty-biased (S,U,N) Models
+\noindent **Strength-, Uncertainty-, & Novelty-biased (S,U,N) Models**
 We also test three variations on the Kachergis et al. model that use only a subset of the mechanisms of the full model in order to understand the contributions of each mechanism.
 The *strength model* lacks the uncertainty bias term, and thus only implements a bias for familiar (i.e., already-strong) associations, with learning rate ($\chi$) and decay $\alpha$ parameters.
 
