@@ -459,7 +459,7 @@ eval_orders <- function(model_name, par, orders, verbose=F) {
 #load(here("fits/generalization_exp_results.RData"))
 for(model_name in names(group_fits)) { 
   pars = group_fits[[model_name]]$optim$bestmem
-  mp = evalMSE_orders(model_name, pars, Suanda, verbose) # 
+  mp = eval_orders(model_name, pars, Suanda, verbose) # 
   # mp$df
   gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, MSE=mp$MSE))
 }
@@ -474,24 +474,26 @@ In Smith & Yu 2008, 12- and 14-month-old infants learned 4 of the 6 words.
 Yu & Smith 2011 again, infants learned 4 of the 6 words.
 
 ```{r}
-mAFC_test <- function(mat, m) {
-  perf = rep(0, nrow(mat))
-  for(i in 1:nrow(mat)) {
-    # sample m-1 incorrect referents
-    alts = sample(setdiff(1:ncol(mat), i), m-1)
-    perf[i] = mat[i,i] / sum(mat[i,c(alts, i)])
-  }
-  return(perf)
-}
-
 sy_ord <- read.csv("other_exps/smithYu2008-2x2-6w.txt", header=F, sep='\t')
-smith_yu = list(SmithYu=list(train=list(words=sy_ord, objs=sy_ord), HumanAcc = 2/3))
-# sum(mAFC_test(mp$matrix, 2))
+smith_yu = list(SmithYu=list(train=list(words=sy_ord, objs=sy_ord), HumanAcc = 2/3,
+                             test = list(trials = list(list(word = 1, objs = c(1,2)),
+                                                  list(word = 2, objs = c(2,3)),
+                                                  list(word = 3, objs = c(3,4)),
+                                                  list(word = 4, objs = c(4,5)),
+                                                  list(word = 5, objs = c(5,6)),
+                                                  list(word = 6, objs = c(6,3)),
+                                                  list(word = 1, objs = c(1,3)),
+                                                  list(word = 2, objs = c(2,4)),
+                                                  list(word = 3, objs = c(3,5)),
+                                                  list(word = 4, objs = c(4,6)),
+                                                  list(word = 5, objs = c(5,1)),
+                                                  list(word = 6, objs = c(6,2)))
+                                         )))
+# each foil appears with each target twice, so particular foil choice shouldn't matter
 
 for(model_name in names(group_fits)) { 
   pars = group_fits[[model_name]]$optim$bestmem
-  mp = evalMSE_orders(model_name, pars, smith_yu, verbose=T) # 
-  # mp$df
+  mp = eval_orders(model_name, pars, smith_yu, verbose=T) # 
   gen_exps = bind_rows(gen_exps, tibble(exp="Smith & Yu", model=model_name, MSE=mp$MSE))
 }
 
