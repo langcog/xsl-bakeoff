@@ -184,7 +184,7 @@ At test, this model uses Luce choice to select the best referent for each word f
 \vspace{-4pt}
 
 ### Propose-but-Verify Model (PV)
-In the propose-but-verify hypothesis testing model [@Trueswell2013], one of the presented referents is selected at random for any word heard that has no remembered referent. 
+In the propose-but-verify hypothesis testing model [@Trueswell2013], a presented referent is selected at random for any presented word that has no remembered referent. 
 The next time that word occurs, the previously-proposed referent is remembered with probability $\alpha$, a free parameter. 
 If the remembered referent is verified to be present, the future probability of recalling the word is increased by $\epsilon$ (another free parameter). 
 If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
@@ -200,7 +200,7 @@ At test, for each word the model chooses the currently hypothesized referent.
 \vspace{-4pt}
 
 ### Pursuit Model (P)
-The pursuit model [@Stevens2017pursuit] represents a hybrid approach, potentially storing graded associations involving a given word and multiple referents (or vice-versa), while on a given trial greedily pursuing the single strongest association for each presented word.
+The pursuit model [@Stevens2017pursuit] is a hybrid model, potentially storing graded associations involving a given word and multiple referents (or vice-versa), while on any given trial greedily pursuing the  strongest association for each presented word.
 If the strongest associated referent for a given word $w$ is present on the trial, the association is strengthened at a rate determined by $\gamma$.
 If the strongest referent for $w$ is not present, the association is weakened (scaled down by ($1-\gamma$)) and the association with a random other available referent is strengthened.
 Novel words are given an initial association of strength $\gamma$ with the available referent whose strongest association is the smallest, implementing an uncertainty bias in forming associations for novel words.
@@ -255,9 +255,6 @@ for(m in names(cv_group_fits)) {
   cvg <- rbind(cvg, cv_group_fits[[m]]$testdf)
 }
 
-# until new pursuit CV fits done
-cvg <- cvg %>% mutate(Model = replace(Model, Model=="pursuit_detailed", "pursuit")) 
-
 cvg_fit_tab <- cvg %>% group_by(Model) %>% 
   summarise(SSE = sum((ModelPerf-HumanPerf)^2), #  / Nitems,
             r = cor(ModelPerf, HumanPerf)) %>%
@@ -266,11 +263,10 @@ cvg_fit_tab <- cvg %>% group_by(Model) %>%
          ` r` = r) %>% left_join(group_fit_tab) %>%
   rename(`All SSE` = SSE) 
 
-# ToDo CHECK THESE, maybe use 2-letter code?
-cvg_fit_tab$Model = c("FUs", "PA", "FU", "Nov", "Unc", "BD", "PbV", "GnT", "R-W", "Str", "Pur") 
-# c("FUs","PA","FU","N","U","BD","PV","GT","RW","S","P")
+# ToDo: use case_when to make this robust to reordering
+cvg_fit_tab$Model = c("FUs", "PA", "FU", "Nov", "Unc", "BD", "GnT", "R-W", "Str", "Pur", "PbV") 
 
-cvg_fit_tab$P = c(3, 2, 3, 2, 3, 3, 3, 2, 2, 2, 3)
+cvg_fit_tab$P = c(3, 2, 3, 2, 3, 3, 2, 3, 2, 3, 2)
 ```
 
 Table 1 shows the sum of squared error (SSE) and correlation ($r$) for each model's best-fitting parameters vs. average human performance on the `r totItems` items, both for the CV fits and for the all-condition fits, along with the number of fitted parameters in each model (P).
@@ -304,10 +300,8 @@ tab2 <- xtable::xtable(cvg_fit_tab, digits=c(0,0, 2, 2, 2, 2, 0),
 print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "H")
 ```
 
-How related are these models?
+<!--How related are these models?-->
 Table 2 shows the correlations between model predictions made using the group-optimized parameters, with the strongest correlation per row in bold. 
-<!-- with the names of the models abbreviated for space (*Ks*: Kachergis sampling, *F*azly, *K*achergis, *N*ovelty, *U*ncertainty, *B*ayesian decay, *R*escorla-Wagner, *S*trength, Propose-but-*V*erify, *G*uess-and-Test, *P*ursuit). -->
-
 
 
 ```{r model-cors-table, results="asis"}

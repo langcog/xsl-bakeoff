@@ -161,6 +161,9 @@ kable(cvg_fit_tab, digits=3, caption="Group model fits.")
 ## Group-level Model Fits
 
 ```{r, summarize-group-fits}
+
+baseline_mod <- run_model(combined_data, "baseline", c())
+
 group_fit_tab <- gfd %>% filter(!is.na(HumanPerf)) %>%
   group_by(Model) %>% 
   summarise(SSE = sum((ModelPerf-HumanPerf)^2),
