@@ -14,7 +14,7 @@ group_fits <- function() {
   # Fazly with threshold parameter
   group_fits[["fazlyt"]] = fit_model("fazlyt", combined_data, c(.01,2,.01), c(2,1000,1)) # .738
   
-  # ToDo: merge these in from group_stochastic_fits.Rdata
+  # ToDo: re-fit these with Nsim=500 (instead of 200), and higher itermax
   # load("fits/group_stochastic_fits.Rdata")
   group_fits[["trueswell2012"]] = fit_stochastic_model("trueswell2012", combined_data, c(.0001,.0001), c(1,1))
   # bestvalit: 0.779708 bestmemit:    0.061586    0.339723
