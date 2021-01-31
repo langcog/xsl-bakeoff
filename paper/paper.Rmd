@@ -263,6 +263,9 @@ cvg_fit_tab <- cvg %>% group_by(Model) %>%
          ` r` = r) %>% left_join(group_fit_tab) %>%
   rename(`All SSE` = SSE) 
 
+# ToDo: add baseline?
+# "group fit": baseline 31.8 0.617 (would be in 10th place, ahead of strength and pursuit)
+
 # ToDo: use case_when to make this robust to reordering
 cvg_fit_tab$Model = c("FUs", "PA", "FU", "Nov", "Unc", "BD", "GnT", "R-W", "Str", "Pur", "PbV") 
 
@@ -278,7 +281,7 @@ Correlations between data and models are presented in Figure 1.
 # remove leading 0. to make table fit in 1 column
 numformat <- function(val) { sub("^(-?)0.", "\\1.", sprintf("%.2f", val)) }
 
-mod_names <- group_fit_tab$Model
+mod_names <- setdiff(group_fit_tab$Model, "baseline")
 mod_cors <- matrix(0, nrow=length(mod_names), ncol=length(mod_names))
 for(r in 1:nrow(mod_cors)) {
   for(c in 1:ncol(mod_cors)) {
@@ -323,8 +326,7 @@ kable(mod_cors, "latex", booktabs = T, escape=F, digits = 2, caption="Correlatio
 ```
 
 ```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=5.2, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model item-level accuracy using best-fitting parameters per model for all conditions (colored by condition). Note that on some items, PbV, GnT, and Pursuit all show more extreme responding (1 or 0) than people ever do."}
-# ToDo: add baseline model perf? maybe also add r or MSE to each plot
-
+# ToDo: maybe also add r or MSE to each plot
 
 # condition-level performance: 
 # interesting to look at which conditions are best/worst fit by each model?
@@ -353,12 +355,14 @@ gfd %>% mutate(Model = case_when(Model == 'kachergis' ~ 'Fam./Unc.',
                              Model == 'guess-and-test' ~ 'Guess-and-Test',
                              Model == 'kachergis_sampling' ~ 'Fam./Unc. sampling',
                              Model == 'pursuit' ~ 'Pursuit',
+                             Model == 'baseline' ~ 'Baseline',
                           TRUE ~ Model)) %>%
   mutate(Model = factor(Model, levels = c("Fam./Unc. sampling", "Prob. Assoc.", 
                                           "Fam./Unc.", "Novelty", 
                                           "Uncertainty", "Bayesian Decay",
                                           "Propose-but-Verify", "Guess-and-Test",
-                                          "Rescorla-Wagner", "Strength", "Pursuit"))) %>% 
+                                          "Rescorla-Wagner", "Baseline", 
+                                          "Strength", "Pursuit"))) %>% 
   ggplot(aes(x=ModelPerf, y=HumanPerf, 
                    group=Condition, color=Condition)) + 
   geom_point(alpha=.3) + 
@@ -414,7 +418,7 @@ for(c in 2:ncol(gentab)) {
   gentab[,c] = round(as.numeric(gentab[,c]), 2)
   if(c!=ncol(gentab)) gentab[min_row,c] = cell_spec(gentab[min_row,c], "latex", bold = T)
 }
-
+# ToDo: add separate Total RMSE column for adult and devo data
 kable(gentab, "latex", booktabs = T, digits=2, escape=F, caption = "Generalization experiment results.") %>%
   kable_styling(latex_options = "scale_down")
 ```
@@ -434,7 +438,7 @@ But the PA model also showed a .84 correlation with the Rescorla-Wagner model, a
 Future work should aim to further explore when these models make overlapping predictions, but another approach is to find conditions where models make very predictions. 
 
 ```{r models-diverge}
-mw <- gfd %>% mutate(ID = rep(1:726, 11)) %>%
+mw <- gfd %>% mutate(ID = rep(1:726, length(unique(gfd$Model)))) %>%
   pivot_wider(names_from=Model, values_from=ModelPerf)
 
 divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) %>%

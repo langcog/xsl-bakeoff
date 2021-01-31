@@ -32,7 +32,6 @@ group_fits <- function() {
   save(group_fits, gfd, file="fits/group_fits.Rdata")
 }
 
-group_fits()
 
 cond_fits <- function() {
   cond_fits = list()
