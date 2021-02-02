@@ -9,29 +9,28 @@ author-information: >
     \author{{\large \bf George Kachergis (kachergis@stanford.edu)} \and {\large \bf Michael C.~Frank (mcfrank@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA}
 
 abstract: >
-    One problem faced by language learners is how to extract word meanings from 
-    situations that often present many possible referents. While a word's meaning  
-    may be ambiugous given any one scene, a large body of empirical work has 
-    found that people are able to learn cross-situationally across multiple 
-    occurrences of a given word. There has been correspondingly much interest 
-    in modeling such learning, and yet there is little consensus on the main mechanisms 
-    underpinning cross-situational word learning. The lack of consensus is in part due 
-    to the large number of disparate studies and models, and lack of systematic model 
-    comparisons across a wide range of studies. This study seeks to remedy this,  
-    comparing the performance of several extant cross-situational word learning models on a 
-    dataset consisting of 1,696 participants spread across 44 experimental conditions.
-    Using cross-validated parameters, we fit multiple models representing theories of both
-    associative learning and hypothesis-testing theories of word learning, find two best-fitting 
-    models, and discuss issues of model and mechanism identifiability. 
-    Finally, we test the models' best-fitting parameters ability to generalize 
-    to a set of additional experiments, including developmental data. 
+    One problem language learners face is extracting word meanings from 
+    scenes with many possible referents. Despite the ambiguity of individual   
+    situations, a large body of empirical work shows that people are
+    able to learn cross-situationally when a word occurs in different 
+    situations. Many computational models of cross-situational word learning   
+    have been proposed, yet there is little consensus on the main mechanisms 
+    supporting learning, in part due to the profusion of disparate studies and models,
+    and lack of systematic model comparisons across a wide range of studies. 
+    This study compares the performance of several extant models on a dataset 
+    of 44 experimental conditions and a total of 1,696 participants.
+    Using cross-validation, we fit multiple models representing theories of both
+    associative learning and hypothesis-testing theories of word learning, find two  
+    best-fitting models, and discuss issues of model and mechanism identifiability. 
+    Finally, we test the models' ability to generalize to additional
+    experiments, including developmental data. 
     
 keywords: >
     cross-situational word learning; model comparison; language learning
     
 output: cogsci2016::cogsci_paper
 #final-submission: \cogscifinalcopy
-# abstract is a bit long: 184 words
+# abstract is a bit long: 152 words
 ---
 
 ```{r global_options, include=FALSE}
@@ -158,7 +157,7 @@ At test, given word $w$ learners use Luce choice, choosing referent $o$ from the
 
 We also fit a *stochastic sampling* (**FUs**) version of this model [see @Kachergis2017], which uses the same update equation, but samples only a single presented object for each word on a trial instead of updating all possible associations. 
 This FU sampling model can still build multiple graded associations for each word (or object), but on any given run will accumulate only a sparse, randomized version of what the full associative model would build.
-\vspace{-4pt}
+
 
 ### Strength-, Uncertainty-, & Novelty-biased (S,U,N) Models
 We also test three variations on the Kachergis et al. model that use only a subset of the mechanisms of the full model in order to understand the contributions of each mechanism.
@@ -167,13 +166,13 @@ The *strength model* lacks the uncertainty bias term, and thus only implements a
 The *uncertainty model* lacks the strength bias term, and thus only implements a bias for stimuli with uncertain (high-entropy) associations.
 The *novelty model* lacks the strength bias term, and substitutes novelty for the entropy terms (e.g., 1/(frequency(*w*)+1) instead of $H(w)$.
 These models still have all three parameters of the original FU model, and at test operate in the same way as the original model. <!--, although $\chi$ and $\beta$ likely trade off.-->
-\vspace{-4pt}
+
 
 ### Bayesian Decay Model (BD)
 This previously-unpublished model updates the $p(w|o)$ and the joint probability $p(w,o)$ from trial to trial according to a likelihood function that reinforces the association between *w* and *o* when they co-occur (scaled by parameter $\delta$), and penalizes all associations that are not occurring on the trial (scaled by parameter $\alpha$).
 Thus, in contrast to other incremental associative learning models considered here (e.g., Fazly and the Kachergis class of models), this model globally updates the entire association matrix on each trial -- both co-occurring pairs and non-co-occurring pairs, and re-normalizes the tracked probabilities at each time step.
 At test, this model uses a softmax choice rule with parameter $\tau$ to select the best referent for each word from the presented alternatives. 
-\vspace{-4pt}
+
 
 ### Rescorla-Wagner Model (RW)
 This associative model is inspired by the prediction-error-based learning model of @Rescorla1972. 
@@ -490,7 +489,8 @@ While many of these models have mechanisms for preferentially selecting and stor
 \vspace{-4pt}
 # Acknowledgements
 \vspace{-3pt}
-We thank Chen Yu for allowing us to include data from several previously-unpublished experimental conditions.
+<!-- We thank Chen Yu for allowing us to include data from several previously-unpublished experimental conditions. -->
+[redacted for blinded review]
 
 \vspace{-4pt}
 # References 
