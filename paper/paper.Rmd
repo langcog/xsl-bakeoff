@@ -228,7 +228,7 @@ However, data from several conditions are contributed by Chen Yu's lab at Indian
 Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
 At test, participants heard each word and were asked to select the best referent from either all $m$ presented objects (*m*-alternative forced choice; AFC), or from a subset (e.g., 4AFC).
 
-[^2]: Information about the dataset: [https://osf.io/s2aty/](https://osf.io/s2aty/)
+[^2]: Information about the dataset: [https://osf.io/REDACTED](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5)
 
 # Results
 
@@ -284,8 +284,8 @@ cvg_fit_tab$P = c(3, 2, 3, 3, 3, 3, 2, 3, 2, 3, 2)
 ```
 
 Table 1 shows the sum of squared error (SSE) and correlation ($r$) for each model's best-fitting parameters vs. average human performance on the `r totItems` items, both for the CV fits and for the all-condition fits, along with the number of fitted parameters in each model (P).
-The results of the two fitting procedures yielded fairly similar SSEs and correlations, and a consistent rank-ordering of the models, with the Kachergis sampling model performing best, followed closely by the Fazly et al. model and then the associative Kachergis et al. model.
-The hypothesis testing models (Propose-but-Verify and Guess-and-Test) and the Pursuit model fit less well than the 0-parameter baseline co-occurrence counting model (not in the table), which had SSE = 32.0 and $r = 0.53$.
+The results of the two fitting procedures mostly yielded similar SSEs and correlations, and a consistent rank-ordering of the models, with the Kachergis sampling model performing best, followed closely by the Fazly et al. model and then the associative Kachergis et al. model.
+The hypothesis testing models (Propose-but-Verify and Guess-and-Test), the Pursuit model, and R-W fit roughly as well as the 0-parameter baseline co-occurrence counting model, which had SSE = 32.0 and $r = 0.53$.
 Correlations between data and models are presented in Figure 1. 
 
 ```{r model-correlations}
@@ -333,7 +333,6 @@ diag(mod_cors) = "-"
 #print(tab3, type="latex", comment = F, include.rownames = T, table.placement = "H")
 kable(mod_cors, "latex", booktabs = T, escape=F, digits = 2, caption="Correlations of models' predictions.") %>%
   kable_styling(latex_options = "scale_down") 
-# ToDo: bold maximum correlation per model (column)
 ```
 
 ```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=5.2, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model item-level accuracy using best-fitting parameters per model for all conditions (colored by condition). Note that on some items, PbV, GnT, and Pursuit all show more extreme responding (1 or 0) than people ever do."}
@@ -485,9 +484,9 @@ divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) 
 #mean(subset(gfd, Model=="fazly" & Condition=="1x4")$HumanPerf) # .19
 ```
 
-\vspace{-4pt}
+
 # Discussion
-\vspace{-3pt}
+
 We set out to conduct a systematic comparison of several models of cross-situational word learning models across a wide variety of experimental conditions. 
 Using a large dataset, we found best-fitting parameters for 11 models both by simultaneously fitting all of the data, and using cross-validation.
 The results of both fitting regimes were consistent and clear: shown in Table 1, the associative models generally achieved better fits (lower SSE and higher correlations) than the hypothesis-testing models (GnT; @Medina2011 and PbV; @Trueswell2013), which made correlated predictions (see Table 2: $r=.65$).
@@ -502,21 +501,21 @@ Among the associative models, the PA model [@Fazly2010] and the FU model [@Kache
 The predictions of the top three models are more correlated with each other than with the human data (see Table 1): PA vs. FUs: .87, PA vs. FU: .84, FU vs. FUs: .92.
 But the PA model also showed a .84 correlation with the Rescorla-Wagner model, and both FU and FUs show a .87 correlation with the simpler novelty-biased associative model (N)--stronger than for the uncertainty-bias mechanism used by the FU models.
 Future work should aim to further explore when these models make overlapping predictions, but another approach is to find conditions where models make disparate predictions. 
-The FUs and PA models make maximally divergent predictions in the conditions with fewer words than objects per trial (esp. 1x3, 1x3 6/18 4AFC, and 1x4), which hints at a difference in mechanism for these models and may guide the design of a new experiment to diagnose which is better able to account for human behavior.
+The FUs and PA models make maximally divergent predictions in the conditions with fewer words than objects per trial (esp. 1x3, 1x3 6/18 4AFC, and 1x4), which hints at a difference in mechanism for these models. 
+A fruitful next step would be to use optimal experiment design to generate a definitive experiment to differentiate these models. 
 
 Although we have aimed for broad coverage of models and experimental conditions, this study is far from complete in both respects.
-First, there are many other models that we have not yet implemented [e.g., @mcmurray2012word], or that we have not finished fitting to the data [e.g., @YurovskyFrank2015]. <!-- @tilles2012minimal; -->
-Moreover, this dataset represents performance from a fairly homogeneous sample: English-speaking US college students, mostly from a single midwestern university. 
+First, there are many other models that we have not yet implemented [e.g., @mcmurray2012word]. <!-- or that we have not finished fitting to the data [e.g., @YurovskyFrank2015].  @tilles2012minimal; -->
+Moreover, this dataset represents performance from a fairly homogeneous sample: English-speaking US college students. 
 Future work should aim to include not only more models, but a more broadly diverse sample, both in terms of language background and age.
 The small number of generalization experiments run here suggest that parameters fitted to adult experimental conditions do not generalize well to developmental experiments: future research should gather a larger set of developmental data and re-fit these models with cross-validation.
-We invite other researchers to contribute datasets and model implementations for future, larger-scale comparisons.
-<!-- OSF link? -->
+We invite other researchers to contribute datasets and model implementations for future, larger-scale comparisons: data and model code will be open-sourced and available on [OSF](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5).
 
 In summary, we have shown not only how a large model comparison can help rank models from most to least able to account for human data, but also how such comparisons can identify models that mimic each other, as well as identifying experimental designs that might aid in distinguishing models.
 Future work should extend this comparison to cross-situational word learning models and extant datasets beyond those tested here, and design novel experiments designed to distinguish these models.
 Finally, assuming that cross-situational learning is an important tool in the language learner's toolbelt, it is important to consider how these models can be extended to incorporate other information sources at the learner's disposal, such as social cues, pragmatics, and syntactic constraints on meaning [@HirshPasek2000; @Markman1990; @yurovsky2017beyond].
 While many of these models have mechanisms for preferentially selecting and storing particular associations, most have yet to formally incorporate relevant cues from social partners--linguistic and nonlinguistic [though see @yurovsky2017beyond].
-<!-- and in particular to developmental experiments in order to test the models' generality for explaining word learning across a lifetime. -->
+More broadly, we believe that structured model comparison is a critical step towards developing more complete models and, eventually, quantitative identification of the fundamental mechanisms of word learning.
 
 
 <!-- In three cross-situational learning experiments, Hendrickson gave participants word-object pairs occurring with Zipf (power-law) frequency distribution, and then compared two models:  -->
