@@ -135,7 +135,7 @@ run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, prin
 }
   
 fit_stochastic_model <- function(model_name, conds, lower, upper) {
-  fit = DEoptim(run_stochastic_model, lower=lower, upper=upper, DEoptim.control(reltol=.001, NP=100, itermax=50), 
+  fit = DEoptim(run_stochastic_model, lower=lower, upper=upper, DEoptim.control(reltol=.001, NP=100, itermax=30), 
                 model_name=model_name, conds=conds, SSE_only=T)
   return(fit)
 }
