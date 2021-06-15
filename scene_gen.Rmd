@@ -1,0 +1,65 @@
+---
+title: "CHILDES Utterance/Scene Generator"
+author: "Kevin & George"
+date: "`Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+
+
+```{r cars}
+library(tidyverse)
+library(childesr)
+```
+
+## Look at summary data
+
+
+```{r get-data, echo=FALSE}
+d_transcripts <- get_transcripts(collection = "Eng-NA")
+
+d_transcripts %>% group_by(corpus_id, corpus_name) %>%
+  summarise(n = n(),
+            mean_age = mean(target_child_age, na.rm=T), # Garvey mean_age=NaN...are they all e.g. 12 mos?
+            sd_age = sd(target_child_age, na.rm=T))
+```
+## Get utterances
+
+```{r}
+d_utts <- get_utterances(corpus = "NewEngland") 
+
+d_clean <- d_utts %>% filter(stem!="",
+                             speaker_role!="Target_Child") # inconsistent labels? do we want Investigator?
+  
+d_clean %>% ggplot(aes(x=num_tokens)) + 
+  geom_histogram() +
+  theme_minimal()
+```
+## First pass generator
+
+```{r}
+fetch_data <- function(corpus_names, min_age, max_age) {
+  dat <- get_utterances(corpus = corpus_names)
+  dat <- dat %>% filter(target_child_age <= max_age, 
+                        target_child_age >= min_age,
+                        stem!="",
+                        speaker_role!="Target_Child")
+  return(dat)
+}
+
+
+generator <- function(utterances, Nutterances, scene_size) {
+  # every scene_size utterances is a 'scene' (e.g., 5 utterances)
+  # Nutterances / Nchildren 
+  # group_by child, and sample N 
+  
+}
+
+utts <- fetch_data(c("Brown", "NewEngland"), 10, 20)
+```
+
