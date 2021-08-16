@@ -13,16 +13,18 @@ get_fscore <- function(thresh, mat) {
   precision = tp / (tp + fp)
   recall = tp / (tp + fn)
   return(2*precision*recall / (precision + recall))
-}
+} # better to return c(precision, recall) so that we can do ROC curves?
 
 
 get_roc <- function(mdat) {
   mat <- mdat$matrix / max(unlist(mdat$matrix)) # normalize so max value(s) are 1
   threshes <- seq(0,1,.01)
-  fscores <- lapply(threshes, get_fscore, mat)
+  fscores <- unlist(lapply(threshes, get_fscore, mat))
 }
 
 
 m <- model(c(0.473378, 3.933056), combined_data[[1]]$train)
 
 fs <- get_roc(m)
+
+plot(x=seq(0,1,.01), y=fs)
