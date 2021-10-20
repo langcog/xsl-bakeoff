@@ -63,24 +63,29 @@ model <- function(params, ord=c(), start_matrix=c(), reps=1, test_noise=0) {
 	B <- params[2] # weighting of uncertainty vs. familiarity
 	C <- params[3] # decay
 	
-	voc_sz = max(unlist(ord$words), na.rm=TRUE) # vocabulary size
-	ref_sz = max(unlist(ord$objs), na.rm=TRUE) # number of objects
+	voc = unique(unlist(ord$words))
+	ref = unique(unlist(ord$objs[!is.na(ord$objs)]))
+	voc_sz = length(voc) # vocabulary size
+	ref_sz = length(ref) # number of objects
 	traj = list()
 	if(is.matrix(start_matrix)) {
 	  m <- start_matrix
 	} else {
 	  m <- matrix(0, voc_sz, ref_sz) # association matrix
 	}
+	colnames(m) = ref
+	rownames(m) = voc
 	perf = matrix(0, reps, voc_sz) # a row for each block
 	# training
 	for(rep in 1:reps) { # for trajectory experiments, train multiple times
-	  for(t in 1:nrow(ord$words)) { 
+	  for(t in 1:length(ord$words)) { 
 		#print(format(m, digits=3))
 	   
-		tr_w = as.integer(ord$words[t,])
-		tr_w = tr_w[!is.na(tr_w)]
-		tr_o = as.integer(ord$objs[t,])
-		tr_o = tr_o[!is.na(tr_o)]
+	    tr_w = unlist(ord$words[t])
+	    tr_w = tr_w[!is.na(tr_w)]
+	    tr_w = tr_w[tr_w != ""]
+	    tr_o = unlist(ord$objs[t])
+	    tr_o = tr_o[!is.na(tr_o)]
     
 		m = update_known(m, tr_w, tr_o) # what's been seen so far?
 		if(length(tr_w)>1) {
@@ -90,7 +95,7 @@ model <- function(params, ord=c(), start_matrix=c(), reps=1, test_noise=0) {
 		}
 		ent_w = exp(B*ent_w)
 		
-		ent_o = apply(m[,tr_o], 2, shannon.entropy) 
+		ent_o = apply(as.matrix(m[,tr_o]), 2, shannon.entropy) 
 		ent_o = exp(B*ent_o)
 		
 		nent = (ent_w %*% t(ent_o))
@@ -102,11 +107,11 @@ model <- function(params, ord=c(), start_matrix=c(), reps=1, test_noise=0) {
 		# update associations on this trial
 		m[tr_w,tr_o] = m[tr_w,tr_o] + (X * assocs * (ent_w %*% t(ent_o))) / denom 
 
-		index = (rep-1)*nrow(ord$words) + t # index for learning trajectory
+		index = (rep-1)*length(ord$words) + t  # index for learning trajectory
 		traj[[index]] = m
 	  }
 	  m_test = m+test_noise # test noise constant k
-	  perf[rep,] = diag(m_test) / rowSums(m_test)
+	  perf[rep,] = get_perf(m_test)
 	}
 	want = list(perf=perf, matrix=m, traj=traj)
 	return(want)

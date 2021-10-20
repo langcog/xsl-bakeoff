@@ -18,18 +18,31 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 	alpha_increase = params[2] # Trueswell 2013 empirically estimates this...
 	#sa <- params[2] # prob of storage (slow learning down)
 
-	voc_sz = max(unlist(ord$words), na.rm=TRUE) # vocabulary size
-	ref_sz = max(unlist(ord$objs), na.rm=TRUE)
+	voc = unique(unlist(ord$words))
+	ref = unique(unlist(ord$objs[!is.na(ord$objs)]))
+	voc_sz = length(voc) # vocabulary size
+	ref_sz = length(ref) # number of objects
 	m <- matrix(0, voc_sz, ref_sz) # hypothesis matrix
+	colnames(m) = ref
+	rownames(m) = voc
   
 	traj = list()
 	perf = matrix(0, reps, voc_sz) # a row for each block
 	freq = rep(0,voc_sz) # number of occurrences per pair, so far (to index the resps matrix)
+  names(freq) = voc
   
 	for(rep in 1:reps) {
-		for(t in 1:nrow(ord$words)) {
-			tr_w = as.integer(ord$words[t,]) # ASSUMES words==objects
-			tr_o = as.integer(ord$objs[t,])
+		for(t in 1:length(ord$words)) {
+		  tr_w = unlist(ord$words[t])
+		  tr_w = tr_w[!is.na(tr_w)]
+		  tr_w = tr_w[tr_w != ""]
+		  tr_o = unlist(ord$objs[t])
+		  tr_o = tr_o[!is.na(tr_o)]
+		  if(length(tr_o) == 0) {
+		    index = t
+		    traj[[index]] = m
+		    next
+		  }
 			freq[tr_w] = freq[tr_w] + 1 
 			
 			# for each word, 1) check if there is a hypothesized ref
@@ -62,14 +75,15 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 			  need_hypoths = tr_w
 			}
 			store = need_hypoths
-			new_hyps = sample(tr_o, length(store), replace=FALSE) # select new random refs from trial
+			new_hyps = sample(tr_o, length(store), replace=TRUE) # select new random refs from trial
 			for(w in 1:length(store)) {
+			  if(length(store) == 0) {next}
 				m[need_hypoths[w], new_hyps[w]] = alpha
 			}
-			index = (rep-1)*nrow(ord$words) + t # index for learning trajectory
+			index = (rep-1)*length(ord$words) + t # index for learning trajectory
 			traj[[index]] = m
 		}
-		perf[rep,] = diag(m) / (rowSums(m)+1e-12) # just in case of zeros
+		perf[rep,] = get_perf(m+1e-12) # just in case of zeros
 		#if(verbose) print(m)
 	}
 	if(verbose) print(perf)

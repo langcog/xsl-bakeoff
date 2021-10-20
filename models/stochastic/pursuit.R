@@ -25,22 +25,37 @@ model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
   thresh = params[2] # threshold (prob) to move an association to the known lexicon 
   lambda = params[3] # smoothing prob
   
-  voc_sz = max(unlist(ord$words), na.rm=TRUE)  # vocabulary size
-  ref_sz = max(unlist(ord$objs), na.rm=TRUE)
+  voc = unique(unlist(ord$words))
+  ref = unique(unlist(ord$objs[!is.na(ord$objs)]))
+  voc_sz = length(voc) # vocabulary size
+  ref_sz = length(ref) # number of objects
   
   if(is.matrix(start_matrix)) {
     m <- start_matrix
   } else {
     m <- matrix(0, voc_sz, ref_sz) # association matrix A(w,h)
   }
+  colnames(m) = ref
+  rownames(m) = voc
   lexicon <- matrix(0, voc_sz, ref_sz) # for any association that reaches threshold
-  compScore = rep(0, nrow(ord$words))
+  colnames(lexicon) = ref
+  rownames(lexicon) = voc
+  compScore = rep(0, length(ord$words))
   freq = rep(0,voc_sz) # number of occurrences per pair, so far (to index the resps matrix)
+  names(freq) = voc
   traj = list()
   
-  for(t in 1:nrow(ord$words)) {
-      tr_w = as.integer(ord$words[t,])
-      tr_o = as.integer(ord$objs[t,])
+  for(t in 1:length(ord$words)) {
+    tr_w = unlist(ord$words[t])
+    tr_w = tr_w[!is.na(tr_w)]
+    tr_w = tr_w[tr_w != ""]
+    tr_o = unlist(ord$objs[t])
+    tr_o = tr_o[!is.na(tr_o)]
+    if(length(tr_o) == 0) {
+      index = t
+      traj[[index]] = m
+      next
+    }
       novel = tr_w[which(freq[tr_w]==0)] # novel words
       freq[tr_w] = freq[tr_w] + 1 # tracks word freq
       if(length(tr_w)==1) {
@@ -53,8 +68,9 @@ model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
       # initialize...
       # 1) if w is novel, select one from available refs with minimum assoc to any other word
       for(w in 1:length(novel)) {
+        if (length(novel) == 0) {next}
         # find max assoc for each referent (including to words not on trial?)
-        max_assoc = apply(m[,tr_o], 2, max)
+        max_assoc = apply(as.matrix(m[,tr_o]), 2, max)
         # select one referent with minimum maximum association
         min_ref = tr_o[which(max_assoc==min(max_assoc))]
         if(length(min_ref)>1) min_ref = sample(min_ref, 1) # break ties 
@@ -67,7 +83,7 @@ model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
         if(!is.element(hypo, tr_o)) { # not on trial, so weaken:
           m[w,hypo] = m[w,hypo]*(1-gamma) # disconfirmed
           # not on trial, so random new hypothesized referent
-          new_hyp = sample(tr_o, 1)
+          new_hyp = sample(tr_o, 1, replace = TRUE)
           m[w,new_hyp] = m[w,new_hyp] + gamma * (1 - m[w,new_hyp])
         } else {
           m[w,hypo] = m[w,hypo] + gamma * (1 - m[w,hypo]) # confirmed: strengthen
@@ -79,9 +95,9 @@ model <- function(params, ord=c(), start_matrix=c(), verbose=F) {
       lexicon[which(Pm_w>thresh)] = 1 # add to lexicon
       traj[[t]] = lexicon
       #compScore[t] = sum(diag(lexicon) / rowSums(lexicon+1e-9)) # should use index
-      compScore[t] = sum(diag(Pm_w))
+      compScore[t] = sum(get_perf(Pm_w))
     }
-  resp_prob = diag(lexicon) / rowSums(lexicon+1e-12) 
+  resp_prob = get_perf(lexicon+1e-12) 
   
   if(verbose) print(m)
   #want = list(perf=diag(Pm_w), matrix=Pm_w, compScore=compScore) 

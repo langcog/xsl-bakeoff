@@ -19,24 +19,34 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 	alpha <- params[1] # 0.1, 0.5, 0.9 decay for word/object non-co-occurrence
 	delta <- params[2] # Multiplier for word/object co-occurrence (set to 1 for no increase)
 	chDec <- params[3] # Decision parameter (e.g., 1)
-	voc_sz = max(unlist(ord$words), na.rm=TRUE) # vocabulary size
-	ref_sz = max(unlist(ord$objs), na.rm=TRUE) # number of objects
+	voc = unique(unlist(ord$words))
+	ref = unique(unlist(ord$objs[!is.na(ord$objs)]))
+	voc_sz = length(voc) # vocabulary size
+	ref_sz = length(ref) # number of objects
+
 	perf = matrix(0, reps, voc_sz) # a row for each block
 	traj = list()
 	
 	ones = rep(1, voc_sz)
 	pWgO <- matrix(1/ref_sz, voc_sz, ref_sz) # prob(word|object) matrix
 	pW_O <- matrix(1/(ref_sz*voc_sz), voc_sz, ref_sz)
+	colnames(pWgO) = ref
+	rownames(pWgO) = voc
+	colnames(pW_O) = ref
+	rownames(pW_O) = voc
 	# training
 	for(rep in 1:reps) { # for trajectory experiments, train multiple times
-	  for(t in 1:nrow(ord$words)) { 
-		tr_w = as.integer(ord$words[t,])
-		tr_w = tr_w[!is.na(tr_w)]
-		tr_o = as.integer(ord$objs[t,])
-		tr_o = tr_o[!is.na(tr_o)]
+	  for(t in 1:length(ord$words)) { 
+	    tr_w = unlist(ord$words[t])
+	    tr_w = tr_w[!is.na(tr_w)]
+	    tr_w = tr_w[tr_w != ""]
+	    tr_o = unlist(ord$objs[t])
+	    tr_o = tr_o[!is.na(tr_o)]
 		
 		words_tr = rep(0,voc_sz)
 		objects_tr = rep(0,ref_sz)
+		names(words_tr) = voc
+		names(objects_tr) = ref
 		words_tr[tr_w] = 1
 		objects_tr[tr_o] = 1
 		
@@ -53,12 +63,11 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 			print(pW_O) 
 		}
 		
-		index = (rep-1)*length(ord$trials) + t # index for learning trajectory
+		index = (rep-1)*length(ord$words) + t # index for learning trajectory
 		traj[[index]] = pWgO
 	  }
 	  # power choice rule
-	  chProb = pWgO^chDec / outer(ones,colSums(pWgO^chDec))
-	  perf[rep,] = diag(chProb) # same as diag(pWgO)^chDec / colSums(pWgO^chDec)
+	  perf[rep,] = get_perf(pWgO) # same as diag(pWgO)^chDec / colSums(pWgO^chDec)
 	}
 	#perf = diag(pWgO) / rowSums(pWgO) # no, we'll use parameterized choice
 	# calculated from joint probs
@@ -69,7 +78,7 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 	#chProb = exp(chDec*pWgO) / outer(ones,colSums(exp(chDec*pWgO)))
 	#cat(diag(chProb))
 	
-	want = list(perf=perf, matrix=chProb, traj=traj)
+	want = list(perf=perf, matrix=pWgO, traj=traj)
 	return(want)
 	}
 

@@ -91,7 +91,7 @@ run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, prin
       mod = Reduce('+', mp)
     } else {
       mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds$train)
-      mod = rowSums(mp) / ncol(mp)
+      mod = get_perf(mp)
       SSE = sum( (mod - conds$HumanItemAcc)^2 )
     }
   } else {
@@ -114,7 +114,7 @@ run_stochastic_model <- function(conds, model_name, parameters, SSE_only=F, prin
           mperf = mafc_test(mperf, conds[[i]]$test)
         } else {
           mp = sapply(1:Nsim, stochastic_dummy, parameters=parameters, ord=conds[[i]]$train)
-          mperf = rowSums(mp) / ncol(mp)
+          mperf = get_perf(mp)
         }
         mod[[names(conds)[i]]] = mperf
         SSE = SSE + conds[[i]]$Nsubj * sum( (mperf - conds[[i]]$HumanItemAcc)^2 )
