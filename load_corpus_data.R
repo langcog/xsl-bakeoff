@@ -1,19 +1,23 @@
 require(tidyverse)
 require(here)
 
-fm_files = sort(list.files(here("data/FMcorpus/")))[1:24]
-fmc <- tibble() # makes sense to concatenate? or treat each child as an 'experimental condition'
-#fmc <- list() 
-# try concatenation; check referent/word overlap across kids
-for(file in fm_files) {
-  tmp <- read_csv(paste0(here("data/FMcorpus/"), file))
-  fmc <- bind_rows(fmc, tmp)
+# run once
+process_FMcorpus <- function() {
+  fm_files = sort(list.files(here("data/FMcorpus/")))[1:24]
+  fmc <- tibble() # makes sense to concatenate? or treat each child as an 'experimental condition'
+  #fmc <- list() 
+  # try concatenation; check referent/word overlap across kids
+  for(file in fm_files) {
+    tmp <- read_csv(here("data/FMcorpus", file))
+    fmc <- bind_rows(fmc, tmp)
+  }
+  save(fmc, file=here("data/FMcorpus_processed.Rdata"))
 }
 
 # ToDo: split objects.present and utt into lists of items
 
-save(fmc, file=here("data/FMcorpus_processed.Rdata"))
-
+#process_FMcorpus()
+load(here("data/FMcorpus_processed.Rdata"))
 
 fgt_w <- read_lines(here("data/FGT_data/words.txt"))
 fgt_o <- read_lines(here("data/FGT_data/objects.txt"))
