@@ -5,18 +5,23 @@ source("optimize_corpus_fscores.R")
 #load in group_fits before running/sourcing
 load(here("fits","group_fits.Rdata"))
 
-determ_models = c(#"Bayesian_decay", "fazly", "kachergis", 
-  "novelty", "rescorla-wagner", "strength", "uncertainty")
+determ_models = c("Bayesian_decay", "fazly", "kachergis", "novelty",
+                  "rescorla-wagner", "strength", "uncertainty")
 stochastic_models = c("guess-and-test","pursuit","trueswell2012","kachergis_sampling")
 
+#corpus_fits = list(FGT = list(), FM = list())
+load(here("fits","FGT_FM_fits.Rdata"))
+
 for (model_name in determ_models) {
-  assign(paste0("fgt_fit_", model_name), 
-         optimize_corpus_fscore(fgt_ord, model_name))
-  save(fit, file=here("CHILDES_fits","fgt_", model_name, ".Rdata"))
+  fit = optimize_corpus_fscore(fgt_ord, model_name)
+  corpus_fits[["FGT"]][model_name] = fit
+  save(fit, file=here("fits","FGT_FM_fits.Rdata"))
 }
 
 for (model_name in determ_models) {
-  assign(paste0("fm_fit_", model_name), 
-         optimize_corpus_fscore(fm_ord, model_name))
-  save(fit, file=here("CHILDES_fits","fm_", model_name, ".Rdata"))
+  fit = optimize_corpus_fscore(fm_ord, model_name)
+  corpus_fits[["FM"]][model_name] = fit
+  save(fit, file=here("fits","FGT_FM_fits.Rdata"))
 }
+
+# ToDo: fit stochastic models
