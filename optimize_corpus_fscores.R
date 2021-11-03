@@ -2,6 +2,7 @@ require(DEoptim)
 require(here)
 
 model_dir = "models/"
+model_dir_stoch = "models/stochastic/"
 fits_dir = "fits/group_fits.Rdata"
 
 # refer as needed to run_model
@@ -32,7 +33,11 @@ run_corpus_model_stochastic <- function(parms, corpora, Fscore_only=T, Nsim = 50
 # corpora = list(FM, FGT)
 optimize_corpus_fscore <- function(corpora, model_name, load_fits = F) {
   stochastic_models = c("guess-and-test","pursuit","trueswell2012","kachergis_sampling")
-  source(here(paste0(model_dir, model_name,".R")))
+  if (model_name %in% stochastic_models) {
+    source(here(paste0(model_dir_stoch, model_name,".R")))
+  } else {
+    source(here(paste0(model_dir, model_name,".R")))
+  }
   if(load_fits) source(here(fits_dir))
   lower = group_fits[[model_name]]$member$lower
   upper = group_fits[[model_name]]$member$upper
