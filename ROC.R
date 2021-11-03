@@ -17,7 +17,7 @@ get_fscore <- function(thresh, mat) {
 
 
 get_roc <- function(mdat) {
-  mat <- mdat$matrix / max(unlist(mdat$matrix)) # normalize so max value(s) are 1
+  mat <- mdat / max(unlist(mdat)) # normalize so max value(s) are 1
   threshes <- seq(0,1,.01)
   fscores <- unlist(lapply(threshes, get_fscore, mat))
   return(fscores)

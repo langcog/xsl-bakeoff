@@ -30,3 +30,15 @@ for (model_name in determ_models) {
 #missing value where TRUE/FALSE needed
 
 # ToDo: fit stochastic models
+
+for (model_name in stochastic_models) {
+  fit = optimize_corpus_fscore(fgt_ord, model_name)
+  corpus_fits[["FGT"]][model_name] = fit
+  save(fit, file=here("fits","FGT_FM_fits.Rdata"))
+}
+
+for (model_name in stochastic_models) {
+  fit = optimize_corpus_fscore(fm_ord, model_name)
+  corpus_fits[["FM"]][model_name] = fit
+  save(fit, file=here("fits","FGT_FM_fits.Rdata"))
+}
