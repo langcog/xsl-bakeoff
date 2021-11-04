@@ -19,6 +19,8 @@ for (model_name in determ_models) {
 }
 
 determ_models = c("kachergis", "uncertainty") # re-fit for FM
+group_fits$kachergis$member$upper = c(.5, 11, 1)
+group_fits$uncertainty$member$upper = c(.5, 11, 1)
 
 for (model_name in determ_models) {
   fit = optimize_corpus_fscore(fm_ord, model_name)
@@ -34,11 +36,27 @@ for (model_name in determ_models) {
 for (model_name in stochastic_models) {
   fit = optimize_corpus_fscore(fgt_ord, model_name)
   corpus_fits[["FGT"]][model_name] = fit
-  save(fit, file=here("fits","FGT_FM_fits.Rdata"))
+  save(fit, file=here("fits","FGT_FM_stoch_fits.Rdata"))
 }
 
 for (model_name in stochastic_models) {
   fit = optimize_corpus_fscore(fm_ord, model_name)
   corpus_fits[["FM"]][model_name] = fit
-  save(fit, file=here("fits","FGT_FM_fits.Rdata"))
+  save(fit, file=here("fits","FGT_FM_stoch_fits.Rdata"))
 }
+
+
+df <- tibble()
+for(corpus_name in names(corpus_fits)) {
+  for(model_name in names(corpus_fits[[corpus_name]])) {
+    df <- bind_rows(df, 
+                    tibble(corpus = corpus_name, 
+                           model = model_name, 
+                           fscore = corpus_fits[[corpus_name]][[model_name]]$bestval))
+  }
+}
+
+df %>% ggplot(aes(y=model, x=fscore)) +
+  facet_wrap(. ~ corpus) + geom_point() +
+  theme_bw() + xlim(0,1)
+ggsave("corpus_fits.pdf", width=7, height=3.5)
