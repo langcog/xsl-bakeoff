@@ -7,7 +7,7 @@
 
 get_fscore <- function(thresh, mat) {
   tmat <- mat >= thresh
-  tp = sum(get_perf(tmat)) # correct referents selected
+  tp = get_tp(tmat) # correct referents selected
   fp = sum(tmat) - tp # incorrect referents selected: all selected referents - TPs
   fn = ncol(tmat) - tp # correct referents missed: num of words - TPs
   precision = tp / (tp + fp)
@@ -15,6 +15,16 @@ get_fscore <- function(thresh, mat) {
   return(2*precision*recall / (precision + recall))
 } # better to return c(precision, recall) so that we can do ROC curves?
 
+get_tp <- function(m) {
+  count = 0
+  for (ref in colnames(m)) {
+    if (!(ref %in% rownames(m))) {
+      next
+    }
+    count = count + m[ref, ref]
+  }
+  return(count)
+}
 
 get_roc <- function(mdat) {
   mat <- mdat / max(unlist(mdat)) # normalize so max value(s) are 1
