@@ -6,26 +6,28 @@ model_dir_stoch = "models/stochastic/"
 fits_dir = "fits/group_fits.Rdata"
 
 # refer as needed to run_model
-run_corpus_model <- function(parms, corpora, Fscore_only=T) {
-  model_out = model(parms, corpora)
+run_corpus_model <- function(parms, corpus, Fscore_only=T) {
+  model_out = model(parms, corpus)
+  # row-normalize matrix?
   fscore = get_roc_max(model_out$matrix)
   if(Fscore_only) { 
     return(1-fscore) 
   } else {
+    roc <- get_roc(model_out$matrix)
     return(list(fscore=fscore, precision=precision, recall=recall))
   }
 }
 
-run_corpus_model_stochastic <- function(parms, corpora, Fscore_only=T, Nsim = 500) {
-  model_out = model(parms, corpora)$matrix
+run_corpus_model_stochastic <- function(parms, corpus, Fscore_only=T, Nsim = 500) {
+  model_out = model(parms, corpus)$matrix
   for (i in 1:Nsim) {
-    model_out = model_out + model(parms, corpora)$matrix
+    model_out = model_out + model(parms, corpus)$matrix
   }
-  fscore = get_roc_max(model_out)
+  fscore = get_roc_max(model_out$matrix)
   if(Fscore_only) { 
     return(1-fscore) 
   } else {
-    return(list(fscore=fscore, precision=precision, recall=recall))
+    return(get_fscore(model_out$matrix, fscore_only = F))
   }
 }
 
@@ -42,13 +44,13 @@ optimize_corpus_fscore <- function(corpora, model_name, load_fits = F) {
   lower = group_fits[[model_name]]$member$lower
   upper = group_fits[[model_name]]$member$upper
   fit = DEoptim(run_corpus_model, lower=lower, upper=upper, DEoptim.control(reltol=.001, NP=100, itermax=100), 
-                corpora=corpora, Fscore_only=T) # maximize Fscore (or minimize 1-F)
+                corpus=corpus, Fscore_only=T) # maximize Fscore (or minimize 1-F)
   if (model_name %in% stochastic_models) {
     fit = DEoptim(run_corpus_model_stochastic, lower=lower, upper=upper, DEoptim.control(reltol=.001, NP=100, itermax=100), 
-                  corpora=corpora, Fscore_only=T) # maximize Fscore (or minimize 1-F)
+                  corpus=corpus, Fscore_only=T) # maximize Fscore (or minimize 1-F)
   } else {
     fit = DEoptim(run_corpus_model, lower=lower, upper=upper, DEoptim.control(reltol=.001, NP=100, itermax=100), 
-                  corpora=corpora, Fscore_only=T) # maximize Fscore (or minimize 1-F)
+                  corpus=corpus, Fscore_only=T) # maximize Fscore (or minimize 1-F)
   }
   return(fit)
 }
