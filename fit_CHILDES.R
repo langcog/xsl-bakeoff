@@ -18,7 +18,7 @@ for (model_name in determ_models) {
   save(corpus_fits, file=here("fits","FGT_FM_fits.Rdata"))
 }
 
-determ_models = c("kachergis", "uncertainty") # re-fit for FM
+#determ_models = c("kachergis", "uncertainty") # re-fit for FM
 group_fits$kachergis$member$upper = c(.5, 11, 1)
 group_fits$uncertainty$member$upper = c(.5, 11, 1)
 
