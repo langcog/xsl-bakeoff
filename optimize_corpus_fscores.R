@@ -19,15 +19,17 @@ run_corpus_model <- function(parms, corpus, Fscore_only=T) {
 }
 
 run_corpus_model_stochastic <- function(parms, corpus, Fscore_only=T, Nsim = 500) {
-  model_out = model(parms, corpus)$matrix
+  model_matrix = model(parms, corpus)$matrix
   for (i in 1:Nsim) {
-    model_out = model_out + model(parms, corpus)$matrix
+    model_matrix = model_matrix + model(parms, corpus)$matrix
   }
-  fscore = get_roc_max(model_out$matrix)
+  fscore = get_roc_max(model_matrix)
   if(Fscore_only) { 
     return(1-fscore) 
   } else {
-    return(get_fscore(model_out$matrix, fscore_only = F))
+    #return(get_fscore(model_matrix, fscore_only = F))
+    roc <- get_roc(model_out$matrix)
+    return(list(fscore=fscore, precision=precision, recall=recall))
   }
 }
 
