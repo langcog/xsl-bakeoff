@@ -5,9 +5,9 @@
 # group_fits$fazly$optim$bestmem 
 
 
-get_fscore <- function(thresh, mat, fscore_only=T) {
+get_fscore <- function(thresh, mat, fscore_only=T, gold_lexicon) {
   tmat <- mat >= thresh
-  tp = get_tp(tmat) # correct referents selected
+  tp = get_tp(tmat, gold_lexicon) # correct referents selected
   fp = sum(tmat) - tp # incorrect referents selected: all selected referents - TPs
   fn = ncol(tmat) - tp # correct referents missed: num of words - TPs
   precision = tp / (tp + fp) 
@@ -25,6 +25,7 @@ get_fscore <- function(thresh, mat, fscore_only=T) {
 } 
 
 
+# 
 get_tp <- function(m) {
   count = 0
   for (ref in colnames(m)) {
@@ -36,6 +37,7 @@ get_tp <- function(m) {
   return(count)
 }
 
+# given model association matrix, returns df with all f-scores or f-scores + precision + recall
 get_roc <- function(mdat, fscores_only=T, plot=F) {
   #mat <- mdat / max(unlist(mdat)) # normalize so max value(s) in entire matrix are 1
   mat <- mdat / rowSums(mdat) # row-normalize matrix (better for all models?)

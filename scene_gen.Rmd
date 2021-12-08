@@ -78,6 +78,7 @@ ord = list(words = list(c(1,2), # utterance 1 (word indices)
 ## First pass generator
 
 ```{r}
+# if easier, only need to do one corpus at a time
 fetch_data <- function(corpus_names, min_age, max_age) {
   dat <- get_utterances(corpus = corpus_names)
   dat <- dat %>% filter(target_child_age <= max_age, 
@@ -88,12 +89,15 @@ fetch_data <- function(corpus_names, min_age, max_age) {
 }
 
 
-generator <- function(utterances, Nutterances, scene_size) {
+generator <- function(utterances, Nutterances, scene_size, 
+                      desiredPoS=c("nouns")) { # , desiredSpeakers=c("")
   # every scene_size utterances is a 'scene' (e.g., 5 utterances)
   # Nutterances / Nchildren 
   # group_by child, and sample N 
   
 }
+
+# want to be able to specify array of PoS to include: nouns, adjectives, verbs
 
 utts <- fetch_data(c("Brown", "NewEngland"), 10, 20)
 ```

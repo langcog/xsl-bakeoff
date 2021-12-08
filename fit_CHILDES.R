@@ -2,6 +2,10 @@ source("load_corpus_data.R")
 source("ROC.R")
 source("optimize_corpus_fscores.R")
 
+fgt_gold <- read.csv(here("data","FGT_data","gold.txt"), header=F, sep=' ')
+names(fgt_gold) = c("word","object")
+#fgt_gold_mat <- 
+
 #load in group_fits before running/sourcing
 load(here("fits","group_fits.Rdata"))
 
