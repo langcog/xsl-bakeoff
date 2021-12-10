@@ -1,27 +1,6 @@
 require(tidyverse)
 require(here)
 
-# run once
-process_FMcorpus <- function() {
-  fm_files = sort(list.files(here("data/FMcorpus/")))[1:24]
-  fmc <- tibble() # makes sense to concatenate? or treat each child as an 'experimental condition'
-  #fmc <- list() 
-  # try concatenation; check referent/word overlap across kids
-  for(file in fm_files) {
-    tmp <- read_csv(here("data/FMcorpus", file))
-    fmc <- bind_rows(fmc, tmp)
-  }
-  save(fmc, file=here("data/FMcorpus_processed.Rdata"))
-}
-
-# ToDo: split objects.present and utt into lists of items
-
-#process_FMcorpus()
-load(here("data/FMcorpus_processed.Rdata"))
-
-fgt_w <- read_lines(here("data/FGT_data/words.txt"))
-fgt_o <- read_lines(here("data/FGT_data/objects.txt"))
-
 create_scenes <- function(words, objects) {
   train <- list(words = list(), objs = list())
   if(length(words)!=length(objects)) print("unequal number of words/objects")
@@ -33,6 +12,53 @@ create_scenes <- function(words, objects) {
   }
   return(train)
 }
+
+# run once
+process_FMcorpus <- function(resave=F) {
+  if(resave) {
+    fm_files = sort(list.files(here("data/FMcorpus/")))[1:24]
+    fmc <- tibble() # makes sense to concatenate? or treat each child as an 'experimental condition'
+    #fmc <- list() 
+    # try concatenation; check referent/word overlap across kids
+    for(file in fm_files) {
+      tmp <- read_csv(here("data/FMcorpus", file))
+      fmc <- bind_rows(fmc, tmp)
+    }
+    save(fmc, file=here("data/FMcorpus_processed.Rdata"))
+  } else {
+    load(here("data/FMcorpus_processed.Rdata"))
+  }
+  fm_ord <- create_scenes(fmc$utt, fmc$objects.present)
+  FM_corpus = list(train = fm_ord) # , gold_lexicon = fm_gold)
+  save(FM_corpus, file="XSLmodels/data/FM_corpus.Rdata")
+}
+
+# ToDo: split objects.present and utt into lists of items
+
+#process_FMcorpus()
+load("XSLmodels/data/FM_corpus.Rdata")
+# ToDo: need gold_lexicon
+
+# run once
+process_FGTcorpus <- function() {
+  fgt_w <- read_lines(here("data/FGT_data/words.txt"))
+  fgt_o <- read_lines(here("data/FGT_data/objects.txt"))
+  
+  fgt_ord <- create_scenes(fgt_w, fgt_o)
+  
+  for (t in 1:length(fgt_ord$objs)) {
+    if (fgt_ord$objs[t] == "NA") {
+      fgt_ord$objs[t] <- NA
+    }
+  }
+  
+  fgt_gold <- read.csv(here("data","FGT_data","gold.txt"), header=F, sep=' ')
+  names(fgt_gold) = c("word","object")
+  FGT_corpus = list(train = fgt_ord, gold_lexicon = fgt_gold)
+  save(FGT_corpus, file="XSLmodels/data/FGT_corpus.Rdata")
+}  
+
+load("XSLmodels/data/FGT_corpus.Rdata")
 
 # get_cooc_matrix - take a training order, build a cooccurrence matrix
 create_matrix <- function(train) {
@@ -46,14 +72,6 @@ create_matrix <- function(train) {
   return(M)
 }
 
-fm_ord <- create_scenes(fmc$utt, fmc$objects.present)
-
-fgt_ord <- create_scenes(fgt_w, fgt_o)
-for (t in 1:length(fgt_ord$objs)) {
-  if (fgt_ord$objs[t] == "NA") {
-    fgt_ord$objs[t] <- NA
-  }
-}
 
 get_perf <- function(m) {
   perf <- rep(0, nrow(m))
