@@ -17,7 +17,7 @@ stochastic_models = c("guess-and-test","pursuit","trueswell2012","kachergis_samp
 load(here("fits","FGT_FM_fits.Rdata"))
 
 for (model_name in determ_models) {
-  fit = optimize_corpus_fscore(fgt_ord, model_name)
+  fit = optimize_corpus_fscore(fgt_ord, model_name, load_fits = T, gold_lexicon=fgt_gold)
   corpus_fits[["FGT"]][model_name] = fit
   save(corpus_fits, file=here("fits","FGT_FM_fits.Rdata"))
 }
@@ -34,6 +34,9 @@ for (model_name in determ_models) {
 
 # fit stochastic models
 load(here("fits","FGT_FM_stoch_fits.Rdata"))
+# kachergis_sampling 
+# Iteration: 26 bestvalit: 0.696970 bestmemit:    0.107670    0.238341    0.071873
+# Iteration: 59 bestvalit: 0.677419 bestmemit:    0.136058    0.184348    0.123132
 
 for (model_name in stochastic_models) {
   fit = optimize_corpus_fscore(fgt_ord, model_name)
