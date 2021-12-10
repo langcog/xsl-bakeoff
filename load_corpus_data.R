@@ -60,51 +60,24 @@ process_FGTcorpus <- function() {
 
 load("XSLmodels/data/FGT_corpus.Rdata")
 
-# get_cooc_matrix - take a training order, build a cooccurrence matrix
-create_matrix <- function(train) {
-  Nwords = length(unique(unlist(train$words)))
-  Nobjs = length(unique(unlist(train$objs)))
-  M = matrix(0, nrow=Nwords, ncol=Nobjs)
-  rownames(M) = sort(unique(unlist(train$words)))
-  colnames(M) = sort(unique(unlist(train$objs)))
-  # iterate over training scenes, M[train$words[i], grain$objs[i]] = M[train$words[i], grain$objs[i]] + 1
-  
-  return(M)
-}
+
+# OLD FUNCTIONS (superseded by ROC.R functions, yes?) - DELETE?
+
+#get_fscore <- function(thresh, mat) {
+#  tmat <- mat >= thresh
+#  tp = sum(get_perf(tmat)) # correct referents selected
+#  fp = sum(tmat) - tp # incorrect referents selected: all selected referents - TPs
+#  fn = ncol(tmat) - tp # correct referents missed: num of words - TPs
+#  precision = tp / (tp + fp)
+#  recall = tp / (tp + fn)
+#  return(2*precision*recall / (precision + recall))
+#} # better to return c(precision, recall) so that we can do ROC curves?
 
 
-get_perf <- function(m) {
-  perf <- rep(0, nrow(m))
-  names(perf) <- rownames(m)
-  for (ref in colnames(m)) {
-    if (!(ref %in% rownames(m))) {
-      next
-    }
-    correct <- m[ref, ref]
-    total <- sum(m[ref,])
-    if (total == 0) {
-      next
-    }
-    perf[ref] <- correct / total
-  }
-  return(perf)
-}
-
-get_fscore <- function(thresh, mat) {
-  tmat <- mat >= thresh
-  tp = sum(get_perf(tmat)) # correct referents selected
-  fp = sum(tmat) - tp # incorrect referents selected: all selected referents - TPs
-  fn = ncol(tmat) - tp # correct referents missed: num of words - TPs
-  precision = tp / (tp + fp)
-  recall = tp / (tp + fn)
-  return(2*precision*recall / (precision + recall))
-} # better to return c(precision, recall) so that we can do ROC curves?
-
-
-get_roc <- function(mdat) {
-  mat <- mdat$matrix / max(unlist(mdat$matrix)) # normalize so max value(s) are 1
-  threshes <- seq(0,1,.01)
-  fscores <- unlist(lapply(threshes, get_fscore, mat))
-  return(fscores)
-}
+#get_roc <- function(mdat) {
+#  mat <- mdat$matrix / max(unlist(mdat$matrix)) # normalize so max value(s) are 1
+#  threshes <- seq(0,1,.01)
+#  fscores <- unlist(lapply(threshes, get_fscore, mat))
+#  return(fscores)
+#}
 

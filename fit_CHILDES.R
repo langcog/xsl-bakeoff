@@ -13,8 +13,16 @@ stochastic_models = c("guess-and-test","pursuit","trueswell2012","kachergis_samp
 #corpus_fits = list(FGT = list(), FM = list())
 load(here("fits","FGT_FM_fits.Rdata"))
 
+#source("models/kachergis.R")
+#run_corpus_model(group_fits$kachergis$optim$bestmem, FGT_corpus$train) # .83
+#run_corpus_model(group_fits$kachergis$optim$bestmem, FGT_corpus$train, gold_lexicon = FGT_corpus$gold_lexicon) # 0.61
+#run_corpus_model(group_fits$kachergis$optim$bestmem, FM_corpus$train) # .82
+
+#optimize_corpus_fscore(FGT_corpus$train, "Bayesian_decay", gold_lexicon = FGT_corpus$gold_lexicon)
+
 for (model_name in determ_models) {
-  fit = optimize_corpus_fscore(fgt_ord, model_name, load_fits = T, gold_lexicon=fgt_gold)
+  fit = optimize_corpus_fscore(FGT_corpus$train, model_name, load_fits = T, 
+                               gold_lexicon=FGT_corpus$gold_lexicon)
   corpus_fits[["FGT"]][model_name] = fit
   save(corpus_fits, file=here("fits","FGT_FM_fits.Rdata"))
 }
@@ -24,7 +32,7 @@ group_fits$kachergis$member$upper = c(.5, 11, 1)
 group_fits$uncertainty$member$upper = c(.5, 11, 1)
 
 for (model_name in determ_models) {
-  fit = optimize_corpus_fscore(fm_ord, model_name)
+  fit = optimize_corpus_fscore(FM_corpus$train, model_name) # need FM_corpus$gold_lexicon
   corpus_fits[["FM"]][model_name] = fit
   save(corpus_fits, file=here("fits","FGT_FM_fits.Rdata"))
 }
@@ -36,7 +44,8 @@ load(here("fits","FGT_FM_stoch_fits.Rdata"))
 # Iteration: 59 bestvalit: 0.677419 bestmemit:    0.136058    0.184348    0.123132
 
 for (model_name in stochastic_models) {
-  fit = optimize_corpus_fscore(fgt_ord, model_name)
+  fit = optimize_corpus_fscore(FGT_corpus$train, model_name, 
+                               gold_lexicon = FGT_corpus$gold_lexicon)
   corpus_fits[["FGT"]][model_name] = fit
   save(corpus_fits, file=here("fits","FGT_FM_stoch_fits.Rdata"))
 }

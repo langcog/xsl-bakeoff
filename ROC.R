@@ -5,15 +5,45 @@ require(here)
 
 # group_fits$fazly$optim$bestmem 
 
-gold_fgt = read.csv(here("data/FGT_data/gold.txt"), sep = " ")
-names(gold_fgt) = c("words", "objs")
+#gold_fgt = read.csv(here("data/FGT_data/gold.txt"), sep = " ")
+#names(gold_fgt) = c("words", "objs")
+
+# get_cooc_matrix - take a training order, build a cooccurrence matrix
+create_matrix <- function(train) {
+  Nwords = length(unique(unlist(train$words)))
+  Nobjs = length(unique(unlist(train$objs)))
+  M = matrix(0, nrow=Nwords, ncol=Nobjs)
+  rownames(M) = sort(unique(unlist(train$words)))
+  colnames(M) = sort(unique(unlist(train$objs)))
+  # iterate over training scenes, M[train$words[i], grain$objs[i]] = M[train$words[i], grain$objs[i]] + 1
+  
+  return(M)
+}
+
+
+get_perf <- function(m) {
+  perf <- rep(0, nrow(m))
+  names(perf) <- rownames(m)
+  for (ref in colnames(m)) {
+    if (!(ref %in% rownames(m))) {
+      next
+    }
+    correct <- m[ref, ref]
+    total <- sum(m[ref,])
+    if (total == 0) {
+      next
+    }
+    perf[ref] <- correct / total
+  }
+  return(perf)
+}
 
 get_fscore <- function(thresh, mat, fscore_only=T, gold_lexicon = c()) {
   tmat <- mat >= thresh
   tp = get_tp(tmat, gold_lexicon) # correct referents selected
   if (length(gold_lexicon) > 0) {
-    fp = sum(tmat[gold_fgt[["words"]], gold_fgt[["objs"]]]) - tp
-    fn = length(gold_lexicon[["objs"]]) - tp
+    fp = sum(tmat[gold_lexicon[["word"]], gold_lexicon[["object"]]]) - tp
+    fn = length(gold_lexicon[["object"]]) - tp
   } else {
     fp = sum(tmat) - tp # incorrect referents selected: all selected referents - TPs
     fn = ncol(tmat) - tp # correct referents missed: num of words - TPs
@@ -37,9 +67,9 @@ get_fscore <- function(thresh, mat, fscore_only=T, gold_lexicon = c()) {
 get_tp <- function(m, gold_lexicon) {
   count = 0
   if (length(gold_lexicon) > 0) {
-    for (i in 1:length(gold_fgt[["words"]])) {
-      word = gold_fgt[["words"]][i]
-      ref = gold_fgt[["objs"]][i]
+    for (i in 1:length(gold_lexicon[["word"]])) {
+      word = gold_lexicon[["word"]][i]
+      ref = gold_lexicon[["object"]][i]
       if (!(word %in% rownames(m))) {
         next
       }
