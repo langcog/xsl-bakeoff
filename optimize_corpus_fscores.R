@@ -14,7 +14,7 @@ run_corpus_model <- function(parms, corpus, Fscore_only=T, gold_lexicon=c()) {
   if(Fscore_only) { 
     return(1-fscore) 
   } else {
-    roc <- get_roc(model_matrix, fscores_only = F, gold_lexicon = gold_lexicon)
+    roc <- get_roc(model_out$matrix, fscores_only = F, gold_lexicon = gold_lexicon)
     return(roc)
   }
 }

@@ -41,13 +41,18 @@ get_perf <- function(m) {
 get_fscore <- function(thresh, mat, fscore_only=T, gold_lexicon = c()) {
   tmat <- mat >= thresh
   tp = get_tp(tmat, gold_lexicon) # correct referents selected
+  words = gold_lexicon[["word"]]
+  words = words[words %in% rownames(tmat)]
+  objects = gold_lexicon[["object"]]
+  objects = objects[objects %in% colnames(tmat)]
   if (length(gold_lexicon) > 0) {
-    fp = sum(tmat[gold_lexicon[["word"]], gold_lexicon[["object"]]]) - tp
-    fn = length(gold_lexicon[["object"]]) - tp
+    fp = sum(tmat[words, objects]) - tp
+    fn = length(objects) - tp
   } else {
     fp = sum(tmat) - tp # incorrect referents selected: all selected referents - TPs
     fn = ncol(tmat) - tp # correct referents missed: num of words - TPs
   }
+  print(c(tp, fp, fn))
   precision = tp / (tp + fp) 
   recall = tp / (tp + fn) # aka sensitivity / true positive rate
   tn = sum(!tmat) - fn # all the 0s that should be 0s
@@ -70,7 +75,7 @@ get_tp <- function(m, gold_lexicon) {
     for (i in 1:length(gold_lexicon[["word"]])) {
       word = gold_lexicon[["word"]][i]
       ref = gold_lexicon[["object"]][i]
-      if (!(word %in% rownames(m))) {
+      if (!(word %in% rownames(m)) | !(ref %in% colnames(m))) {
         next
       }
       count = count + m[word, ref]
