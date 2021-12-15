@@ -78,7 +78,10 @@ ord = list(words = list(c(1,2), # utterance 1 (word indices)
 ## First pass generator
 
 ```{r}
+source("load_corpus_data.R")
+
 # if easier, only need to do one corpus at a time
+
 fetch_data <- function(corpus_names, min_age, max_age) {
   dat <- get_utterances(corpus = corpus_names)
   dat <- dat %>% filter(target_child_age <= max_age, 
@@ -89,12 +92,39 @@ fetch_data <- function(corpus_names, min_age, max_age) {
 }
 
 
-generator <- function(utterances, Nutterances, scene_size, 
-                      desiredPoS=c("nouns")) { # , desiredSpeakers=c("")
+generator <- function(utterances, scene_size, with_verbs = F) { 
+  # , desiredSpeakers=c("")
   # every scene_size utterances is a 'scene' (e.g., 5 utterances)
-  # Nutterances / Nchildren 
   # group_by child, and sample N 
-  
+  refs_scene = c()
+  for (i in 1:nrow(utterances)) {
+    pos = str_split(utterances[i, "part_of_speech"], " ")[[1]]
+    words = str_split(utterances[i, "stem"], " ")[[1]]
+    if (length(pos) != length(words)) {
+      next
+    }
+    for (j in 1:length(pos)) {
+      if (with_verbs) {
+        if (startsWith(pos[j], "n") | startsWith(pos[j], "v")) {
+          refs_scene = append(refs_scene, words[j])
+        }
+      } else {
+        if (startsWith(pos[j], "n")) {
+          refs_scene = append(refs_scene, words[j])
+        }
+      }
+    }
+    if ((i %% scene_size) == 0) {
+      for (j in (i - scene_size + 1):i) {
+        utterances[j, "refs"] = paste(refs_scene, collapse = " ")
+      }
+      refs_scene = c()
+    }
+  }
+  train_words = c(utterances["stem"])[[1]]
+  train_refs = c(utterances["refs"])[[1]]
+  utterances_ord = create_scenes(train_words, train_refs)
+  return(utterances_ord)
 }
 
 # want to be able to specify array of PoS to include: nouns, adjectives, verbs
