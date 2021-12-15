@@ -29,7 +29,9 @@ process_FMcorpus <- function(resave=F) {
     load(here("data/FMcorpus_processed.Rdata"))
   }
   fm_ord <- create_scenes(fmc$utt, fmc$objects.present)
-  FM_corpus = list(train = fm_ord) # , gold_lexicon = fm_gold)
+  load("data/FMcorpus/gold_fm.RData")
+  
+  FM_corpus = list(train = fm_ord, gold_lexicon = gold_fm)
   save(FM_corpus, file="XSLmodels/data/FM_corpus.Rdata")
 }
 
@@ -41,8 +43,8 @@ load("XSLmodels/data/FM_corpus.Rdata")
 
 # run once
 process_FGTcorpus <- function() {
-  fgt_w <- read_lines(here("data/FGT_data/words.txt"))
-  fgt_o <- read_lines(here("data/FGT_data/objects.txt"))
+  fgt_w <- read_lines(here("data","FGT_data","words.txt"))
+  fgt_o <- read_lines(here("data","FGT_data","objects.txt"))
   
   fgt_ord <- create_scenes(fgt_w, fgt_o)
   

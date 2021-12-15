@@ -38,7 +38,7 @@ get_perf <- function(m) {
   return(perf)
 }
 
-get_fscore <- function(thresh, mat, fscore_only=T, gold_lexicon = c()) {
+get_fscore <- function(thresh, mat, fscore_only=T, gold_lexicon = c(), verbose=F) {
   tmat <- mat >= thresh
   tp = get_tp(tmat, gold_lexicon) # correct referents selected
   words = gold_lexicon[["word"]]
@@ -52,7 +52,7 @@ get_fscore <- function(thresh, mat, fscore_only=T, gold_lexicon = c()) {
     fp = sum(tmat) - tp # incorrect referents selected: all selected referents - TPs
     fn = ncol(tmat) - tp # correct referents missed: num of words - TPs
   }
-  print(c(tp, fp, fn))
+  if(verbose) print(c(tp, fp, fn))
   precision = tp / (tp + fp) 
   recall = tp / (tp + fn) # aka sensitivity / true positive rate
   tn = sum(!tmat) - fn # all the 0s that should be 0s

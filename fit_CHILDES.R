@@ -32,10 +32,15 @@ group_fits$kachergis$member$upper = c(.5, 11, 1)
 group_fits$uncertainty$member$upper = c(.5, 11, 1)
 
 for (model_name in determ_models) {
-  fit = optimize_corpus_fscore(FM_corpus$train, model_name) # need FM_corpus$gold_lexicon
+  fit = optimize_corpus_fscore(FM_corpus$train, model_name, load_fits = T,
+                               gold_lexicon=FM_corpus$gold_lexicon) # need FM_corpus$gold_lexicon
   corpus_fits[["FM"]][model_name] = fit
   save(corpus_fits, file=here("fits","FGT_FM_fits.Rdata"))
 }
+
+
+
+
 
 # fit stochastic models
 load(here("fits","FGT_FM_stoch_fits.Rdata"))
@@ -51,7 +56,7 @@ for (model_name in stochastic_models) {
 }
 
 for (model_name in stochastic_models) {
-  fit = optimize_corpus_fscore(fm_ord, model_name)
+  fit = optimize_corpus_fscore(FM_corpus$train, model_name) # ToDo: get gold_lexicon
   corpus_fits[["FM"]][model_name] = fit
   save(corpus_fits, file=here("fits","FGT_FM_stoch_fits.Rdata"))
 }
