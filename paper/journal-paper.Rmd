@@ -435,6 +435,7 @@ Nevertheless, the Rescorla-Wagner model best matched both the Medina et al. adul
 The novelty-biased model best predicted the Koehne et al. adult data, with FUs and the Strength-biased models just behind.
 Finally, the Suanda et al. developmental data was best fit by the Bayesian Decay model. 
 
+
 ```{r gen-exp-table, results="asis"}
 #gen_tab$model = c("R-W", "Nov", "FUs", "Str", "PA", "Pur", "", "PbV", "GnT", "Pur", "BD")
 
@@ -489,21 +490,40 @@ divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) 
 
 ## Corpus Results
 
-Motivate use of a few representative CHILDES corpora - 
-large number of utterances, maybe diverse ages?, diverse/ordinary activities (e.g., guided/free play, book reading..)
+Now we turn to evaluating these models on selected corpora of child-directed speech.
+Following earlier work, we first evaluate on small collections of annotated transcripts from the Rollins corpus, annotated by Frank, Goodman, & Tenenbaum (2009), and on transcripts from 24 English-speaking infants from Fernald & Morikawa (1993), annotated by Frank, Tenenbaum, & Fernald (2013). 
+For each utterance in these corpora (referred to as FGT and FM, respectively), researchers viewed the video recordings and annotated which referents were in view of the child at the time of the utterance.
 
-### Best-fitting Parameters
+define gold lexicons, specify how many words/referents in each
+mention ages of children in Rollins and FM, and number of utterances (and unique nouns, maybe?)
+
+Finally, we also investigate model performance on another corpus selected CHILDES, for which no referent annotations were available.
+describe strategy for constructing referent 'scenes' from adjacent utterances
+If the results are largely concordant with the above results, we suggest that additional model testing and learnability analyses can usefully be done using just these scenes constructed from audio transcripts.
+
+First, we examine how well the models perform on the FGT and FM corpora using the best-fitting parameters from the adult experiments.
+describe f-score metric
+Then we optimize the models' parameters for the FGT and FM corpora, and discuss any broad differences between using the experiment-optimized parameters and the corpus-optimized parameters. 
+Finally, we test the generality of our results with respect to scenes constructed form audio-only transcripts of child-directed speech.
+
+### Experiment-optimized Parameters
 
 ```{r}
 # show model performance based on parameters fitted to above experiments
 # ToDo: sampling models ?
 ```
 
-### Optimized Parameters
+
+### Corpus-optimized Parameters
 
 <!-- maybe optimizing for short experiments is unfair: which models can do much better if optimized?  --> 
-
 <!-- noun bias vs. verb? only if it's counterintuitive wrt the statistics (if 1 verb/sentence, makes sense) --> 
+
+### Generalization to Audio-only Corpora
+
+<!-- use a longitudinal corpus? e.g. Manchester? would be interesting if there are predicted individual differences -->
+
+
 
 # Discussion
 
