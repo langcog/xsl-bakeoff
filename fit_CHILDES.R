@@ -44,9 +44,16 @@ for (model_name in determ_models) {
 
 # fit stochastic models
 load(here("fits","FGT_FM_stoch_fits.Rdata"))
-# kachergis_sampling 
+# kachergis_sampling (old)
 # Iteration: 26 bestvalit: 0.696970 bestmemit:    0.107670    0.238341    0.071873
 # Iteration: 59 bestvalit: 0.677419 bestmemit:    0.136058    0.184348    0.123132
+
+# pursuit
+# Iteration: 100 bestvalit: 0.565217 bestmemit:    0.779606    0.920186    0.001486
+
+# trueswell
+# Iteration: 67 bestvalit: 0.575758 bestmemit:    0.464308    0.350012    0.044143
+
 
 for (model_name in stochastic_models) {
   fit = optimize_corpus_fscore(FGT_corpus$train, model_name, 
@@ -56,7 +63,8 @@ for (model_name in stochastic_models) {
 }
 
 for (model_name in stochastic_models) {
-  fit = optimize_corpus_fscore(FM_corpus$train, model_name) # ToDo: get gold_lexicon
+  fit = optimize_corpus_fscore(FM_corpus$train, model_name,
+                               gold_lexicon = FM_corpus$gold_lexicon) # ToDo: get gold_lexicon
   corpus_fits[["FM"]][model_name] = fit
   save(corpus_fits, file=here("fits","FGT_FM_stoch_fits.Rdata"))
 }
