@@ -69,6 +69,7 @@ for (model_name in stochastic_models) {
   save(corpus_fits, file=here("fits","FGT_FM_stoch_fits.Rdata"))
 }
 
+# creates tibble of model predictions from list of fitted models
 get_corpus_fits_df <- function(corpus_fits) {
   df <- tibble()
   for(corpus_name in names(corpus_fits)) {

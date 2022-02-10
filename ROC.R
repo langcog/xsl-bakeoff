@@ -21,6 +21,7 @@ create_matrix <- function(train) {
 }
 
 
+# given a model knowledge matrix, retrieve Luce choice (proportion correct) per item
 get_perf <- function(m) {
   perf <- rep(0, nrow(m))
   names(perf) <- rownames(m)
@@ -37,6 +38,7 @@ get_perf <- function(m) {
   }
   return(perf)
 }
+
 
 get_fscore <- function(thresh, mat, fscore_only=T, gold_lexicon = c(), verbose=F) {
   tmat <- mat >= thresh
