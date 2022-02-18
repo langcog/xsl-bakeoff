@@ -13,6 +13,7 @@ stochastic_models = c("guess-and-test","pursuit","trueswell2012","kachergis_samp
 
 load(here("data/combined_data.RData"))
 
+# imported
 mafc_test <- function(mperf, test) {
   perf = rep(0, length(test$trials))
   for(i in 1:length(test$trials)) {
