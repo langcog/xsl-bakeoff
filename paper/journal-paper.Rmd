@@ -95,9 +95,9 @@ We end by examining results from generalization of models to other experiments n
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
 # Method
-\vspace{-6pt}
+
 ## Procedure
-\vspace{-6pt}
+
 Our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
 Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
@@ -115,7 +115,7 @@ First, we optimize each model's parameters on 80% of data and evaluate on the re
 Second, in the *group fit* regime we fit each model to all conditions and datasets and evaluate across all data. Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. \vspace{-4pt}
 
 ## Models
-\vspace{-6pt}
+
 ```{r, model-list}
 # need to be run >100 times per given parameter values
 stochastic_models = list.files(here("models/stochastic/"))
@@ -154,7 +154,7 @@ The update rule for adjusting the association $M_{w,o}$ between a given word $w$
 M_{w,o} =  \alpha M_{w,o} + \frac{ \chi \cdot e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o}  }{  \sum_{w\in W} \sum_{o\in O} e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o} }
 \label{eq:fullmodel}
 \end{equation}
-\vspace{-2pt}
+
 At test, given word $w$ learners use Luce choice, choosing referent $o$ from the \textit{m} given alternatives in proportion to associative strength $M_{w,o}$. 
 
 We also fit a *stochastic sampling* (**FUs**) version of this model [see @Kachergis2017], which uses the same update equation, but samples only a single presented object for each word on a trial instead of updating all possible associations. 
@@ -182,7 +182,7 @@ Objects on each trial serve as cues to predict which words will be heard.
 When a given word is heard, the associations between that word and each object on the trial are scaled at a learning rate $\beta$ in proportion to the magnitude of the difference between the prediction and the maximum association value ($\lambda$). 
 Each trial, the association matrix is subject to decay (parameter $\alpha$).
 At test, this model uses Luce choice to select the best referent for each word from the presented alternatives.
-\vspace{-4pt}
+
 
 ### Propose-but-Verify Model (PbV)
 In the propose-but-verify hypothesis testing model [@Trueswell2013], a presented referent is selected at random for any presented word that has no remembered referent. 
@@ -190,7 +190,7 @@ The next time that word occurs, the previously-proposed referent is remembered w
 If the remembered referent is verified to be present, the future probability of recalling the word is increased by parameter $\epsilon$. 
 If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
 This model implements trial-level mutual exclusivity by selecting new proposals only from among the referents that are not yet part of a hypothesis.
-\vspace{-4pt}
+
 
 ### Guess-and-Test Model (GnT)
 The guess-and-test hypothesis testing model is based on the description given by @Medina2011 of a one-shot (i.e. "fast mapping") learning, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
@@ -562,15 +562,14 @@ More broadly, we believe that structured model comparison is a critical step tow
 
 <!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill-posed altogether [@Yu2012hyp]. -->
 
-\vspace{-4pt}
-<!--
+
 # Acknowledgements
-\vspace{-3pt}
-We thank Chen Yu for allowing us to include data from several previously-unpublished experimental conditions. 
--->
+
+We thank Chen Yu for allowing us to include data from several previously-unpublished experimental conditions.
+We thank members of the Language and Cognition Lab at Stanford University for feedback on early versions of this manuscript.
 
 # References 
-\vspace{-3pt}
+
 \footnotesize
 ```{r}
 # References will be generated automatically by Pandoc and included here.
