@@ -492,14 +492,37 @@ divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) 
 
 Now we turn to evaluating these models on selected corpora of child-directed speech.
 Following earlier work, we first evaluate on small collections of annotated transcripts from the Rollins corpus, annotated by Frank, Goodman, & Tenenbaum (2009), and on transcripts from 24 English-speaking infants from Fernald & Morikawa (1993), annotated by Frank, Tenenbaum, & Fernald (2013). 
-For each utterance in these corpora (referred to as FGT and FM, respectively), researchers viewed the video recordings and annotated which referents were in view of the child at the time of the utterance.
+For each utterance in these corpora (referred to as FGT and FM, respectively), researchers viewed the video recordings and annotated which referents were in visible to the child at the time of the utterance.
+For example, the utterance "it's a look and see book" is tagged with "book, bird, rattle, face" as those were the referents visible in the scene during the utterances. 
+As seen in Table \ref{fig:corporastats}, the number of utterances in the FM corpus is almost eight times greater than the number of utterances in the FGT corpus, and the number of word types is almost three times greater. 
+However, there is a comparable number of referent types. 
+Thus, the FM corpus represents a much noisier learning environment which allows for a comparison of the models in different contexts.
 
-define gold lexicons, specify how many words/referents in each
+\begin{table}[h!]
+\caption{\label{fig:corporastats} Corpora Statistics}
+\vskip 0.12in
+\centering
+\scalebox{0.9}{
+    \begin{tabular}{ |c|c|c|c| }
+        \hline
+         Corpus  & Word Types & Referent Types & Number of Utterances  \\
+        \hline
+         FGT  & 419 & 22 & 624 \\
+         FM & 1122 & 30 & 4763 \\
+         \hline
+    \end{tabular}}
+\end{table} 
+
 mention ages of children in Rollins and FM, and number of utterances (and unique nouns, maybe?)
 
 Finally, we also investigate model performance on another corpus selected CHILDES, for which no referent annotations were available.
-describe strategy for constructing referent 'scenes' from adjacent utterances
 If the results are largely concordant with the above results, we suggest that additional model testing and learnability analyses can usefully be done using just these scenes constructed from audio transcripts.
+
+\subsection{Corpus Generation Procedure}
+
+Although the combined size of the FGT and FM corpora are larger than most corpora used to test cross-situational word learning models in the literature, their utility is limited by the fact that both corpora are of similar contexts (play sessions) and only contain English-speaking children. They are also limited in size when compared to the large body of child-directed corpora that is available in CHILDES \cite{CHILDES}. Through the use of generated corpora, we are able to perform further comparisons on both larger and more diverse datasets that are not possible with the FGT and FM corpora. 
+
+Thus, we propose a method of automatically annotating CHILDES corpora to include referents present in the scene. Specifically, we group every $\alpha$ utterances together (where $\alpha$ is a free parameter) and all the nouns (or potentially other specified syntactic categories) are presumed to be present in the scene. This assumption is a drastic oversimplification of naturalistic learning situations since there are often referents which are not uttered that are present and there are words which are uttered that do not have a corresponding referent. Nevertheless, we will show that such a simplistic method can create corpora that demonstrate many of the same properties as the FGT and FM corpora when used as inputs to word learning models. 
 
 First, we examine how well the models perform on the FGT and FM corpora using the best-fitting parameters from the adult experiments.
 describe f-score metric
@@ -507,6 +530,8 @@ Then we optimize the models' parameters for the FGT and FM corpora, and discuss 
 Finally, we test the generality of our results with respect to scenes constructed form audio-only transcripts of child-directed speech.
 
 ### Experiment-optimized Parameters
+
+<!-- can pull more from: https://www.overleaf.com/project/61c2da4a85034543cfe10bec -->
 
 ```{r}
 # show model performance based on parameters fitted to above experiments
