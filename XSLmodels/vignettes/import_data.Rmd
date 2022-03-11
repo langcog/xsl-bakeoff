@@ -1,0 +1,47 @@
+---
+title: "Importing a Dataset and Fitting Models"
+author: "George Kachergis"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+        fig_caption: yes
+vignette: >
+  %\VignetteIndexEntry{Importing a Dataset and Fitting Models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Importing a Dataset
+
+Cross-situational word learning experiments are assumed to have a training phase, and a testing phase.
+For the training phase, participants (and models) are presented with a subset of words and referents (i.e. objects) on each trial.
+To allow for designs that present an unequal number of words and objects on each trial, we use a list format.
+
+If you have data from an experiment that you would like to fit models to, or if you have 
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+
