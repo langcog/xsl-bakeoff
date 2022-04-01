@@ -80,7 +80,6 @@ ord = list(words = list(c(1,2), # utterance 1 (word indices)
 ```{r}
 source("load_corpus_data.R")
 
-# if easier, only need to do one corpus at a time
 
 fetch_data <- function(corpus_names, min_age, max_age) {
   dat <- get_utterances(corpus = corpus_names)
@@ -91,21 +90,35 @@ fetch_data <- function(corpus_names, min_age, max_age) {
   return(dat)
 }
 
+# include by default "all" parts of speech?
+# closed-class vs. open-class distinction only?
+# or broad categories: "verbs", "adjs", "nouns", "function_words" (determiners, pronouns)
 
-generator <- function(utterances, scene_size, include_POS = c("n")) { 
+# user can specify either "all" to get all POS, or a list of whichever specific POS tags (refer to CHILDES spreadsheet)
+# or "nouns" or "verbs" to get 
+generator <- function(utterances, scene_size, include_POS = c("nouns")) { 
   # , desiredSpeakers=c("")
+  final_POS = c()
   # every scene_size utterances is a 'scene' (e.g., 5 utterances)
-  # group_by child, and sample N 
+  # group_by child, and sample N
+  if(is.element("verbs",include_POS)) {
+    final_POS = c(final_POS, c("v","cop","v:aux","mod","part")) 
+  } else if(is.element("nouns",include_POS)) {
+    final_POS = c(final_POS, c("n","n:adj","n:gerund","n:let","n:prop","n:pt"))
+  } else {
+    final_POS = include_POS
+  }
   refs_scene = c()
   for (i in 1:nrow(utterances)) {
     pos = str_split(utterances[i, "part_of_speech"], " ")[[1]]
     words = str_split(utterances[i, "stem"], " ")[[1]]
     if (length(pos) != length(words)) {
-      next
+      next 
     }
+    # loop version (maybe try to vectorize..)
     for (j in 1:length(pos)) {
-      for (p in include_POS) {
-        if (startsWith(pos[j], p)) {
+      for (p in final_POS) {
+        if (pos[j]==p) { 
           refs_scene = append(refs_scene, words[j])
         }
       }
@@ -129,6 +142,7 @@ generator <- function(utterances, scene_size, include_POS = c("n")) {
 # note: v does not include modals (mod) and copulas (cop)
 utts <- fetch_data(c("Brown", "NewEngland"), 10, 14)
 gen_adj <- generator(utts, 5, c("adj"))
+gen_nouns_verbs <- generator(utts, 5, c("nouns","verbs"))
 ```
 
 ## Data questions
