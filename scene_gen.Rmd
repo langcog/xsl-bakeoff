@@ -92,7 +92,7 @@ fetch_data <- function(corpus_names, min_age, max_age) {
 }
 
 
-generator <- function(utterances, scene_size, with_verbs = F) { 
+generator <- function(utterances, scene_size, include_POS = c("n")) { 
   # , desiredSpeakers=c("")
   # every scene_size utterances is a 'scene' (e.g., 5 utterances)
   # group_by child, and sample N 
@@ -104,12 +104,8 @@ generator <- function(utterances, scene_size, with_verbs = F) {
       next
     }
     for (j in 1:length(pos)) {
-      if (with_verbs) {
-        if (startsWith(pos[j], "n") | startsWith(pos[j], "v")) {
-          refs_scene = append(refs_scene, words[j])
-        }
-      } else {
-        if (startsWith(pos[j], "n")) {
+      for (p in include_POS) {
+        if (startsWith(pos[j], p)) {
           refs_scene = append(refs_scene, words[j])
         }
       }
@@ -128,8 +124,11 @@ generator <- function(utterances, scene_size, with_verbs = F) {
 }
 
 # want to be able to specify array of PoS to include: nouns, adjectives, verbs
-
-utts <- fetch_data(c("Brown", "NewEngland"), 10, 20)
+# noun: n, adjective: adj, verb: v, adv: adv, pronoun: pro, determiner: det
+# prepopsition: prep
+# note: v does not include modals (mod) and copulas (cop)
+utts <- fetch_data(c("Brown", "NewEngland"), 10, 14)
+gen_adj <- generator(utts, 5, c("adj"))
 ```
 
 ## Data questions
