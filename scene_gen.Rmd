@@ -94,6 +94,10 @@ fetch_data <- function(corpus_names, min_age, max_age) {
 # closed-class vs. open-class distinction only?
 # or broad categories: "verbs", "adjs", "nouns", "function_words" (determiners, pronouns)
 
+#adjs: "adj" "post" 
+#advs: "adv" "adv:tem"
+#function_words: "det" "quan" "qn" "det:dem" "det:art" "det:int" "det:num" "det:poss" (determiners) "pro" "rel" "pro:dem" "pro:exist" "pro:indef" "pro:int" "pro:per" "pro:poss" "pro:refl" "pro:rel" "pro:sub" (pronouns) also "prep" "coord" "co" "int" "conj" "comp" 
+
 # user can specify either "all" to get all POS, or a list of whichever specific POS tags (refer to CHILDES spreadsheet)
 # or "nouns" or "verbs" to get 
 generator <- function(utterances, scene_size, include_POS = c("nouns")) { 
@@ -102,9 +106,9 @@ generator <- function(utterances, scene_size, include_POS = c("nouns")) {
   # every scene_size utterances is a 'scene' (e.g., 5 utterances)
   # group_by child, and sample N
   if(is.element("verbs",include_POS)) {
-    final_POS = c(final_POS, c("v","cop","v:aux","mod","part")) 
+    final_POS = c(final_POS, c("v","cop","aux", "v:aux", "mod","part")) 
   } else if(is.element("nouns",include_POS)) {
-    final_POS = c(final_POS, c("n","n:adj","n:gerund","n:let","n:prop","n:pt"))
+    final_POS = c(final_POS, c("n","n:adj", "n:gerund","n:let","n:prop","n:pt"))
   } else {
     final_POS = include_POS
   }
