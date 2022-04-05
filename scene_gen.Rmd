@@ -96,7 +96,10 @@ fetch_data <- function(corpus_names, min_age, max_age) {
 
 #adjs: "adj" "post" 
 #advs: "adv" "adv:tem"
-#function_words: "det" "quan" "qn" "det:dem" "det:art" "det:int" "det:num" "det:poss" (determiners) "pro" "rel" "pro:dem" "pro:exist" "pro:indef" "pro:int" "pro:per" "pro:poss" "pro:refl" "pro:rel" "pro:sub" (pronouns) also "prep" "coord" "co" "int" "conj" "comp" 
+#function_words: 
+#"det" "quan" "qn" "det:dem" "det:art" "det:int" "det:num" "det:poss" (determiners) 
+#"pro" "rel" "pro:dem" "pro:exist" "pro:indef" "pro:int" "pro:per" "pro:poss" "pro:refl" "pro:rel" "pro:sub" (pronouns) 
+#"prep" "coord" "co" "int" "conj" "comp" (prepositions, conjunctions)
 
 # user can specify either "all" to get all POS, or a list of whichever specific POS tags (refer to CHILDES spreadsheet)
 # or "nouns" or "verbs" to get 
