@@ -1,3 +1,7 @@
+#get_model_info() ?
+# help("pursuit") ?
+longcite = "Stevens, J. ..."
+shortcite = "Stevens et al. 2014"
 # Stevens et al. 2014 pursuit model
 # The pursuit model assumes that when word w is heard, it’s strongest associated meaning (h) is selected, 
 # and the association A(w,h) is updated based on the presence or absence of that referent. 

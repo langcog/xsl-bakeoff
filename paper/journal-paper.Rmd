@@ -30,8 +30,8 @@ abstract: >
 keywords: >
     cross-situational word learning; model comparison; language learning
     
-output: cogsci2016::cogsci_paper
-final-submission: \cogscifinalcopy
+#output: cogsci2016::cogsci_paper
+#final-submission: \cogscifinalcopy -->
 # abstract is a bit long: 152 words
 ---
 
@@ -520,7 +520,9 @@ If the results are largely concordant with the above results, we suggest that ad
 
 \subsection{Corpus Generation Procedure}
 
-Although the combined size of the FGT and FM corpora are larger than most corpora used to test cross-situational word learning models in the literature, their utility is limited by the fact that both corpora are of similar contexts (play sessions) and only contain English-speaking children. They are also limited in size when compared to the large body of child-directed corpora that is available in CHILDES \cite{CHILDES}. Through the use of generated corpora, we are able to perform further comparisons on both larger and more diverse datasets that are not possible with the FGT and FM corpora. 
+Although the combined size of the FGT and FM corpora are larger than most corpora used to test cross-situational word learning models in the literature, their utility is limited by the fact that both corpora are of similar contexts (play sessions) and only contain English-speaking children. 
+They are also limited in size when compared to the large body of child-directed corpora that is available in CHILDES \cite{CHILDES}. 
+Through the use of generated corpora, we are able to perform further comparisons on both larger and more diverse datasets that are not possible with the FGT and FM corpora. 
 
 Thus, we propose a method of automatically annotating CHILDES corpora to include referents present in the scene. Specifically, we group every $\alpha$ utterances together (where $\alpha$ is a free parameter) and all the nouns (or potentially other specified syntactic categories) are presumed to be present in the scene. This assumption is a drastic oversimplification of naturalistic learning situations since there are often referents which are not uttered that are present and there are words which are uttered that do not have a corresponding referent. Nevertheless, we will show that such a simplistic method can create corpora that demonstrate many of the same properties as the FGT and FM corpora when used as inputs to word learning models. 
 
@@ -544,8 +546,11 @@ Finally, we test the generality of our results with respect to scenes constructe
 <!-- maybe optimizing for short experiments is unfair: which models can do much better if optimized?  --> 
 <!-- noun bias vs. verb? only if it's counterintuitive wrt the statistics (if 1 verb/sentence, makes sense) --> 
 
-### Generalization to Audio-only Corpora
+As we show in Appendix X, similar results are found for audio-only corpora where we generate
 
+
+### Generalization to Audio-only Corpora
+<!-- ToDo: move to appendix? -->
 <!-- use a longitudinal corpus? e.g. Manchester? would be interesting if there are predicted individual differences -->
 
 
