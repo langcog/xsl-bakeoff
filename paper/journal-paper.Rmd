@@ -462,6 +462,7 @@ RW_vs_baseline = cor(rw$ModelPerf, b$ModelPerf) # .999 -- but not 1!
 
 
 ```{r models-diverge}
+# find conditions where the best-performing models maximally diverge
 mw <- gfd %>% mutate(ID = rep(1:726, length(unique(gfd$Model)))) %>%
   pivot_wider(names_from=Model, values_from=ModelPerf)
 
@@ -491,7 +492,7 @@ divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) 
 ## Corpus Results
 
 Now we turn to evaluating these models on selected corpora of child-directed speech.
-Following earlier work, we first evaluate on small collections of annotated transcripts from the Rollins corpus, annotated by Frank, Goodman, & Tenenbaum (2009), and on transcripts from 24 English-speaking infants from Fernald & Morikawa (1993), annotated by Frank, Tenenbaum, & Fernald (2013). 
+Following earlier work, we first evaluate on small collections of annotated transcripts from the @rollins2003caregivers corpus, annotated by Frank, Goodman, & Tenenbaum (2009), and on transcripts from 24 English-speaking infants from Fernald & Morikawa (1993), annotated by @frank2013social. 
 For each utterance in these corpora (referred to as FGT and FM, respectively), researchers viewed the video recordings and annotated which referents were in visible to the child at the time of the utterance.
 For example, the utterance "it's a look and see book" is tagged with "book, bird, rattle, face" as those were the referents visible in the scene during the utterances. 
 As seen in Table \ref{fig:corporastats}, the number of utterances in the FM corpus is almost eight times greater than the number of utterances in the FGT corpus, and the number of word types is almost three times greater. 
@@ -513,7 +514,7 @@ Thus, the FM corpus represents a much noisier learning environment which allows 
     \end{tabular}}
 \end{table} 
 
-mention ages of children in Rollins and FM, and number of utterances (and unique nouns, maybe?)
+mention ages of children in Rollins (9 mos, 12 mos, and 30 mos, but what ages were transcribed?) and FM (6, 12, and 19 mos), and number of utterances (and unique nouns, maybe?)
 
 Finally, we also investigate model performance on another corpus selected CHILDES, for which no referent annotations were available.
 If the results are largely concordant with the above results, we suggest that additional model testing and learnability analyses can usefully be done using just these scenes constructed from audio transcripts.
