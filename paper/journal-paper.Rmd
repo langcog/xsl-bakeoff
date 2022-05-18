@@ -307,6 +307,7 @@ colnames(mod_cors) = mod_names_short
 ```
 
 ```{r cv-fits-table, results="asis"}
+# ToDo: change to use labels
 tab2 <- xtable::xtable(cvg_fit_tab, digits=c(0,0, 2, 2, 2, 2, 0), 
                        caption = "Cross-validated and group model fits.")
 
@@ -330,8 +331,8 @@ diag(mod_cors) = "-"
 #tab3 <- mod_cors[2:nrow(mod_cors),1:(ncol(mod_cors)-1)]
 
 #print(tab3, type="latex", comment = F, include.rownames = T, table.placement = "H")
-kable(mod_cors, "latex", booktabs = T, escape=F, digits = 2, caption="Correlations of models' predictions.") %>%
-  kable_styling(latex_options = "scale_down") 
+kable(mod_cors, "latex", booktabs = T, escape=F, digits = 2, caption="Correlations of models' predictions.") # %>%
+#  kable_styling(latex_options = "scale_down") 
 ```
 
 ```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=5.2, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model item-level accuracy using best-fitting parameters per model for all conditions (colored by condition). Note that on some items, PbV, GnT, and Pursuit all show more extreme responding (1 or 0) than people ever do."}
@@ -447,8 +448,8 @@ for(c in 2:ncol(gentab)) {
   gentab[min_row,c] = cell_spec(gentab[min_row,c], "latex", bold = T)
 }
 # ToDo: add separate Total RMSE column for adult and devo data
-kable(gentab, "latex", booktabs = T, digits=2, escape=F, caption = "Generalization experiment results.") %>%
-  kable_styling(latex_options = "scale_down")
+kable(gentab, "latex", booktabs = T, digits=2, escape=F, caption = "Generalization experiment results.") #%>%
+  #kable_styling(latex_options = "scale_down")
 ```
 
 ```{r}
