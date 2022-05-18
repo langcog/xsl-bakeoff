@@ -1,38 +1,26 @@
 ---
-# title: "Let me count the ways to decompose a contingency table"
 title: "A large-scale comparison of cross-situational word learning models"
 bibliography: refs.bib
 csl: apa6.csl
-document-params: "10pt, letterpaper"
-
-author-information: > 
-    \author{{\large \bf George Kachergis (kachergis@stanford.edu)} \and 
-    \author{{\large \bf Kevin Liang (.edu)} \and
-    {\large \bf Michael C.~Frank (mcfrank@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA}
-
-abstract: >
-    One problem language learners face is extracting word meanings from 
-    scenes with many possible referents. Despite the ambiguity of individual   
-    situations, a large body of empirical work shows that people are
-    able to learn cross-situationally when a word occurs in different 
-    situations. Many computational models of cross-situational word learning   
-    have been proposed, yet there is little consensus on the main mechanisms 
-    supporting learning, in part due to the profusion of disparate studies and models,
-    and lack of systematic model comparisons across a wide range of studies. 
-    This study compares the performance of several extant models on a dataset 
-    of 44 experimental conditions and a total of 1,696 participants.
-    Using cross-validation, we fit multiple models representing theories of both
-    associative learning and hypothesis-testing theories of word learning, find two  
-    best-fitting models, and discuss issues of model and mechanism identifiability. 
-    Finally, we test the models' ability to generalize to additional
-    experiments, including developmental data. 
-    
-keywords: >
-    cross-situational word learning; model comparison; language learning
-    
-#output: cogsci2016::cogsci_paper
-#final-submission: \cogscifinalcopy -->
-# abstract is a bit long: 152 words
+output: pdf_document
+author-information: |
+  \author{{\large \bf George Kachergis (kachergis@stanford.edu)} \and  \author{{\large \bf Kevin Liang (.edu)} \and {\large \bf Michael C.~Frank (mcfrank@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA}
+abstract: "One problem language learners face is extracting word meanings from  scenes
+  with many possible referents. Despite the ambiguity of individual    situations,
+  a large body of empirical work shows that people are able to learn cross-situationally
+  when a word occurs in different  situations. Many computational models of cross-situational
+  word learning    have been proposed, yet there is little consensus on the main mechanisms
+  \ supporting learning, in part due to the profusion of disparate studies and models,
+  and lack of systematic model comparisons across a wide range of studies.  This study
+  compares the performance of several extant models on a dataset  of 44 experimental
+  conditions and a total of 1,696 participants. Using cross-validation, we fit multiple
+  models representing theories of both associative learning and hypothesis-testing
+  theories of word learning, find two   best-fitting models, and discuss issues of
+  model and mechanism identifiability.  Finally, we test the models' ability to generalize
+  to additional experiments, including developmental data. \n"
+keywords: |
+  cross-situational word learning; model comparison; language learning
+document-params: 10pt, letterpaper
 ---
 
 ```{r global_options, include=FALSE}
@@ -501,7 +489,8 @@ divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) 
 ## Corpus Results
 
 Now we turn to evaluating these models on selected corpora of child-directed speech.
-Following earlier work, we first evaluate on small collections of annotated transcripts from the @rollins2003caregivers corpus, annotated by Frank, Goodman, & Tenenbaum (2009), and on transcripts from 24 English-speaking infants from Fernald & Morikawa (1993), annotated by @frank2013social. 
+Following earlier work, we first evaluate on small collections of annotated transcripts from the @rollins2003caregivers corpus, annotated by Frank, Goodman, & Tenenbaum (2009), and on transcripts from 24 English-speaking infants from @fernald1993common, annotated by @frank2013social. 
+<!-- mention ages of children in Rollins (9 mos, 12 mos, and 30 mos, but what ages were transcribed?) and FM (6, 12, and 19 mos), and number of utterances (and unique nouns, maybe?) -->
 For each utterance in these corpora (referred to as FGT and FM, respectively), researchers viewed the video recordings and annotated which referents were in visible to the child at the time of the utterance.
 For example, the utterance "it's a look and see book" is tagged with "book, bird, rattle, face" as those were the referents visible in the scene during the utterances. 
 As seen in Table \ref{fig:corporastats}, the number of utterances in the FM corpus is almost eight times greater than the number of utterances in the FGT corpus, and the number of word types is almost three times greater. 
@@ -523,7 +512,6 @@ Thus, the FM corpus represents a much noisier learning environment which allows 
     \end{tabular}}
 \end{table} 
 
-mention ages of children in Rollins (9 mos, 12 mos, and 30 mos, but what ages were transcribed?) and FM (6, 12, and 19 mos), and number of utterances (and unique nouns, maybe?)
 
 Finally, we also investigate model performance on another corpus selected CHILDES, for which no referent annotations were available.
 If the results are largely concordant with the above results, we suggest that additional model testing and learnability analyses can usefully be done using just these scenes constructed from audio transcripts.
@@ -532,23 +520,31 @@ If the results are largely concordant with the above results, we suggest that ad
 
 
 Although the combined size of the FGT and FM corpora are larger than most corpora used to test cross-situational word learning models in the literature, their utility is limited by the fact that both corpora are of similar contexts (play sessions) and only contain English-speaking children. 
-They are also limited in size when compared to the large body of child-directed corpora that is available in CHILDES \cite{CHILDES}. 
+They are also limited in size when compared to the large body of child-directed corpora that is available in CHILDES [@MacWhinney2000]. 
 Through the use of generated corpora, we are able to perform further comparisons on both larger and more diverse datasets that are not possible with the FGT and FM corpora. 
 
 Thus, we propose a method of automatically annotating CHILDES corpora to include referents present in the scene. Specifically, we group every $\alpha$ utterances together (where $\alpha$ is a free parameter) and all the nouns (or potentially other specified syntactic categories) are presumed to be present in the scene. This assumption is a drastic oversimplification of naturalistic learning situations since there are often referents which are not uttered that are present and there are words which are uttered that do not have a corresponding referent. Nevertheless, we will show that such a simplistic method can create corpora that demonstrate many of the same properties as the FGT and FM corpora when used as inputs to word learning models. 
 
 First, we examine how well the models perform on the FGT and FM corpora using the best-fitting parameters from the adult experiments.
-describe f-score metric
 Then we optimize the models' parameters for the FGT and FM corpora, and discuss any broad differences between using the experiment-optimized parameters and the corpus-optimized parameters. 
 Finally, we test the generality of our results with respect to scenes constructed form audio-only transcripts of child-directed speech.
 
 ### Experiment-optimized Parameters
 
-Two different metrics are used to evaluate the models. The first of these metrics is the $F_1$ score. As the standard metric in evaluating word-learning models, the $F_1$ score is used to facilitate comparison with the literature \cite{Stevens2017}. The  $F_1$ score is the harmonic mean of two other metrics - precision and recall. Precision measures the percent of correct predictions out of the total number of predictions (i.e., out of all the word-referent pairs proposed, what proportion are correct?) whereas recall measures the number of correct predictions by the model out of all the possible correct predictions (i.e., out of all the word-referent pairs that can be learned, what proportion did the model learn?)  In this case, we use the provided "gold" lexicon for each corpus - a list of word-referent mappings that have been judged to be learnable - to determine the correct word-referent mappings.
+Two different metrics are used to evaluate the models. 
+The first of these metrics is the $F_1$ score, a standard metric in evaluating the accuracy of classification models that is harmonic mean of precision and recall. 
+*Precision* is the number of correct predictions out of the total number of predictions (i.e., out of all the word-referent pairs proposed, what proportion are correct?), whereas *recall* is the number of correct predictions by the model out of all the possible correct predictions (i.e., out of all the word-referent pairs that can be learned, what proportion did the model learn?). 
+In this case, we use the provided "gold" lexicon for each corpus -- a list of word-referent mappings that have been judged to be learnable -- to determine the correct word-referent mappings.
 
-The second metric is the comprehension score \cite{fazly2010}. This score is defined as the sum of the probabilities of each referent being matched with the correct word (i.e., the expected value of the number of correct word-referent pairs) and allows us to better understand how learning takes places over time for each model. Additionally, it can still be used even when there is no "gold" lexicon present, and it is not obvious which mappings are learnable (i.e., in the case of the generated corpora). 
+The second metric is the *comprehension score* \cite{fazly2010}, defined as the sum of the probabilities of each referent being matched with the correct word (i.e., the expected value of the number of correct word-referent pairs).
+The comprehension score allows us to better understand and compare how learning takes places over time for each model. 
+Additionally, it can still be used even when there is no "gold" lexicon present, and it is not obvious which mappings are learnable (i.e., in the case of the generated corpora). 
 
-Although the corpora used to train each model is identical, each model also has a set of unique parameters that need to specified. Differing settings for these parameters can significantly affect the performance of the model. Consequently, for a fair comparison of these models, we fit these parameters to the data. For all models, we perform an optimization to maximize the $F_1$ score of the model. This optimization was done using differential evolution with the DEoptim package \cite{DEoptim} in R. Due to the stochastic nature of the hypothesis-testing models considered, we simulated a sample of 500 learners to optimize the parameters for those models. 
+Although the corpora used to train each model is identical, each model also has a set of unique parameters that need to specified. 
+Differing settings for these parameters can significantly affect the performance of the model. Consequently, for a fair comparison of these models, we fit these parameters to the data. 
+For all models, we perform an optimization to maximize the $F_1$ score of the model. 
+This optimization was done using differential evolution with the DEoptim package \cite{DEoptim} in R. 
+Due to the stochastic nature of the hypothesis-testing models considered, we simulated a sample of 500 learners in each iteration of parameter optimization for those models. 
 
 Subsequently, we use these optimized parameters to test whether the models show any order effects. In other words, is the performance of each model affected by the order in which the utterances are presented?
 
