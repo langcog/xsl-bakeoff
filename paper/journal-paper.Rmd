@@ -46,7 +46,7 @@ If a learner's task is to connect the words they hear to the potential referents
 Yet children learn words very quickly. How do they do this? 
 
 An array of social [@yurovsky2017beyond], pragmatic [@Clark1987; @Markman1992], and linguistic [@Gleitman1990] cues are often available to reduce a learner's uncertainty. 
-Yet at its heart, these information sources can be seen as reducing the uncertainty inherent in the task of *cross-situational mapping* [@Frank2009]: that is, cross-referencing which referents a word has consistently appeared with across multiple uses [@Gleitman1990; @Carey1978]. 
+Yet at its heart, these information sources can be seen as reducing the uncertainty inherent in the task of *cross-situational mapping* [@Frank2009]: that is, cross-referencing which referents a word has consistently appeared with across multiple uses [@Gleitman1990; @Carey1978]. This word learning task is referred to as cross-situational learning.
 If learners can learn cross-situationally, they might be able to pool information about reference (and hence word meaning) over time and learn even absent perfectly disambiguated input in any particular situation. 
 Can children (or even adults) learn in this way? 
 
@@ -55,7 +55,6 @@ In such experiments, participants are typically presented with a series of train
 <!-- G: maybe add what "nonce words" mean in this context: words that do not correspond to any meaning? -->
 and (when possible) instructed to learn the meaning(s) of the presented words.
 These training trials typically present 10--20 distinct word-referent pairs to be learned across 10--50 trials, presenting each word/referent 3--10 times across a total span of $<10$ minutes.
-<!-- G: why "word/referent" and not "word-referent pair"? Isn't it the pair that is presented 3-10 times? -->
 Learning is then typically assessed by presenting each word and asking learners to make a forced choice of the best referent, either from the entire set or from a small subset of referents.
 
 People of all ages are able to learn word-object mappings in such paradigms at a level significantly above chance, but their performance is typically far from perfect in all but the most trivial versions of the task [@yurovsky2017beyond].
@@ -73,21 +72,20 @@ These models often represent distinct intuitions of how learning operates, vario
 <!-- Extant cross-situational word learning models are too numerous to review exhaustively here.  -->
 
 It is unknown which of these models -- or even which broad class of models -- best fits the breadth of experimental data. 
-While most models of cross-situational learning have typically been tested against at least a few datasets, to our knowledge there has been no systematic comparison of models across a wide variety of experimental conditions. 
-Identifying the model(s) that best predict human performance is thus an important goal for consolidating this broad literature. 
+Identifying the model(s) that best predict human performance is an important goal for consolidating this broad literature. 
 More broadly, identifying such models could be an important step in assessing the contribution of cross-situational learning to word learning more generally.
+
+However, while most models of cross-situational learning have typically been tested against at least a few datasets, to our knowledge there has been no systematic comparison of models across a wide variety of experimental conditions. 
+Different models also often contain a range of parameters that must be fit to data. Previous comparison work was thus hindered, either because the parameters have been allowed to vary freely across multiple conditions, or because models' performance is compared on different datasets. 
 
 <!-- However, we believe that comparing a large selection of models fitted jointly to a wide variety of experimental conditions may reveal which model(s, classes, mechanism) are most promising for explaining human word learning behavior. -->
 
-Thus, the goal of our current study is to test the ability of a range of cross-situational word learning models in accounting for a wide range of experimental data. 
+Thus, the goal of our current study is to test the ability of different cross-situational word learning models in accounting for a wide range of experimental data, by systematically comparing the performance of a range of models.
 <!-- G: maybe something like: "Thus, the goal of our current study is to systematically compare a range of cross-situational word learning models and evaluate their viability. We do so by testing the models' ability in accounting both for a wide range of experimental and naturalistic data." -->
-
-Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) being used for evaluation.
-<!-- G: maybe also mention varying the nature of the data? (both lab, and real life) -->
-Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work, either because the parameters have been allowed to vary freely across multiple conditions, or because models' performance is compared on different datasets. 
-<!-- G: maybe "Different models often contain a range of parameters that must be fit to data. Previous comparison work was thus hindered, either because the parameters have been allowed to vary freely across multiple conditions, or because models' performance was compared on different datasets.  -->
-Thus, we focus on out-of-sample prediction of human data using cross-validated parameter fits.
-<!-- G: maybe "In this study, we undertake these challenges by using cross-validated parameter fits and focusing on out-of-sample prediction of human data for a range of cross-situational models. -->
+We do so by testing the models' ability in accounting both for a wide range of experimental data and for naturalistic child-directed speech data. 
+Our goal is to scale up both the number of models evaluated, the number of experiment designs (and participants) and the nature of the data (both lab, and real life)
+being used for evaluation. 
+We undertake this challenge by using cross-validated parameter fits and focusing on out-of-sample prediction of human data for a range of cross-situational models.
 We end by examining results from generalization of models to other experiments not included in the initial evaluation and parameter fitting.
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
