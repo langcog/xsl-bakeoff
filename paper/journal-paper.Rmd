@@ -94,20 +94,22 @@ We end by examining results from generalization of models to other experiments n
 ## Procedure
 
 Our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
-Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
+Each model typically is defined as a function that takes input data  and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
 Our primary outcome measure is the correlation between each model's performance for each item in a specific experimental condition and item-level human performance on that same experimental condition. 
 
-Although input data and test trials are features of specific experimental tests, each  model has parameters that must be specified. 
+Although input data and test trials are features of specific experimental tests, each model also has a group of parameters (often between 2--4) that must be specified. 
 Typically the settings of these parameters are critical to the predictive performance of the model. 
 Hence, to ensure a fair comparison between models, these parameters must be fit to data. 
-In all cases, we optimize parameter values to minimize the sum of squared error (SSE) between model and human performance, weighting the contribution of each condition's SSE by the number of participants in that condition.
+For all models, we optimize parameter values to minimize the sum of squared error (SSE) between model and human performance, weighting the contribution of each condition's SSE by the number of participants in that condition.
 We optimize parameters using differential evolution via the DEoptim R package [@DEoptim].
 For the stochastic models, each parameter setting was evaluated using a simulated sample of 200 learners.
 
-We conducted two evaluations of models. 
-First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation) .
-Second, in the *group fit* regime we fit each model to all conditions and datasets and evaluate across all data. Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. \vspace{-4pt}
+We conduct two evaluations of models. 
+First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation).
+Second, in the *group fit* regime we fit each model to all conditions and datasets  
+<!--G: (thus optimizing each model's parameters on 100% of data) --> 
+and evaluate across all data. Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. \vspace{-4pt}
 
 ## Models
 
