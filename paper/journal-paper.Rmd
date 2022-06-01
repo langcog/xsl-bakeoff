@@ -223,8 +223,11 @@ The modeled data are average accuracies from `r totItems` word-object pairs in `
 A table containing details of each condition is available on OSF[^2]. 
 The number of trials per condition ranged from 18 to 108, with 1-4 words and objects presented per trial, and a total of 12-24 pairs to be learned per condition.
 The bulk of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
-However, data from several conditions are contributed by Chen Yu's lab at Indiana University, and have never before been published.
+However, data from several conditions are contributed by Chen Yu's lab at Indiana University, 
+<!--G: X participants out of total -->
+and have never before been published.
 Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
+<!--G: how many pairs? --> 
 At test, participants heard each word and were asked to select the best referent from either all $m$ presented objects (*m*-alternative forced choice; AFC), or from a subset (e.g., 4AFC).
 
 [^2]: Information about the dataset: [https://osf.io/REDACTED](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5)
