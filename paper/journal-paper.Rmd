@@ -76,7 +76,8 @@ Identifying the model(s) that best predict human performance is an important goa
 More broadly, identifying such models could be an important step in assessing the contribution of cross-situational learning to word learning more generally.
 
 However, while most models of cross-situational learning have typically been tested against at least a few datasets, to our knowledge there has been no systematic comparison of models across a wide variety of experimental conditions. 
-Different models also often contain a range of parameters that must be fit to data. Previous comparison work was thus hindered, either because the parameters have been allowed to vary freely across multiple conditions, or because models' performance is compared on different datasets. 
+Different models also often contain a range of parameters (e.g., a learning rate) that should be optimized to fit the observed data. 
+Previous comparison work was thus hindered, either because the parameters have been allowed to vary freely across multiple conditions, or because models' performance is compared on different datasets. 
 
 <!-- However, we believe that comparing a large selection of models fitted jointly to a wide variety of experimental conditions may reveal which model(s, classes, mechanism) are most promising for explaining human word learning behavior. -->
 
@@ -107,9 +108,8 @@ For the stochastic models, each parameter setting was evaluated using a simulate
 
 We conduct two evaluations of models. 
 First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation).
-Second, in the *group fit* regime we fit each model to all conditions and datasets  
-<!--G: (thus optimizing each model's parameters on 100% of data) --> 
-and evaluate across all data. Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. \vspace{-4pt}
+Second, in the *group fit* regime we fit each model to all conditions and datasets (i.e., optimizing each model's parameters on 100% of data) and evaluate across all data. 
+Though slightly overfitting may occur in the *group fit* regime, this evaluation allows us to make the best test of generalization to other experiments from the literature. 
 
 ## Models
 
@@ -206,7 +206,7 @@ A given word-object association only enters the lexicon if $p(o|w) > \theta$, a 
 At test, this model chooses the best referent for each word by Luce choice from the lexicon, which is not necessarily 1-to-1.
 
 ## Data
-\vspace{-4pt}
+
 ```{r load-data}
 load(here("data/combined_data.RData"))
 
@@ -220,9 +220,13 @@ for(c in 1:length(combined_data)) {
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
-A table containing details of each condition is available on OSF[^2]. 
+We give a brief overview of included conditions, and the full  important takeaway is that within this dataset, there is substantial variation along each of these dimensions, making it a useful testbed for establishing the generality of word learning models.
+A table containing design details of each condition is available on OSF[^2], and the trial-by-trial order information for all `r length(combined_data)` conditions -- along with participants' item-level average performance -- is included in our R package [ToDo: github XSLmodels].
 The number of trials per condition ranged from 18 to 108, with 1-4 words and objects presented per trial, and a total of 12-24 pairs to be learned per condition.
-The bulk of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
+
+The bulk of these data have been previously published. 
+For example, data from 13 of the conditions were reported in @Kachergis2013nat, which compared performance on conditions with differing numbers of words and objects presented per trial (e.g., 1 word and 3 objects per trial; dubbed "1x3") to those with equal numbers of words and objects per trial (e.g., "2x2", "3x3", and "4x4"), with an equal amount of overall repetitions per stimulus.
+Data from another 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016, which manipulated frequency and contextual diversity word-object pairs.
 However, data from several conditions are contributed by Chen Yu's lab at Indiana University, 
 <!--G: X participants out of total -->
 and have never before been published.
