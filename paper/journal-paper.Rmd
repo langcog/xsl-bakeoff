@@ -88,6 +88,7 @@ Our goal is to scale up both the number of models evaluated, the number of exper
 being used for evaluation. 
 We undertake this challenge by using cross-validated parameter fits and focusing on out-of-sample prediction of human data for a range of cross-situational models.
 We end by examining results from generalization of models to other experiments not included in the initial evaluation and parameter fitting.
+<!-- Georgia: mention the package at this point? --> 
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
 # Method
@@ -121,6 +122,7 @@ assoc_models = list.files(here("models/"))
 assoc_models = assoc_models[assoc_models!="stochastic"]
 ```
 We fit a baseline co-occurrence model along with six associative models, two hypothesis-testing models, and two hybrid models that store multiple, graded hypotheses--but only a subset of all possible associations.
+<!-- Georgia: maybe more info about these categories in general, what the hybrid models are, and a reference? --> 
 These models and their free parameters are briefly described below.
 
 
@@ -206,6 +208,7 @@ A given word-object association only enters the lexicon if $p(o|w) > \theta$, a 
 At test, this model chooses the best referent for each word by Luce choice from the lexicon, which is not necessarily 1-to-1.
 
 ## Data
+<!-- Georgia: "Experimental data" maybe? To differentiate with the corpus data below?-->
 
 ```{r load-data}
 load(here("data/combined_data.RData"))
@@ -237,6 +240,7 @@ At test, participants heard each word and were asked to select the best referent
 [^2]: Information about the dataset: [https://osf.io/REDACTED](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5)
 
 # Results
+<!-- Georgia: maybe "Experimental results" ? -->
 
 ```{r load-group-fits}
 load(here("fits/group_fits.Rdata"))
@@ -429,6 +433,7 @@ gen_tab <- gen_exps %>% mutate(RMSE = sqrt(MSE)) %>% select(-MSE) %>%
 
 
 Using the optimal parameters found for each model in the group fit, we simulated model performance for four other published (two adult, two developmental) for which we only have participants' average performance. 
+<!-- Georgia: what's the difference with the ones above? what are developmental corpora? -->
 @Koehne2013 manipulated the temporal order with which words were assigned two meanings of different strengths across four conditions given to adults.
 @Medina2011 manipulated the informativeness (number of referents per trial) and order of trials across four conditions, again with adults.
 <!--The pattern of results from both of these experiments were seen as evidence that people learn via hypothesis testing, but we find that the Koehne et al. data is best accounted for by the novelty-biased model, and the Medina et al. data is best predicted by the Rescorla-Wagner model.-->
@@ -548,7 +553,7 @@ The second metric is the *comprehension score* \cite{fazly2010}, defined as the 
 The comprehension score allows us to better understand and compare how learning takes places over time for each model. 
 Additionally, it can still be used even when there is no "gold" lexicon present, and it is not obvious which mappings are learnable (i.e., in the case of the generated corpora). 
 
-Although the corpora used to train each model is identical, each model also has a set of unique parameters that need to specified. 
+Although the corpora used to train each model are identical, each model also has a set of unique parameters that need to specified. 
 Differing settings for these parameters can significantly affect the performance of the model. Consequently, for a fair comparison of these models, we fit these parameters to the data. 
 For all models, we perform an optimization to maximize the $F_1$ score of the model. 
 This optimization was done using differential evolution with the DEoptim package \cite{DEoptim} in R. 
@@ -580,7 +585,7 @@ As we show in Appendix X, similar results are found for audio-only corpora where
 
 # Discussion
 
-We set out to conduct a systematic comparison of several models of cross-situational word learning models across a wide variety of experimental conditions. 
+We set out to conduct a systematic comparison of several models of the cross-situational word learning models described above across a wide variety of experimental conditions. 
 Using a large dataset, we found best-fitting parameters for 11 models both by simultaneously fitting all of the data, and using cross-validation.
 The results of both fitting regimes were consistent and clear: shown in Table 1, the associative models generally achieved better fits (lower SSE and higher correlations) than the hypothesis-testing models (GnT; @Medina2011 and PbV; @Trueswell2013), which made correlated predictions (see Table 2: $r=.65$).
 The Rescorla-Wagner model, a prediction error-based associative model, performed similarly to the GnT model, with highly correlated predictions ($r=.87$), while PbV had the poorest fit, and made responses most similar to the R-W model ($r=.67$).
