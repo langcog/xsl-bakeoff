@@ -5,8 +5,15 @@ output: pdf_document
 
 ```{r, echo=F, warning=F, message=F}
 require(here)
+require(gplots)
 require(tidyverse)
+require(RColorBrewer)
+knitr::opts_chunk$set(echo=F, message=F, warning=F)
 ```
+
+# Appendix A: Summary of Experimental Conditions
+
+Table 1 describes the 44 experimental conditions included in the model comparison, including the number of trials, the number of words presented per trial (Words/Trial), the number of referents presented per trial (Objects/Trial), the number of to-be-learned word-referent pairs (Items), people's overall mean accuracy ($p(o|w)$ across all intended $w-o$ mappings) in each condition (Accuracy), the standard deviation of performance (SD), and the number of participants per condition (N). 
 
 ```{r conditions-table, results="asis", echo=F}
 load(here("data/combined_data.RData"))
@@ -37,3 +44,104 @@ tab1 <- xtable::xtable(tab, digits=2,
 
 print(tab1, type="latex", comment = F, include.rownames = F, table.placement = "p")
 ```
+
+# Appendix B: Clustering experiments and models by misfit
+
+The table below shows model fit (SSE; sum of squared error) for each experimental condition.
+
+Model fit x Experiment table? maybe clustered...? (to show most similar models, and most similar experiments?)
+
+```{r, fig.width=8, fig.height=9}
+load(here("fits/cv_group_fits.Rdata"))
+cvg <- tibble()
+for(m in names(cv_group_fits)) {
+  cvg <- rbind(cvg, cv_group_fits[[m]]$testdf)
+}
+
+exp_by_mod <- cvg %>%
+  mutate(SSE = (ModelPerf-HumanPerf)^2) %>% # should we weight be sample size?
+  group_by(Condition, Model) %>%
+  summarize(meanSSE = mean(SSE)) %>%
+  pivot_wider(id_cols = Condition, names_from = Model, values_from = meanSSE)
+
+xm_mat <- as.matrix(exp_by_mod[,2:12])
+row.names(xm_mat) = exp_by_mod$Condition
+
+
+colfunc <- colorRampPalette(c("black", "red")) 
+heatmap.2(xm_mat, col=colfunc(20)) # , scale="row"
+```
+
+Takeaways:
+Some experimental conditions are hard for particular models to fit.
+For example, the strength-biased model has particular difficulty with the `filt` conditions[^1] (Kachergis et al., 2012), which present a group of word-referent pairs early in training which then systematically co-occur with particular novel late-stage word-referent pairs, testing how strictly learners will maintain a mutual exclusivity (ME) constraint. 
+The Trueswell2012 model also shows greater misfit in most of these conditions (except for the `filtXE_3L` conditions, which have only 3 repetitions of the late-stage pairings, and thus do not overwhelm learners' ME bias).
+
+
+On the other hand, many experimental conditions are nearly equally well fit by all models, especially those that have a fixed number of repetitions per word-referent pair (e.g., 3x3, 4x4, )
+
+[^1]: Except for the `filt0E_` conditions, which consist only of the late-stage pairs, with no early stage.
+
+Other ideas:
+
+- Find experiment with maximal discrimination between the models? (highest SD of fit?)
+- Find experiment that each model best predicts? and worst predicts?
+
+# Correlation of model predictions with item perforance per condition
+
+Each cell displays the correlation coefficient of a 
+
+```{r, fig.width=8, fig.height=9}
+exp_by_mod <- cvg %>%
+  group_by(Condition, Model) %>%
+  summarize(r = cor(ModelPerf, HumanPerf)) %>%
+  pivot_wider(id_cols = Condition, names_from = Model, values_from = r)
+
+xm_mat <- as.matrix(exp_by_mod[,2:12])
+row.names(xm_mat) = exp_by_mod$Condition
+require(pals)
+heatmap.2(xm_mat, col=brewer.spectral(30), # brewer.pal(11,"RdBu")
+          scale="none", trace="none") # scale="row", "col" <- interesting
+```
+How many experiments is each model a best fit for? Worst fit?
+
+```{r}
+exp_by_mod <- cvg %>%
+  group_by(Condition, Model) %>%
+  summarize(r = cor(ModelPerf, HumanPerf)) 
+
+models = unique(exp_by_mod$Model)
+conditions = unique(exp_by_mod$Condition)
+
+  
+# NAs for fazly, rescorla-wagner, and Bayesian decay for a few filt conditions??
+# exp_by_mod[which(is.na(exp_by_mod$r)),]
+#subset(cvg, Condition=="filt0E_3L" & Model=="fazly") # no variation in model performance: ModelPerf=.402
+#subset(cvg, Condition=="filt0E_3L" & Model=="rescorla-wagner") # ModelPerf=.5
+#subset(cvg, Condition=="filt0E_3L" & Model=="Bayesian_decay") # ModelPerf=.237
+
+mod_best_worst <- exp_by_mod %>% group_by(Model) %>%
+  summarize(best = max(r, na.rm=T), 
+            worst = min(r, na.rm=T),
+            best_cond = Condition[which(r==best)],
+            worst_cond = Condition[which(r==worst)]) %>%
+  arrange(desc(best))
+
+sort(table(mod_best_worst$best_cond)) 
+# freq369-3x3loCD best for 6 models; freq369_36mx best for 2 models
+sort(table(mod_best_worst$worst_cond))
+# filt6E_3L worst condition for 4 models; 2x3 6/9 4AFC worst for 2
+# and 3 other asymmetric conditions worst for 3 other models: 1x3, 2x3, 3x4
+
+cond_best_worst <- exp_by_mod %>% group_by(Condition) %>%
+  summarize(best = max(r, na.rm=T), 
+            worst = min(r, na.rm=T), 
+            best_mod = Model[which(r==best)],
+            worst_mod = Model[which(r==worst)]) %>%
+  arrange(desc(best))
+
+sort(table(cond_best_worst$best_mod)) # fazly best for 6 conds, trueswell2012 for 5, kachergis_sampling for 5
+# freq369-3x3loCD best for 6 models; freq369_36mx best for 2 models
+sort(table(cond_best_worst$worst_mod)) # rescorla-wagner worst for 8 conditions, guess-and-test for 7, pursuit for 6
+```
+

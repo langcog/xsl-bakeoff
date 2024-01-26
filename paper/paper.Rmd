@@ -66,8 +66,8 @@ These training trials typically present 10--20 distinct word-referent pairs to b
 Learning is then typically assessed by presenting each word and asking learners to make a forced choice of the best referent, either from the entire set or from a small subset of referents.
 
 People of all ages are able to learn word-object mappings in such paradigms at a level significantly above chance, but their performance is typically far from perfect in all but the most trivial versions of the task [@yurovsky2017beyond].
-Numerous training manipulations have been found to influence performance. 
-How often mappings are presented  [@Suanda2012; @Kachergis2016], the  interval between appearances of a mapping [@Vlach2012eq; @Vlach2013], and the number of mappings presented per trial [@Yu2008] all have been shown to affect learning performance.
+To test the robustness of such learning, many studies have manipulated training and studied resulting performance.
+How often mappings are presented [@Suanda2012; @Kachergis2016], the interval between appearances of a mapping [@Vlach2012eq; @Vlach2013], and the number of mappings presented per trial [@Yu2008] all have been shown to affect learning performance.
 In sum, the evidence is strong that people can learn word cross-situationally: we are somehow able to integrate evidence (co-occurrence of words and objects) across trials and use that evidence to learn and remember new word meanings in cross-situational learning experiments.
 But what are the psychological mechanisms supporting this process? 
 And critically, do these mechanisms support naturalistic word learning?
