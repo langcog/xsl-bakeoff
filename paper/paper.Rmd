@@ -110,7 +110,8 @@ For the stochastic models, each parameter setting was evaluated using a simulate
 
 We conducted two evaluations of models. 
 First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation) .
-Second, in the *group fit* regime we fit each model to all conditions and datasets and evaluate across all data. Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. \vspace{-4pt}
+Second, in the *group fit* regime we fit each model to all conditions and datasets and evaluate across all data. 
+Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. \vspace{-4pt}
 
 ## Models
 \vspace{-6pt}
@@ -127,7 +128,7 @@ These models and their free parameters are briefly described below.
 
 ### Baseline Co-occurrence Model
 The baseline model simply tallies the co-occurrences of any words and objects appearing together on each trial, accumulating the counts in a word $\times$ object matrix $M$.
-At test, for word $w_1$ this model selects the correct referent $o_1$ according to Luce choice from the co-occurrences of $w_1$ with all referents: $P(o_1|w_1) = M_{w_1,o_1} / \sum{M_{w_1,\cdot}}$.
+At test, for word $w_1$ this model selects the correct referent $o_1$ according to @Luce1959 choice from the co-occurrences of $w_1$ with all referents: $P(o_1|w_1) = M_{w_1,o_1} / \sum{M_{w_1,\cdot}}$.
 The model's probability of correctly choosing each word per condition is what is scored against people's average probability of choosing the correct item.
 <!-- tried adding a softmax parameter but it didn't help --> 
 
@@ -136,7 +137,7 @@ The model's probability of correctly choosing each word per condition is what is
 The probabilistic associative model [@Fazly2010] represents the meaning of each word *w* as a probability distribution $p(\cdot | w)$ over the objects appearing across the trials, and incrementally learns these distributions trial-by-trial.
 The association between a given *w* and *o* grows more quickly if $p(w|o)$ is already high (a familiarity bias), unless some other word has a strong association with *o*; thus, associations are competitive.
 A parameter $\lambda$ is a small smoothing constant added to both the numerator and denominator of each $p(w|o)$, further adjusted in the denominator by a $\beta$ parameter representing the upper bound on the number of symbol types.
-At test, the correct referent for each word *w* is chosen according to Luce choice from the probability distribution over the objects that appeared with that word $p(\cdot | w)$.[^1]
+At test, the correct referent for each word *w* is chosen according to @Luce1959 choice from the probability distribution over the objects that appeared with that word $p(\cdot | w)$.[^1]
 
 [^1]: The original model implemented a $\theta$-thresholded lexicon that discretized the probability matrix, but we found that including this mechanism resulted in a worse fit to the data.
 
@@ -221,7 +222,7 @@ for(c in 1:length(combined_data)) {
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
-A table containing details of each condition is available on OSF[^2]. 
+A table containing details of each condition is available on OSF[^2], along with the full trial orderings. 
 The number of trials per condition ranged from 18 to 108, with 1-4 words and objects presented per trial, and a total of 12-24 pairs to be learned per condition.
 The bulk of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
 However, data from several conditions are contributed by Chen Yu's lab at Indiana University, and have never before been published.
@@ -424,7 +425,7 @@ gen_tab <- gen_exps %>% mutate(RMSE = sqrt(MSE)) %>% select(-MSE) %>%
 Using the optimal parameters found for each model in the group fit, we simulated model performance for four other published (two adult, two developmental) for which we only have participants' average performance. 
 @Koehne2013 manipulated the temporal order with which words were assigned two meanings of different strengths across four conditions given to adults.
 @Medina2011 manipulated the informativeness (number of referents per trial) and order of trials across four conditions, again with adults.
-<!--The pattern of results from both of these experiments were seen as evidence that people learn via hypothesis testing, but we find that the Koehne et al. data is best accounted for by the novelty-biased model, and the Medina et al. data is best predicted by the Rescorla-Wagner model.-->
+The pattern of results from both of these experiments were seen as evidence that people learn via hypothesis testing, but we find that the Koehne et al. data is best accounted for by the novelty-biased model, and the Medina et al. data is best predicted by the Rescorla-Wagner model.
 @Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words repeated across 30 trials, and found that infants learned on average 4 words.
 @Suanda2014 tested 6-year-old children in three conditions with varying contextual diversity.
 Table 3 shows the root-mean-square error (RMSE) of each model vs. average human performance, as well as the total RMSE separately for the adult experiments and the developmental experiments.
@@ -509,7 +510,7 @@ First, there are many other models that we have not yet implemented [e.g., @mcmu
 Moreover, this dataset represents performance from a fairly homogeneous sample: English-speaking US college students. 
 Future work should aim to include not only more models, but a more broadly diverse sample, both in terms of language background and age.
 The small number of generalization experiments run here suggest that parameters fitted to adult experimental conditions do not generalize well to developmental experiments: future research should gather a larger set of developmental data and re-fit these models with cross-validation.
-We invite other researchers to contribute datasets and model implementations for future, larger-scale comparisons: data and model code will be open-sourced and available on [OSF](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5).
+We invite other researchers to contribute datasets and model implementations for future, larger-scale comparisons: data, model code, and fitting procedures will be open-sourced and available on [OSF](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5), as well as through an R package \texttt{XSLmodels} which we invite other to contribute to.
 
 In summary, we have shown not only how a large model comparison can help rank models from most to least able to account for human data, but also how such comparisons can identify models that mimic each other, as well as identifying experimental designs that might aid in distinguishing models.
 Future work should extend this comparison to cross-situational word learning models and extant datasets beyond those tested here, and design novel experiments designed to distinguish these models.

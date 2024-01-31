@@ -12,6 +12,7 @@ require(ggplot2)
 require(here)
 library(knitr)
 library(kableExtra)
+require(ggpmisc)
 ```
 
 # Introduction
@@ -295,7 +296,7 @@ run_Koehne_exp <- function(model_name, par, ord) {
 
 
 evalMSE_Koehne <- function(model_name, par, orders, verbose=F) {
-  df = tibble(Cond = names(Koehne), Human=rep(0.0, 4), Model=rep(0.0, 4), Model_sd=rep(0.0, 4))
+  df = tibble(Condition = names(Koehne), Human=rep(0.0, 4), Model=rep(0.0, 4), Model_sd=rep(0.0, 4))
   for(i in 1:length(Koehne)) {
     cond = names(Koehne)[i]
     mperf = run_Koehne_exp(model_name, par, Koehne[[cond]]) 
@@ -304,20 +305,23 @@ evalMSE_Koehne <- function(model_name, par, orders, verbose=F) {
     df[i,]$Human = Koehne[[cond]]$HumanAcc
   }
   if(verbose) print(df)
-  return(sum((df$Human-df$Model)^2)/4)
+  df <- df %>% mutate(model = model_name,
+                      exp="Koehne et al.")
+  return(list(MSE = sum((df$Human-df$Model)^2)/4, df = df))
 }
 
 gen_exps = tibble(exp=character(), model=character(), MSE=numeric())
+gen_exps_perf = tibble()
 for(model_name in names(group_fits)) {
   pars = group_fits[[model_name]]$optim$bestmem
-  mse = evalMSE_Koehne(model_name, pars, Koehne, verbose=F) # 
-  gen_exps = bind_rows(gen_exps, tibble(exp="Koehne et al.", model=model_name, MSE=mse))
+  tmp = evalMSE_Koehne(model_name, pars, Koehne, verbose=F) # 
+  gen_exps = bind_rows(gen_exps, tibble(exp="Koehne et al.", model=model_name, MSE=tmp$MSE))
+  gen_exps_perf = bind_rows(gen_exps_perf, tmp$df)
 }
 
 # the model predicts the same ordering as humans out of the box -- PPPAAA is best, AAAPPP is worst
 # contradicts Koehne et al.'s interpretation: "This finding is inconsistent with a standard cross-situational
 # account because all conditions should have been above chance independent of presentation order.
-
 
 ```
 
@@ -346,7 +350,7 @@ get_block_perf <- function(modperf) {
     perf = c(perf, mean(diag(modperf[[i]]) / rowSums(modperf[[i]])))
   }
   perf[which(is.nan(perf))] = 0 # if there was division by zero
-  return(perf)
+  return(list(perf = perf, mod_sd = sd(perf)))
 }
 
 run_Medina_exp <- function(model_name, pars, plot=F) {
@@ -367,12 +371,16 @@ run_Medina_exp <- function(model_name, pars, plot=F) {
       source(here(paste0(model_dir,model_name,".R")))
       mp <- model(pars, Medina[[i]]$train)$traj
     }
-    df <- bind_rows(df, bind_cols(Condition = rep(names(Medina)[i],5),
+    modperf <- get_block_perf(mp)
+    df <- bind_rows(df, 
+                    bind_cols(Condition = rep(names(Medina)[i],5),
                               Vignette = 1:5,
-                              ModAcc = get_block_perf(mp),
-                              HumAcc = Medina[[i]]$HumBlockAcc))
+                              Model = modperf$perf,
+                              Model_sd = modperf$mod_sd,
+                              Human = Medina[[i]]$HumBlockAcc))
   }
-  df$Model = model_name
+  df <- df %>% mutate(model = model_name,
+                      exp="Medina et al.")
   
   if(plot) {
     p <- ggplot(df, aes(x=Vignette, y=Performance, group=Condition, shape=Condition, color=Condition)) + 
@@ -384,7 +392,7 @@ run_Medina_exp <- function(model_name, pars, plot=F) {
 
 evalMSE_Medina <- function(model_name, pars) {
   df <- run_Medina_exp(model_name, pars)
-  return( sum((df$HumAcc - df$ModAcc)^2) / nrow(df) )
+  return(list(MSE = sum((df$Human - df$Model)^2) / nrow(df), df = df))
 }
 
 #me <- run_Medina_exp("kachergis", c(.126, 14.25, 1.0))
@@ -392,8 +400,9 @@ evalMSE_Medina <- function(model_name, pars) {
 
 for(model_name in names(group_fits)) {
   pars = group_fits[[model_name]]$optim$bestmem
-  mse = evalMSE_Medina(model_name, pars) # 
-  gen_exps = bind_rows(gen_exps, tibble(exp="Medina et al.", model=model_name, MSE=mse))
+  tmp = evalMSE_Medina(model_name, pars) # 
+  gen_exps = bind_rows(gen_exps, tibble(exp="Medina et al.", model=model_name, MSE=tmp$MSE))
+  gen_exps_perf = bind_rows(gen_exps_perf, tmp$df)
 }
 
 ```
@@ -404,7 +413,7 @@ Yu, Zhong, and Fricker (2012) pre-trained adult participants with three word-obj
 
 NOT DONE WITH THIS ONE
 
-```{r, pretraining-exp}
+```{r, pretraining-exp, eval=F}
 # orig4x4, but 3 pairs (which ones??) are pretrained: accuracy on those is .9187, 
 # and accuracy on the other 15 is .5812 
 # How variable is this effect based on selecting different 3 items for retraining?)
@@ -473,9 +482,10 @@ eval_orders <- function(model_name, par, orders, verbose=F) {
   for(i in 1:length(orders)) {
     cond = names(orders)[i]
     mperf = mp[[cond]]
-    df = bind_rows(df, tibble(Cond=cond, Model=mean(mperf), Model_sd=sd(mperf), 
+    df = bind_rows(df, tibble(Condition=cond, Model=mean(mperf), Model_sd=sd(mperf), 
                               Human=orders[[cond]]$HumanAcc))
   }
+  df <- df %>% mutate(model = model_name)
   if(verbose) print(df)
   mse = sum((df$Human-df$Model)^2)/length(orders)
   return(list(MSE=mse, df=df))
@@ -484,9 +494,9 @@ eval_orders <- function(model_name, par, orders, verbose=F) {
 #load(here("fits/generalization_exp_results.RData"))
 for(model_name in names(group_fits)) { 
   pars = group_fits[[model_name]]$optim$bestmem
-  mp = eval_orders(model_name, pars, Suanda, verbose) # 
-  # mp$df
+  mp = eval_orders(model_name, pars, Suanda) # verbose=T
   gen_exps = bind_rows(gen_exps, tibble(exp="Suanda et al.", model=model_name, MSE=mp$MSE))
+  gen_exps_perf = bind_rows(gen_exps_perf, mp$df %>% mutate(exp="Suanda et al."))
 }
 
 ```
@@ -520,9 +530,48 @@ for(model_name in names(group_fits)) {
   pars = group_fits[[model_name]]$optim$bestmem
   mp = eval_orders(model_name, pars, smith_yu, verbose=T) # 
   gen_exps = bind_rows(gen_exps, tibble(exp="Smith & Yu", model=model_name, MSE=mp$MSE))
+  gen_exps_perf = bind_rows(gen_exps_perf, mp$df %>% mutate(exp="Smith & Yu"))
 }
 
-save(gen_exps, file=here("fits/generalization_exp_results.RData"))
+save(gen_exps, gen_exps_perf, file=here("fits/generalization_exp_results.RData"))
+```
+
+
+```{r}
+r_squared <- gen_exps_perf %>% 
+  group_by(model) %>% 
+  do({
+    model <- lm(Model ~ Human, data = .)
+    data.frame(R2 = summary(model)$r.squared)
+  }) %>% 
+  ungroup()
+
+gen_exps_perf %>% 
+  left_join(r_squared, by = c("model")) %>%
+  mutate(Experiment = exp) %>%
+  mutate(model = case_when(model == 'kachergis' ~ 'Fam./Unc.',
+                             model == 'fazly' ~ 'Prob. Assoc.',
+                             model == 'novelty' ~ 'Novelty',
+                             model == 'Bayesian_decay' ~ 'Bayesian Decay', 
+                             model == 'strength' ~ 'Strength',
+                             model == 'uncertainty' ~ 'Uncertainty',
+                             model == 'rescorla-wagner' ~ 'Rescorla-Wagner',
+                             model == 'trueswell2012' ~ 'Propose-but-Verify',
+                             model == 'guess-and-test' ~ 'Guess-and-Test',
+                             model == 'kachergis_sampling' ~ 'Fam./Unc. sampling',
+                             model == 'pursuit' ~ 'Pursuit',
+                             model == 'baseline' ~ 'Baseline',
+                          TRUE ~ model)) %>%
+  ggplot(aes(x=Human, y=Model, group=Experiment, color=Experiment)) +
+  facet_wrap(. ~ model) + geom_point(alpha=.7) +
+  ylim(0,1) + xlim(0,1) + 
+  ylab("Model Proportion Correct") + xlab("Human Proportion Correct") +
+  theme_bw() + geom_abline(intercept=0, slope=1, linetype="dashed") + 
+  theme(legend.position = "top") +
+  geom_text(aes(label=paste0("R² = ", round(R2, 2)), 
+                x=0.7, y=0.2), hjust=0, vjust=0, size=3, color="black", check_overlap = TRUE)
+  #stat_correlation() # is there a way to ignore group?
+ggsave("model_vs_human_generalization_exps.pdf", width=8.5, height=6)
 ```
 
 
