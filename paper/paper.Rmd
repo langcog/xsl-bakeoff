@@ -92,9 +92,9 @@ We end by examining results from generalization of models to other experiments n
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
 # Method
-\vspace{-6pt}
+
 ## Procedure
-\vspace{-6pt}
+
 Our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
 Each model is typically defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
@@ -110,10 +110,11 @@ For the stochastic models, each parameter setting was evaluated using a simulate
 We conducted two evaluations of models. 
 First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation).
 Second, in the *group fit* regime, we fit each model to all conditions and datasets and evaluate across all data. 
-Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. \vspace{-4pt}
+Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. 
+
 
 ## Models
-\vspace{-6pt}
+
 ```{r, model-list}
 # need to be run >100 times per given parameter values
 stochastic_models = list.files(here("models/stochastic/"))
@@ -152,7 +153,7 @@ The update rule for adjusting the association $M_{w,o}$ between a given word $w$
 M_{w,o} =  \alpha M_{w,o} + \frac{ \chi \cdot e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o}  }{  \sum_{w\in W} \sum_{o\in O} e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o} }
 \label{eq:fullmodel}
 \end{equation}
-\vspace{-2pt}
+
 At test, given word $w$ learners use Luce choice, choosing referent $o$ from the \textit{m} given alternatives in proportion to associative strength $M_{w,o}$. 
 
 We also fit a *stochastic sampling* (**FUs**) version of this model [see @Kachergis2017], which uses the same update equation, but samples only a single presented object for each word on a trial instead of updating all possible associations. 
@@ -180,7 +181,7 @@ Objects on each trial serve as cues to predict which words will be heard.
 When a given word is heard, the associations between that word and each object on the trial are scaled at a learning rate $\beta$ in proportion to the magnitude of the difference between the prediction and the maximum association value ($\lambda$). 
 Each trial, the association matrix is subject to decay (parameter $\alpha$).
 At test, this model uses Luce choice to select the best referent for each word from the presented alternatives.
-\vspace{-4pt}
+
 
 ### Propose-but-Verify Model (PbV)
 In the propose-but-verify hypothesis testing model [@Trueswell2013], a presented referent is selected at random for any presented word that has no remembered referent. 
@@ -188,7 +189,7 @@ The next time that word occurs, the previously-proposed referent is remembered w
 If the remembered referent is verified to be present, the future probability of recalling the word is increased by parameter $\epsilon$. 
 If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
 This model implements trial-level mutual exclusivity by selecting new proposals only from among the referents that are not yet part of a hypothesis.
-\vspace{-4pt}
+
 
 ### Guess-and-Test Model (GnT)
 The guess-and-test hypothesis testing model is based on the description given by @Medina2011 of a one-shot (i.e. "fast mapping") learning model, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
@@ -196,7 +197,7 @@ The guess-and-test hypothesis testing model is based on the description given by
 We give this model two free parameters: a probability of successful encoding ($s$, hypothesis formation), and a probability $f$ of forgetting a hypothesis at retrieval. 
 At test, for each word the model chooses the currently hypothesized referent.
 <!-- This model is quite similar to the guess-and-test model formally analyzed by @Blythe2010 to determine the theoretical long-term efficacy of cross-situational word learning. -->
-\vspace{-4pt}
+
 
 ### Pursuit Model (Pur)
 The pursuit model [@Stevens2017pursuit] is a hybrid model, potentially storing graded associations involving a given word and multiple referents (or vice-versa), while on any given trial greedily pursuing the  strongest association for each presented word.
@@ -207,7 +208,7 @@ A given word-object association only enters the lexicon if $p(o|w) > \theta$, a 
 At test, this model chooses the best referent for each word by Luce choice from the lexicon, which is not necessarily 1-to-1.
 
 ## Data
-\vspace{-4pt}
+
 ```{r load-data}
 load(here("data/combined_data.RData"))
 
@@ -490,16 +491,21 @@ divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) 
 We set out to conduct a systematic comparison of several models of cross-situational word learning models across a wide variety of experimental conditions. 
 Using a large dataset, we found best-fitting parameters for 11 models both by simultaneously fitting all of the data, and using cross-validation.
 The results of both fitting regimes were consistent and clear: shown in Table 1, the associative models generally achieved better fits (lower SSE and higher correlations) than the hypothesis-testing models (GnT; @Medina2011 and PbV; @Trueswell2013), which made correlated predictions (see Table 2: $r=.65$).
+However, it was also striking how similar many models' predictions were, even to models representing disparate learning theories.
+
 The Rescorla-Wagner model, a prediction error-based associative model, performed similarly to the GnT model, with highly correlated predictions ($r=.87$), while PbV had the poorest fit, and made responses most similar to the R-W model ($r=.67$).
-Moreover, the predictions of the R-W model were also highly correlated with the baseline co-occurrence counting model ($r = .999$): such similar predictions yielded by seemingly different theories is surprising and warrants further investigation.
+Moreover, the predictions of the R-W model were also highly correlated with the baseline co-occurrence counting model ($r = .99$): such similar predictions yielded by seemingly different theories is surprising and warrants further investigation.
 However, some models' particular patterns of responses suggest certain theoretical shortcomings.
 For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{Pur} =$ `r round(mean(subset(gfd, Model=="pursuit")$ModelPerf), 2)`, $M_{hum} = 0.48$).
 Indeed, as shown in Figure 1, Pur, PbV, and GnT all showed a pattern of inhuman responses: for a subset of items, the models either always got them correct or always got them incorrect, while people were more stochastic.
-<!-- And yet Pur made responses that were most highly correlated with the FUs model (r=.74)--one of the best-fitting models. -->
+And yet Pur made responses that were most highly correlated with the FUs model ($r=.74$)--one of the best-fitting models.
+In summary, although the hypothesis testing models evaluated here did not fare well, it is worth nothing that models from different theories can often mimic each other--at least in some experimental conditions--and so it is necessary to both 1) test other instances of general theories (including hypothesis testing models with, say, a decaying memory to reduce ceiling performance), and 2) use models to generate predictions during experiment design, in order to choose more informative experiments. 
 
-Among the associative models, the PA model [@Fazly2010] and the FU model [@Kachergis2012gi] both fare quite well, and the sampling version of the FU model (FUs) performs slightly better, albeit with three free parameters compared to two in the PA model.
-The predictions of the top three models are more correlated with each other than with the human data (see Table 1): PA vs. FUs: .87, PA vs. FU: .84, FU vs. FUs: .92.
-But the PA model also showed a .84 correlation with the Rescorla-Wagner model, and both FU and FUs show a .87 correlation with the simpler novelty-biased associative model (Nov)--stronger than for the uncertainty-bias mechanism used by the FU models.
+<!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill-posed altogether [@Yu2012hyp]. -->
+
+Among the associative models, the PA model [@Fazly2010] and the FU model [@Kachergis2012gi] both fared quite well, and the sampling version of the FU model (FUs) performed slightly better, albeit with three free parameters compared to two in the PA model.
+The predictions of the top three models were more correlated with each other than with the human data (see Table 1): PA vs. FUs: .87, PA vs. FU: .84, FU vs. FUs: .92.
+But the PA model also showed a .84 correlation with the Rescorla-Wagner model, and both FU and FUs showed a .87 correlation with the simpler novelty-biased associative model (Nov)--stronger than for the uncertainty-bias mechanism used by the FU models.
 Examining the experimental conditions that were easiest for the models to fit can indicate what types of designs are less useful to conduct to test theories of learning. 
 For example, the condition best accounted for by six of the models had varied frequency (pairs appeared 3, 6, or 9 times) with low contextual diversity (i.e., the words of each frequency co-occurred only with each other): it turns out that showing a performance advantage for more frequent items is straightforward for many theories.
 Future work should aim to further explore when these models make overlapping predictions, but another approach is to find conditions where models make disparate predictions. 
@@ -524,18 +530,16 @@ More broadly, we believe that structured model comparison is a critical step tow
 
 <!-- In three cross-situational learning experiments, Hendrickson gave participants word-object pairs occurring with Zipf (power-law) frequency distribution, and then compared two models:  -->
 
-<!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill-posed altogether [@Yu2012hyp]. -->
 
-\vspace{-4pt}
+
+
 <!--
 # Acknowledgements
-\vspace{-3pt}
+
 We thank Chen Yu for allowing us to include data from several previously-unpublished experimental conditions. 
 -->
 
 # References 
-\vspace{-3pt}
-\footnotesize
 ```{r}
 # References will be generated automatically by Pandoc and included here.
 # The following code is some latex to format the bibliography. Do not remove it.
@@ -547,7 +551,3 @@ We thank Chen Yu for allowing us to include data from several previously-unpubli
 \setlength{\leftskip}{0.125in}
 \noindent
 
-<!--
-```{r, child = "appendix.Rmd"}
-```
--->

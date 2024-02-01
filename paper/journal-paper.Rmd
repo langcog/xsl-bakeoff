@@ -542,7 +542,6 @@ More broadly, we believe that structured model comparison is a critical step tow
 
 <!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill-posed altogether [@Yu2012hyp]. -->
 
-\vspace{-4pt}
 <!--
 # Acknowledgements
 \vspace{-3pt}
@@ -550,8 +549,7 @@ We thank Chen Yu for allowing us to include data from several previously-unpubli
 -->
 
 # References 
-\vspace{-3pt}
-\footnotesize
+
 ```{r}
 # References will be generated automatically by Pandoc and included here.
 # The following code is some latex to format the bibliography. Do not remove it.

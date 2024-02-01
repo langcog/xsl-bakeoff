@@ -47,8 +47,14 @@ print(tab1, type="latex", comment = F, include.rownames = F, table.placement = "
 
 # Appendix B: Clustering experiments and models by misfit
 
-The table below shows cross-validated model fit (SSE; sum of squared error) for each experimental condition.
+The heatmap below shows cross-validated model fit (SSE; sum of squared error) for each experimental condition.
+Note that each model has difficulty fitting at least one ore more experimental conditions--and these difficult conditions vary somewhat by model.
+For example, the strength-biased model has particular difficulty with the `filt` conditions[^1] (Kachergis et al., 2012), which present a group of word-referent pairs early in training which then systematically co-occur with particular novel late-stage word-referent pairs, testing how strictly learners will maintain a mutual exclusivity (ME) constraint. 
+The Trueswell2012 model also shows greater misfit in most of these conditions (except for the `filtXE_3L` conditions, which have only 3 repetitions of the late-stage pairings, and thus do not overwhelm learners' ME bias).
 
+On the other hand, many experimental conditions are nearly equally well fit by all models, especially those that have a fixed number of repetitions per word-referent pair (e.g., 3x3 and 4x4, although 2x2 presents difficulties for some models).
+
+[^1]: Except for the `filt0E_` conditions, which consist only of the late-stage pairs, with no early stage.
 
 ```{r, fig.width=8, fig.height=9}
 load(here("fits/cv_group_fits.Rdata"))
@@ -71,22 +77,12 @@ colfunc <- colorRampPalette(c("black", "red"))
 heatmap.2(xm_mat, col=colfunc(20)) # , scale="row"
 ```
 
-Takeaways:
-Some experimental conditions are hard for particular models to fit.
-For example, the strength-biased model has particular difficulty with the `filt` conditions[^1] (Kachergis et al., 2012), which present a group of word-referent pairs early in training which then systematically co-occur with particular novel late-stage word-referent pairs, testing how strictly learners will maintain a mutual exclusivity (ME) constraint. 
-The Trueswell2012 model also shows greater misfit in most of these conditions (except for the `filtXE_3L` conditions, which have only 3 repetitions of the late-stage pairings, and thus do not overwhelm learners' ME bias).
 
 
-On the other hand, many experimental conditions are nearly equally well fit by all models, especially those that have a fixed number of repetitions per word-referent pair (e.g., 3x3, 4x4, )
+<!-- Other ideas: -->
+<!-- - Find experiment with maximal discrimination between the models? (highest SD of fit?) -->
 
-[^1]: Except for the `filt0E_` conditions, which consist only of the late-stage pairs, with no early stage.
-
-Other ideas:
-
-- Find experiment with maximal discrimination between the models? (highest SD of fit?)
-- Find experiment that each model best predicts? and worst predicts?
-
-# Correlation of model predictions with item perforance per condition
+# Correlation of model vs. human item-level performance per condition
 
 Each cell displays the correlation coefficient of model vs. human item-level performance in a given experimental condition.
 
@@ -106,7 +102,10 @@ heatmap.2(xm_mat, col=brewer.spectral(30), # brewer.pal(11,"RdBu")
 
 ## Each Model's Best- and Worst-Fitting Experiment
 
-Which experiments are models best fitting?
+Table 2 summarizes for each model, what experimental condition is best fit by that model (in terms of correlation, `best` and `best_cond`), and what condition has the worst fit for that model (`worst` and `worst_cond`).
+For six models, `freq369-3x3loC` was the easiest to fit.
+For four models, `filt6E_3Lfazly` was the most difficult to fit.
+<!-- Which experiments are models best fitting? -->
 
 ```{r, results="asis"}
 exp_by_mod <- cvg %>%
@@ -148,11 +147,9 @@ sort(table(mod_best_worst$worst_cond))
 ```
 
 
-## Best and worst fitting models per experiment
+<!-- ## Best and worst fitting models per experiment -->
 
-(Could order conditions by how much they discriminate models?)
-
-```{r, results="asis"}
+```{r, results="asis", include=F}
 cond_best_worst <- exp_by_mod %>% group_by(Condition) %>%
   summarize(best = max(r, na.rm=T), 
             worst = min(r, na.rm=T), 
