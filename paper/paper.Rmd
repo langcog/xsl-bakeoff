@@ -83,7 +83,6 @@ While most models of cross-situational learning have typically been tested again
 Identifying the model(s) that best predict human performance is thus an important goal for consolidating this broad literature. 
 More broadly, identifying such models could be an important step in assessing the contribution of cross-situational learning to word learning more generally.
 
-<!-- However, we believe that comparing a large selection of models fitted jointly to a wide variety of experimental conditions may reveal which model(s, classes, mechanism) are most promising for explaining human word learning behavior. -->
 
 Thus, the goal of our current study is to test the ability of a range of cross-situational word learning models in accounting for a wide range of experimental data. 
 Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) being used for evaluation.
@@ -101,7 +100,7 @@ Each model typically is defined as a function that takes input data and a group 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
 Our primary outcome measure is the correlation between each model's performance for each item in a specific experimental condition and item-level human performance on that same experimental condition. 
 
-Although input data and test trials are features of specific experimental tests, each  model has parameters that must be specified. 
+Although input data and test trials are features of specific experimental tests, each model has parameters that must be specified. 
 Typically the settings of these parameters are critical to the predictive performance of the model. 
 Hence, to ensure a fair comparison between models, these parameters must be fit to data. 
 In all cases, we optimize parameter values to minimize the sum of squared error (SSE) between model and human performance, weighting the contribution of each condition's SSE by the number of participants in that condition.
@@ -192,7 +191,7 @@ This model implements trial-level mutual exclusivity by selecting new proposals 
 \vspace{-4pt}
 
 ### Guess-and-Test Model (GnT)
-The guess-and-test hypothesis testing model is based on the description given by @Medina2011 of a one-shot (i.e. "fast mapping") learning, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
+The guess-and-test hypothesis testing model is based on the description given by @Medina2011 of a one-shot (i.e. "fast mapping") learning model, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
 <!-- In summary, guess-and-test learners do *not* reach a final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses. -->
 We give this model two free parameters: a probability of successful encoding ($s$, hypothesis formation), and a probability $f$ of forgetting a hypothesis at retrieval. 
 At test, for each word the model chooses the currently hypothesized referent.
@@ -222,7 +221,7 @@ for(c in 1:length(combined_data)) {
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
-A table containing details of each condition is available on OSF[^2], along with the full trial orderings. 
+A table containing details of each condition is available on OSF[^2], along with the full trial orderings and aggregate human performance. 
 The number of trials per condition ranged from 18 to 108, with 1-4 words and objects presented per trial, and a total of 12-24 pairs to be learned per condition.
 The bulk of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
 However, data from several conditions are contributed by Chen Yu's lab at Indiana University, and have never before been published.
@@ -310,7 +309,7 @@ colnames(mod_cors) = mod_names_short
 
 ```{r cv-fits-table, results="asis"}
 tab2 <- xtable::xtable(cvg_fit_tab, digits=c(0,0, 2, 2, 2, 2, 0), 
-                       caption = "Cross-validated and group model fits.")
+                       caption = "Sorted cross-validated and group model fits.")
 
 print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "H")
 ```

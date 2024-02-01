@@ -47,9 +47,8 @@ print(tab1, type="latex", comment = F, include.rownames = F, table.placement = "
 
 # Appendix B: Clustering experiments and models by misfit
 
-The table below shows model fit (SSE; sum of squared error) for each experimental condition.
+The table below shows cross-validated model fit (SSE; sum of squared error) for each experimental condition.
 
-Model fit x Experiment table? maybe clustered...? (to show most similar models, and most similar experiments?)
 
 ```{r, fig.width=8, fig.height=9}
 load(here("fits/cv_group_fits.Rdata"))
@@ -89,7 +88,7 @@ Other ideas:
 
 # Correlation of model predictions with item perforance per condition
 
-Each cell displays the correlation coefficient of a 
+Each cell displays the correlation coefficient of model vs. human item-level performance in a given experimental condition.
 
 ```{r, fig.width=8, fig.height=9}
 exp_by_mod <- cvg %>%
@@ -103,9 +102,13 @@ require(pals)
 heatmap.2(xm_mat, col=brewer.spectral(30), # brewer.pal(11,"RdBu")
           scale="none", trace="none") # scale="row", "col" <- interesting
 ```
-How many experiments is each model a best fit for? Worst fit?
 
-```{r}
+
+## Each Model's Best- and Worst-Fitting Experiment
+
+Which experiments are models best fitting?
+
+```{r, results="asis"}
 exp_by_mod <- cvg %>%
   group_by(Condition, Model) %>%
   summarize(r = cor(ModelPerf, HumanPerf)) 
@@ -127,12 +130,29 @@ mod_best_worst <- exp_by_mod %>% group_by(Model) %>%
             worst_cond = Condition[which(r==worst)]) %>%
   arrange(desc(best))
 
+tab2 <- xtable::xtable(mod_best_worst, digits=2, 
+                       caption = "Each model's best- and worst-fitting experiment.")
+
+print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "p")
+```
+
+
+
+```{r, eval=F}
 sort(table(mod_best_worst$best_cond)) 
 # freq369-3x3loCD best for 6 models; freq369_36mx best for 2 models
+
 sort(table(mod_best_worst$worst_cond))
 # filt6E_3L worst condition for 4 models; 2x3 6/9 4AFC worst for 2
 # and 3 other asymmetric conditions worst for 3 other models: 1x3, 2x3, 3x4
+```
 
+
+## Best and worst fitting models per experiment
+
+(Could order conditions by how much they discriminate models?)
+
+```{r, results="asis"}
 cond_best_worst <- exp_by_mod %>% group_by(Condition) %>%
   summarize(best = max(r, na.rm=T), 
             worst = min(r, na.rm=T), 
@@ -140,8 +160,23 @@ cond_best_worst <- exp_by_mod %>% group_by(Condition) %>%
             worst_mod = Model[which(r==worst)]) %>%
   arrange(desc(best))
 
-sort(table(cond_best_worst$best_mod)) # fazly best for 6 conds, trueswell2012 for 5, kachergis_sampling for 5
+#sort(table(cond_best_worst$best_mod)) # fazly best for 6 conds, trueswell2012 for 5, kachergis_sampling for 5
 # freq369-3x3loCD best for 6 models; freq369_36mx best for 2 models
-sort(table(cond_best_worst$worst_mod)) # rescorla-wagner worst for 8 conditions, guess-and-test for 7, pursuit for 6
+#sort(table(cond_best_worst$worst_mod)) # rescorla-wagner worst for 8 conditions, guess-and-test for 7, pursuit for 6
+
+best <- cond_best_worst %>%
+  group_by(best_mod) %>% summarize(best_fits = n()) %>%
+  rename(Model = best_mod)
+
+worst <- cond_best_worst %>%
+  group_by(worst_mod) %>% summarize(worst_fits = n()) %>%
+  rename(Model = worst_mod)
+
+best_worst_tab <- best %>% left_join(worst)
+
+tab3 <- xtable::xtable(best_worst_tab, digits=2, 
+                       caption = "Number of experiments that each model fits best, and worst.")
+
+print(tab3, type="latex", comment = F, include.rownames = F, table.placement = "p")
 ```
 
