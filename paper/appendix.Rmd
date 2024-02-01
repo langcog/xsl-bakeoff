@@ -63,7 +63,21 @@ for(m in names(cv_group_fits)) {
   cvg <- rbind(cvg, cv_group_fits[[m]]$testdf)
 }
 
-exp_by_mod <- cvg %>%
+cvg <- cvg %>% mutate(Model = case_when(Model == 'kachergis' ~ 'Fam./Unc.',
+                             Model == 'fazly' ~ 'Prob. Assoc.',
+                             Model == 'novelty' ~ 'Novelty',
+                             Model == 'Bayesian_decay' ~ 'Bayesian Decay', 
+                             Model == 'strength' ~ 'Strength',
+                             Model == 'uncertainty' ~ 'Uncertainty',
+                             Model == 'rescorla-wagner' ~ 'Rescorla-Wagner',
+                             Model == 'trueswell2012' ~ 'Propose-but-Verify',
+                             Model == 'guess-and-test' ~ 'Guess-and-Test',
+                             Model == 'kachergis_sampling' ~ 'Fam./Unc. sampling',
+                             Model == 'pursuit' ~ 'Pursuit',
+                             Model == 'baseline' ~ 'Baseline',
+                          TRUE ~ Model)) 
+
+exp_by_mod <- cvg %>% 
   mutate(SSE = (ModelPerf-HumanPerf)^2) %>% # should we weight be sample size?
   group_by(Condition, Model) %>%
   summarize(meanSSE = mean(SSE)) %>%
@@ -74,7 +88,7 @@ row.names(xm_mat) = exp_by_mod$Condition
 
 
 colfunc <- colorRampPalette(c("black", "red")) 
-heatmap.2(xm_mat, col=colfunc(20)) # , scale="row"
+heatmap.2(xm_mat, col=colfunc(20), cexCol=.85, srtCol=45, margins = c(6,6.5)) # , scale="row"
 ```
 
 
@@ -96,7 +110,8 @@ xm_mat <- as.matrix(exp_by_mod[,2:12])
 row.names(xm_mat) = exp_by_mod$Condition
 require(pals)
 heatmap.2(xm_mat, col=brewer.spectral(30), # brewer.pal(11,"RdBu")
-          scale="none", trace="none") # scale="row", "col" <- interesting
+          scale="none", trace="none", 
+          cexCol=.85, srtCol=45, margins = c(6,6.5)) # scale="row", "col" <- interesting
 ```
 
 
