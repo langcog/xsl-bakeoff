@@ -61,7 +61,7 @@ If learners can learn cross-situationally, they might be able to pool informatio
 Can children (or even adults) learn in this way? 
 
 The general idea of cross-situational word learning has been adopted into a variety of experimental paradigms for testing the word learning ability of infants [e.g., @Smith2008vg; @Vlach2013], children [e.g., @Akhtar1999; @Suanda2014; @Vlach2012eq], and adults [e.g., @Yu2007; @Smith2010th].
-In such experiments, participants are typically presented with a series of training trials comprised of multiple possible referents (e.g., an array of 2-4 novel objects) and one or more spoken nonce words, and (when possible) instructed to learn the meaning(s) of the presented words.
+In such experiments, participants are typically presented with a series of training trials composed of multiple possible referents (e.g., an array of 2-4 novel objects) and one or more spoken nonce words, and (when possible) instructed to learn the meaning(s) of the presented words.
 These training trials typically present 10--20 distinct word-referent pairs to be learned across 10--50 trials, presenting each word/referent 3--10 times across a total span of $<10$ minutes.
 Learning is then typically assessed by presenting each word and asking learners to make a forced choice of the best referent, either from the entire set or from a small subset of referents.
 
@@ -86,7 +86,7 @@ More broadly, identifying such models could be an important step in assessing th
 
 Thus, the goal of our current study is to test the ability of a range of cross-situational word learning models in accounting for a wide range of experimental data. 
 Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) being used for evaluation.
-Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work, either because the parameters have been allowed to vary freely across multiple conditions, or because models' performance is compared on different datasets. 
+Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work, either because the parameters have been allowed to vary freely across multiple conditions, or because model performance is compared on different datasets. 
 Thus, we focus on out-of-sample prediction of human data using cross-validated parameter fits.
 We end by examining results from generalization of models to other experiments not included in the initial evaluation and parameter fitting.
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
@@ -96,7 +96,7 @@ We end by examining results from generalization of models to other experiments n
 ## Procedure
 \vspace{-6pt}
 Our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
-Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
+Each model is typically defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
 Our primary outcome measure is the correlation between each model's performance for each item in a specific experimental condition and item-level human performance on that same experimental condition. 
 
@@ -108,8 +108,8 @@ We optimize parameters using differential evolution via the DEoptim R package [@
 For the stochastic models, each parameter setting was evaluated using a simulated sample of 200 learners.
 
 We conducted two evaluations of models. 
-First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation) .
-Second, in the *group fit* regime we fit each model to all conditions and datasets and evaluate across all data. 
+First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation).
+Second, in the *group fit* regime, we fit each model to all conditions and datasets and evaluate across all data. 
 Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. \vspace{-4pt}
 
 ## Models
@@ -128,14 +128,14 @@ These models and their free parameters are briefly described below.
 ### Baseline Co-occurrence Model
 The baseline model simply tallies the co-occurrences of any words and objects appearing together on each trial, accumulating the counts in a word $\times$ object matrix $M$.
 At test, for word $w_1$ this model selects the correct referent $o_1$ according to @Luce1959 choice from the co-occurrences of $w_1$ with all referents: $P(o_1|w_1) = M_{w_1,o_1} / \sum{M_{w_1,\cdot}}$.
-The model's probability of correctly choosing each word per condition is what is scored against people's average probability of choosing the correct item.
+The model's probability of correctly choosing each word per condition is scored against people's average probability of choosing the correct item.
 <!-- tried adding a softmax parameter but it didn't help --> 
 
 
 ### Probabilistic Associative Model (PA)
 The probabilistic associative model [@Fazly2010] represents the meaning of each word *w* as a probability distribution $p(\cdot | w)$ over the objects appearing across the trials, and incrementally learns these distributions trial-by-trial.
 The association between a given *w* and *o* grows more quickly if $p(w|o)$ is already high (a familiarity bias), unless some other word has a strong association with *o*; thus, associations are competitive.
-A parameter $\lambda$ is a small smoothing constant added to both the numerator and denominator of each $p(w|o)$, further adjusted in the denominator by a $\beta$ parameter representing the upper bound on the number of symbol types.
+The parameter $\lambda$ is a small smoothing constant added to both the numerator and denominator of each $p(w|o)$, further adjusted in the denominator by a $\beta$ parameter representing the upper bound on the number of symbol types.
 At test, the correct referent for each word *w* is chosen according to @Luce1959 choice from the probability distribution over the objects that appeared with that word $p(\cdot | w)$.[^1]
 
 [^1]: The original model implemented a $\theta$-thresholded lexicon that discretized the probability matrix, but we found that including this mechanism resulted in a worse fit to the data.
@@ -161,7 +161,7 @@ This FU sampling model can still build multiple graded associations for each wor
 
 ### Strength-, Uncertainty-, & Novelty-biased (Str,Unc,Nov) Models
 We also test three variations of the FU model that use only a subset of the mechanisms of the full model in order to understand the contributions of each mechanism.
-The *strength model* lacks the uncertainty bias term, and thus only implements a bias for familiar (i.e., already-strong) associations, with learning rate ($\chi$) and decay $\alpha$ parameters.
+The *strength model* lacks the uncertainty bias term, and thus only implements a bias for familiar (i.e., already-strong) associations, with learning rate ($\chi$) and decay ($\alpha$) parameters.
 
 The *uncertainty model* lacks the strength bias term, and thus only implements a bias for stimuli with uncertain (high-entropy) associations.
 The *novelty model* also lacks the strength bias term, and substitutes novelty for the entropy terms (e.g., 1/(frequency(*w*)+1) instead of $H(w)$).
@@ -377,7 +377,7 @@ gfd %>% mutate(Model = case_when(Model == 'kachergis' ~ 'Fam./Unc.',
                    group=Condition, color=Condition)) + 
   geom_point(alpha=.3) + 
   facet_wrap(vars(Model)) + 
-  theme_bw() + 
+  theme_bw(base_size=10) + 
   ylab("Human Proportion Correct") + xlab("Model Proportion Correct") + 
   geom_abline(intercept=0, slope=1, linetype="dashed") + 
   theme(legend.position = "none") # save space for initial submission (maybe put legend at OSF link?)
@@ -425,7 +425,7 @@ Using the optimal parameters found for each model in the group fit, we simulated
 @Koehne2013 manipulated the temporal order with which words were assigned two meanings of different strengths across four conditions given to adults.
 @Medina2011 manipulated the informativeness (number of referents per trial) and order of trials across four conditions, again with adults.
 The pattern of results from both of these experiments were seen as evidence that people learn via hypothesis testing, but we find that the Koehne et al. data is best accounted for by the novelty-biased model, and the Medina et al. data is best predicted by the Rescorla-Wagner model.
-@Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words repeated across 30 trials, and found that infants learned on average 4 words.
+@Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words repeated across 30 trials, and found that infants learned 4 words on average.
 @Suanda2014 tested 6-year-old children in three conditions with varying contextual diversity.
 Table 3 shows the root-mean-square error (RMSE) of each model vs. average human performance, as well as the total RMSE separately for the adult experiments and the developmental experiments.
 The models generally outperformed children and thus did not fit well to the developmental conditions.
@@ -493,16 +493,18 @@ The results of both fitting regimes were consistent and clear: shown in Table 1,
 The Rescorla-Wagner model, a prediction error-based associative model, performed similarly to the GnT model, with highly correlated predictions ($r=.87$), while PbV had the poorest fit, and made responses most similar to the R-W model ($r=.67$).
 Moreover, the predictions of the R-W model were also highly correlated with the baseline co-occurrence counting model ($r = .999$): such similar predictions yielded by seemingly different theories is surprising and warrants further investigation.
 However, some models' particular patterns of responses suggest certain theoretical shortcomings.
-For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{Pur} =$ `r round(mean(subset(gfd, Model=="pursuit")$ModelPerf), 2)`), $M_{hum} = 0.48$).
+For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{Pur} =$ `r round(mean(subset(gfd, Model=="pursuit")$ModelPerf), 2)`, $M_{hum} = 0.48$).
 Indeed, as shown in Figure 1, Pur, PbV, and GnT all showed a pattern of inhuman responses: for a subset of items, the models either always got them correct or always got them incorrect, while people were more stochastic.
 <!-- And yet Pur made responses that were most highly correlated with the FUs model (r=.74)--one of the best-fitting models. -->
 
 Among the associative models, the PA model [@Fazly2010] and the FU model [@Kachergis2012gi] both fare quite well, and the sampling version of the FU model (FUs) performs slightly better, albeit with three free parameters compared to two in the PA model.
 The predictions of the top three models are more correlated with each other than with the human data (see Table 1): PA vs. FUs: .87, PA vs. FU: .84, FU vs. FUs: .92.
-But the PA model also showed a .84 correlation with the Rescorla-Wagner model, and both FU and FUs show a .87 correlation with the simpler novelty-biased associative model (N)--stronger than for the uncertainty-bias mechanism used by the FU models.
+But the PA model also showed a .84 correlation with the Rescorla-Wagner model, and both FU and FUs show a .87 correlation with the simpler novelty-biased associative model (Nov)--stronger than for the uncertainty-bias mechanism used by the FU models.
 Future work should aim to further explore when these models make overlapping predictions, but another approach is to find conditions where models make disparate predictions. 
-The FUs and PA models make maximally divergent predictions in the conditions with fewer words than objects per trial (esp. 1x3, 1x3 6/18 4AFC, and 1x4), which hints at a difference in mechanism for these models. 
-A fruitful next step would be to use optimal experiment design to generate a definitive experiment to differentiate these models. 
+The FUs and PA models make maximally divergent predictions in the conditions with fewer words than objects per trial (esp. 1 word x 3 referents and 1 word x 4 referents conditions), which hints at a difference in mechanism for these models. 
+A fruitful next step would be to use optimal experiment design to generate a definitive experiment to differentiate these models.
+
+More generally, examining the experimental conditions that were easiest for the models to fit can indicate what types of designs are less useful to conduct: indeed, the condition best accounted for by six of the models had varied frequency (pairs appeared 3, 6, or 9 times) with low contextual diversity (i.e., the words of each frequency co-occurred only with each other), a
 
 Although we have aimed for broad coverage of models and experimental conditions, this study is far from complete in both respects.
 First, there are many other models that we have not yet implemented [e.g., @mcmurray2012word]. <!-- or that we have not finished fitting to the data [e.g., @YurovskyFrank2015].  @tilles2012minimal; -->
