@@ -500,11 +500,13 @@ Indeed, as shown in Figure 1, Pur, PbV, and GnT all showed a pattern of inhuman 
 Among the associative models, the PA model [@Fazly2010] and the FU model [@Kachergis2012gi] both fare quite well, and the sampling version of the FU model (FUs) performs slightly better, albeit with three free parameters compared to two in the PA model.
 The predictions of the top three models are more correlated with each other than with the human data (see Table 1): PA vs. FUs: .87, PA vs. FU: .84, FU vs. FUs: .92.
 But the PA model also showed a .84 correlation with the Rescorla-Wagner model, and both FU and FUs show a .87 correlation with the simpler novelty-biased associative model (Nov)--stronger than for the uncertainty-bias mechanism used by the FU models.
+Examining the experimental conditions that were easiest for the models to fit can indicate what types of designs are less useful to conduct to test theories of learning. 
+For example, the condition best accounted for by six of the models had varied frequency (pairs appeared 3, 6, or 9 times) with low contextual diversity (i.e., the words of each frequency co-occurred only with each other): it turns out that showing a performance advantage for more frequent items is straightforward for many theories.
 Future work should aim to further explore when these models make overlapping predictions, but another approach is to find conditions where models make disparate predictions. 
 The FUs and PA models make maximally divergent predictions in the conditions with fewer words than objects per trial (esp. 1 word x 3 referents and 1 word x 4 referents conditions), which hints at a difference in mechanism for these models. 
 A fruitful next step would be to use optimal experiment design to generate a definitive experiment to differentiate these models.
+Models also struggled with conditions that tested how learners relax their bias for mutually exclusive pairings in the face of evidence that two words may both map to two referents: five models had the worst fit for conditions from @Kachergis2012gi.
 
-More generally, examining the experimental conditions that were easiest for the models to fit can indicate what types of designs are less useful to conduct: indeed, the condition best accounted for by six of the models had varied frequency (pairs appeared 3, 6, or 9 times) with low contextual diversity (i.e., the words of each frequency co-occurred only with each other), a
 
 Although we have aimed for broad coverage of models and experimental conditions, this study is far from complete in both respects.
 First, there are many other models that we have not yet implemented [e.g., @mcmurray2012word]. <!-- or that we have not finished fitting to the data [e.g., @YurovskyFrank2015].  @tilles2012minimal; -->
