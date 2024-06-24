@@ -61,7 +61,7 @@ model <- function(params, ord=c()) {
 		
 		# preprocessing of novel stimuli
 		if(length(cur_novel_w)!=0) { # what if cur_novel_o / cur_old_o / other_old_o == NULL?
-			m[cur_novel_w,cur_novel_o] = B/length(cur_novel) + (1-B)/N # Eqn 2
+			m[cur_novel_w,cur_novel_o] = B/length(cur_novel_w) + (1-B)/N # Eqn 2 - check if length(cur_novel_w, or _o ?)
 			m[cur_novel_w,cur_old_o] = (1-B) / N # Eqn 3
 			m[cur_novel_w,other_old_o] = (1-B) / N # Eqn 4 (obj not appearing on current t, but earlier)
 		}
