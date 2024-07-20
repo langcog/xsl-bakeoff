@@ -35,6 +35,7 @@ run_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F) {
     SSE = 0
     unweighted_SSE = 0
     totSs = 0
+    SSE_per_cond = list()
     for(i in 1:length(conds)) {
       #print(conds[[i]]$Condition)
       #print(parameters)
@@ -46,8 +47,10 @@ run_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F) {
         mperf = mp$perf
         mod[[names(conds)[i]]] = mperf
       }
-      SSE = SSE + conds[[i]]$Nsubj * sum( (mperf - conds[[i]]$HumanItemAcc)^2 )
-      unweighted_SSE = unweighted_SSE + sum( (mperf - conds[[i]]$HumanItemAcc)^2 )
+      cur_SSE = sum( (mperf - conds[[i]]$HumanItemAcc)^2 )
+      SSE_per_cond[[names(conds)[i]]] = cur_SSE
+      SSE = SSE + conds[[i]]$Nsubj * cur_SSE
+      unweighted_SSE = unweighted_SSE + cur_SSE
       totSs = totSs + conds[[i]]$Nsubj
     }
     SSE = SSE / totSs
@@ -58,6 +61,8 @@ run_model <- function(conds, model_name, parameters, SSE_only=F, print_perf=F) {
     #print(paste0("unweighted SSE: ", unweighted_SSE)) # baseline: 31.84
 	}
   mod$SSE = SSE
+  mod$unweighted_SSE = unweighted_SSE / length(conds)
+  mod$SSE_per_cond = SSE_per_cond
   
   if(SSE_only) return(SSE)
 	return(mod)

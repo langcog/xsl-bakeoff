@@ -33,8 +33,9 @@ runs[["decay"]]$params <- c(.96)
 runs[["fazly"]] <- run_model(combined_data, "fazly", c(1e-5, 8500), print_perf=F)
 runs[["fazly"]]$params <- c(1e-5, 8500)
 
-runs[["fazlyt"]] <- run_model(combined_data, "fazlyt", c(1e-5, 8500), print_perf=F)
-runs[["fazlyt"]]$params <- c(1e-5, 8500)
+runs[["fazlyt"]] <- run_model(combined_data, "fazlyt", c(1e-5, 8500, .4), print_perf=F)
+runs[["fazlyt"]]$params <- c(1e-5, 8500, .4)
+
 
 # Error!
 # runs[["tilles"]] <- run_model(combined_data, "tilles", c(.5, .8, .85), print_perf=F)
@@ -45,9 +46,6 @@ saveRDS(runs, file="orig_xsl-bakeoff_model_test_runs.rds")
 
 
 # test pursuit model
-par = group_fits$pursuit_detailed$optim$bestmem
-mp = run_stochastic_model(combined_data[["orig_3x3"]], "pursuit_detailed", 
-                         par, SSE_only = F, print_perf=T)
-
-model(par, combined_data[["orig_3x3"]]$train)
-ord = combined_data[["orig_3x3"]]$train
+#par = group_fits$pursuit_detailed$optim$bestmem
+#mp = run_stochastic_model(combined_data[["orig_3x3"]], "pursuit_detailed", 
+#                         par, SSE_only = F, print_perf=T)
