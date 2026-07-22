@@ -29,7 +29,7 @@ keywords: >
     cross-situational word learning; model comparison; language learning
     
 output: cogsci2016::cogsci_paper
-#final-submission: \cogscifinalcopy
+final-submission: \cogscifinalcopy
 # abstract is a bit long: 152 words
 ---
 

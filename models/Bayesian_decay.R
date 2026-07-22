@@ -42,7 +42,7 @@ model <- function(params, ord=c(), reps=1, verbose=F) {
 		
 		likelihood = likelihoodFun(words_tr, objects_tr, alpha, delta)
 		pWgO = likelihood * pWgO
-		pWgO = pWgO/outer(ones,colSums(pWgO)) # rowSums(pWgO)
+		pWgO = pWgO/outer(ones,colSums(pWgO)) # <- why is this colSums? shouldn't it be rowSums(pWgO) ?
 		pW_O = likelihood * pW_O
 		pW_O = pW_O/sum(pW_O)
 		
