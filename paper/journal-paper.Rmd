@@ -6,9 +6,7 @@ csl: apa6.csl
 document-params: "10pt, letterpaper"
 
 author-information: > 
-    \author{{\large \bf George Kachergis (kachergis@stanford.edu)} \and 
-    \author{{\large \bf Kevin Liang (.edu)} \and
-    {\large \bf Michael C.~Frank (mcfrank@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA}
+    \author{{\large \bf George Kachergis (kachergis@stanford.edu)} \and {\large \bf Michael C.~Frank (mcfrank@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA}
 
 abstract: >
     One problem language learners face is extracting word meanings from 
@@ -63,13 +61,13 @@ If learners can learn cross-situationally, they might be able to pool informatio
 Can children (or even adults) learn in this way? 
 
 The general idea of cross-situational word learning has been adopted into a variety of experimental paradigms for testing the word learning ability of infants [e.g., @Smith2008vg; @Vlach2013], children [e.g., @Akhtar1999; @Suanda2014; @Vlach2012eq], and adults [e.g., @Yu2007; @Smith2010th].
-In such experiments, participants are typically presented with a series of training trials comprised of multiple possible referents (e.g., an array of 2-4 novel objects) and one or more spoken nonce words, and (when possible) instructed to learn the meaning(s) of the presented words.
+In such experiments, participants are typically presented with a series of training trials composed of multiple possible referents (e.g., an array of 2-4 novel objects) and one or more spoken nonce words, and (when possible) instructed to learn the meaning(s) of the presented words.
 These training trials typically present 10--20 distinct word-referent pairs to be learned across 10--50 trials, presenting each word/referent 3--10 times across a total span of $<10$ minutes.
 Learning is then typically assessed by presenting each word and asking learners to make a forced choice of the best referent, either from the entire set or from a small subset of referents.
 
 People of all ages are able to learn word-object mappings in such paradigms at a level significantly above chance, but their performance is typically far from perfect in all but the most trivial versions of the task [@yurovsky2017beyond].
-Numerous training manipulations have been found to influence performance. 
-How often mappings are presented  [@Suanda2012; @Kachergis2016], the  interval between appearances of a mapping [@Vlach2012eq; @Vlach2013], and the number of mappings presented per trial [@Yu2008] all have been shown to affect learning performance.
+To test the robustness of such learning, many studies have manipulated training and studied resulting performance.
+How often mappings are presented [@Suanda2012; @Kachergis2016], the interval between appearances of a mapping [@Vlach2012eq; @Vlach2013], and the number of mappings presented per trial [@Yu2008] all have been shown to affect learning performance.
 In sum, the evidence is strong that people can learn word cross-situationally: we are somehow able to integrate evidence (co-occurrence of words and objects) across trials and use that evidence to learn and remember new word meanings in cross-situational learning experiments.
 But what are the psychological mechanisms supporting this process? 
 And critically, do these mechanisms support naturalistic word learning?
@@ -85,25 +83,24 @@ While most models of cross-situational learning have typically been tested again
 Identifying the model(s) that best predict human performance is thus an important goal for consolidating this broad literature. 
 More broadly, identifying such models could be an important step in assessing the contribution of cross-situational learning to word learning more generally.
 
-<!-- However, we believe that comparing a large selection of models fitted jointly to a wide variety of experimental conditions may reveal which model(s, classes, mechanism) are most promising for explaining human word learning behavior. -->
 
 Thus, the goal of our current study is to test the ability of a range of cross-situational word learning models in accounting for a wide range of experimental data. 
 Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) being used for evaluation.
-Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work, either because the parameters have been allowed to vary freely across multiple conditions, or because models' performance is compared on different datasets. 
+Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work, either because the parameters have been allowed to vary freely across multiple conditions, or because model performance is compared on different datasets. 
 Thus, we focus on out-of-sample prediction of human data using cross-validated parameter fits.
 We end by examining results from generalization of models to other experiments not included in the initial evaluation and parameter fitting.
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
 # Method
-\vspace{-6pt}
+
 ## Procedure
-\vspace{-6pt}
+
 Our goal is to fit a set of models to a set of datasets; members of each of these sets are listed below.
-Each model typically is defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
+Each model is typically defined as a function that takes input data and a group of parameter values (often between 2--4) and then can be evaluated on test trials (typically multi-alternative forced choice test). 
 Each model then returns predictions on each test trial, which can be scored against the "correct" (intended by the design) answer and averaged to produce an analogue to human performance. 
 Our primary outcome measure is the correlation between each model's performance for each item in a specific experimental condition and item-level human performance on that same experimental condition. 
 
-Although input data and test trials are features of specific experimental tests, each  model has parameters that must be specified. 
+Although input data and test trials are features of specific experimental tests, each model has parameters that must be specified. 
 Typically the settings of these parameters are critical to the predictive performance of the model. 
 Hence, to ensure a fair comparison between models, these parameters must be fit to data. 
 In all cases, we optimize parameter values to minimize the sum of squared error (SSE) between model and human performance, weighting the contribution of each condition's SSE by the number of participants in that condition.
@@ -111,34 +108,59 @@ We optimize parameters using differential evolution via the DEoptim R package [@
 For the stochastic models, each parameter setting was evaluated using a simulated sample of 200 learners.
 
 We conducted two evaluations of models. 
-First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation) .
-Second, in the *group fit* regime we fit each model to all conditions and datasets and evaluate across all data. Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. \vspace{-4pt}
+First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation).
+Second, in the *group fit* regime, we fit each model to all conditions and datasets and evaluate across all data. 
+Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. 
+
 
 ## Models
-\vspace{-6pt}
+
 ```{r, model-list}
-# need to be run >100 times per given parameter values
-stochastic_models = list.files(here("models/stochastic/"))
-# assoc models need to be run only once per given parameter values
-assoc_models = list.files(here("models/"))
-assoc_models = assoc_models[assoc_models!="stochastic"]
+# Canonical model metadata: package name -> paper abbreviation, model
+# class, and number of free parameters. Single source of truth for every
+# downstream table/figure so nothing hard-codes an 11-model roster.
+# ToDo (revision): confirm abbreviations/classes for the four post-CogSci
+# models once their Method subsections are finalized.
+model_meta <- tibble::tribble(
+  ~Model,               ~abbr,   ~class,                 ~P,
+  "kachergis",          "FU",    "associative",          3,
+  "kachergis_sampling", "FUs",   "associative (sampling)", 3,
+  "fazly",              "PA",    "associative",          2,
+  "novelty",            "Nov",   "associative",          3,
+  "uncertainty",        "Unc",   "associative",          3,
+  "strength",           "Str",   "associative",          2,
+  "Bayesian_decay",     "BD",    "associative",          3,
+  "rescorla-wagner",    "R-W",   "associative",          3,
+  "trueswell2012",      "PbV",   "hypothesis-testing",   2,
+  "guess-and-test",     "GnT",   "hypothesis-testing",   2,
+  "pursuit",            "Pur",   "hybrid",               3,
+  "uncfam_attention",   "FU-A",  "associative",          3,
+  "uncfam_predictive",  "FU-P",  "associative",          3,
+  "kalman_filter",      "KF",    "associative",          3,
+  "softmax_rl",         "RL",    "reinforcement learning", 2,
+  "baseline",           "Base",  "baseline",             0,
+  "fazlyt",             "PA-t",  "associative",          3
+)
+abbr_of <- function(m) model_meta$abbr[match(m, model_meta$Model)] |> dplyr::coalesce(m)
 ```
-We fit a baseline co-occurrence model along with six associative models, two hypothesis-testing models, and two hybrid models that store multiple, graded hypotheses--but only a subset of all possible associations.
+We fit a baseline co-occurrence model along with several associative models, two hypothesis-testing models, a hybrid model, and a reinforcement-learning model.
+<!-- ToDo (revision): rewrite this sentence for the final 15-model roster. -->
+Four of the associative models (BAM+Attention, BAM+Prediction, the Kalman-filter model) and the reinforcement-learning model were added to the model set after the initial comparison.
 These models and their free parameters are briefly described below.
 
 
 ### Baseline Co-occurrence Model
 The baseline model simply tallies the co-occurrences of any words and objects appearing together on each trial, accumulating the counts in a word $\times$ object matrix $M$.
-At test, for word $w_1$ this model selects the correct referent $o_1$ according to Luce choice from the co-occurrences of $w_1$ with all referents: $P(o_1|w_1) = M_{w_1,o_1} / \sum{M_{w_1,\cdot}}$.
-The model's probability of correctly choosing each word per condition is what is scored against people's average probability of choosing the correct item.
+At test, for word $w_1$ this model selects the correct referent $o_1$ according to @Luce1959 choice from the co-occurrences of $w_1$ with all referents: $P(o_1|w_1) = M_{w_1,o_1} / \sum{M_{w_1,\cdot}}$.
+The model's probability of correctly choosing each word per condition is scored against people's average probability of choosing the correct item.
 <!-- tried adding a softmax parameter but it didn't help --> 
 
 
 ### Probabilistic Associative Model (PA)
 The probabilistic associative model [@Fazly2010] represents the meaning of each word *w* as a probability distribution $p(\cdot | w)$ over the objects appearing across the trials, and incrementally learns these distributions trial-by-trial.
 The association between a given *w* and *o* grows more quickly if $p(w|o)$ is already high (a familiarity bias), unless some other word has a strong association with *o*; thus, associations are competitive.
-A parameter $\lambda$ is a small smoothing constant added to both the numerator and denominator of each $p(w|o)$, further adjusted in the denominator by a $\beta$ parameter representing the upper bound on the number of symbol types.
-At test, the correct referent for each word *w* is chosen according to Luce choice from the probability distribution over the objects that appeared with that word $p(\cdot | w)$.[^1]
+The parameter $\lambda$ is a small smoothing constant added to both the numerator and denominator of each $p(w|o)$, further adjusted in the denominator by a $\beta$ parameter representing the upper bound on the number of symbol types.
+At test, the correct referent for each word *w* is chosen according to @Luce1959 choice from the probability distribution over the objects that appeared with that word $p(\cdot | w)$.[^1]
 
 [^1]: The original model implemented a $\theta$-thresholded lexicon that discretized the probability matrix, but we found that including this mechanism resulted in a worse fit to the data.
 
@@ -154,7 +176,7 @@ The update rule for adjusting the association $M_{w,o}$ between a given word $w$
 M_{w,o} =  \alpha M_{w,o} + \frac{ \chi \cdot e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o}  }{  \sum_{w\in W} \sum_{o\in O} e^{ \lambda \cdot (H(w) + H(o)) } \cdot M_{w,o} }
 \label{eq:fullmodel}
 \end{equation}
-\vspace{-2pt}
+
 At test, given word $w$ learners use Luce choice, choosing referent $o$ from the \textit{m} given alternatives in proportion to associative strength $M_{w,o}$. 
 
 We also fit a *stochastic sampling* (**FUs**) version of this model [see @Kachergis2017], which uses the same update equation, but samples only a single presented object for each word on a trial instead of updating all possible associations. 
@@ -163,7 +185,7 @@ This FU sampling model can still build multiple graded associations for each wor
 
 ### Strength-, Uncertainty-, & Novelty-biased (Str,Unc,Nov) Models
 We also test three variations of the FU model that use only a subset of the mechanisms of the full model in order to understand the contributions of each mechanism.
-The *strength model* lacks the uncertainty bias term, and thus only implements a bias for familiar (i.e., already-strong) associations, with learning rate ($\chi$) and decay $\alpha$ parameters.
+The *strength model* lacks the uncertainty bias term, and thus only implements a bias for familiar (i.e., already-strong) associations, with learning rate ($\chi$) and decay ($\alpha$) parameters.
 
 The *uncertainty model* lacks the strength bias term, and thus only implements a bias for stimuli with uncertain (high-entropy) associations.
 The *novelty model* also lacks the strength bias term, and substitutes novelty for the entropy terms (e.g., 1/(frequency(*w*)+1) instead of $H(w)$).
@@ -182,7 +204,7 @@ Objects on each trial serve as cues to predict which words will be heard.
 When a given word is heard, the associations between that word and each object on the trial are scaled at a learning rate $\beta$ in proportion to the magnitude of the difference between the prediction and the maximum association value ($\lambda$). 
 Each trial, the association matrix is subject to decay (parameter $\alpha$).
 At test, this model uses Luce choice to select the best referent for each word from the presented alternatives.
-\vspace{-4pt}
+
 
 ### Propose-but-Verify Model (PbV)
 In the propose-but-verify hypothesis testing model [@Trueswell2013], a presented referent is selected at random for any presented word that has no remembered referent. 
@@ -190,14 +212,14 @@ The next time that word occurs, the previously-proposed referent is remembered w
 If the remembered referent is verified to be present, the future probability of recalling the word is increased by parameter $\epsilon$. 
 If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
 This model implements trial-level mutual exclusivity by selecting new proposals only from among the referents that are not yet part of a hypothesis.
-\vspace{-4pt}
+
 
 ### Guess-and-Test Model (GnT)
-The guess-and-test hypothesis testing model is based on the description given by @Medina2011 of a one-shot (i.e. "fast mapping") learning, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
-In summary, guess-and-test learners do *not* reach a final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses. 
+The guess-and-test hypothesis testing model is based on the description given by @Medina2011 of a one-shot (i.e. "fast mapping") learning model, which posits that "i) learners hypothesize a single meaning based on their first encounter with a word, ii) learners neither weight nor even store back-up alternative meanings, and iii) on later encounters, learners attempt to retrieve this hypothesis from memory and test it against a new context, updating it only if it is disconfirmed."
+<!-- In summary, guess-and-test learners do *not* reach a final hypothesis by comparing multiple episodic memories of prior contexts or multiple semantic hypotheses. -->
 We give this model two free parameters: a probability of successful encoding ($s$, hypothesis formation), and a probability $f$ of forgetting a hypothesis at retrieval. 
 At test, for each word the model chooses the currently hypothesized referent.
-This model is quite similar to the guess-and-test model formally analyzed by @Blythe2010 to determine the theoretical long-term efficacy of cross-situational word learning.
+<!-- This model is quite similar to the guess-and-test model formally analyzed by @Blythe2010 to determine the theoretical long-term efficacy of cross-situational word learning. -->
 
 
 ### Pursuit Model (Pur)
@@ -209,22 +231,28 @@ A given word-object association only enters the lexicon if $p(o|w) > \theta$, a 
 At test, this model chooses the best referent for each word by Luce choice from the lexicon, which is not necessarily 1-to-1.
 
 ## Data
-\vspace{-4pt}
-```{r load-data}
-load(here("data/combined_data.RData"))
 
-totSs = 0
-totItems = 0
-for(c in 1:length(combined_data)) { 
-  totSs = totSs + combined_data[[c]]$Nsubj 
-  totItems = totItems + length(combined_data[[c]]$HumanItemAcc)
-}
-# moved condition summary table to appendix.Rmd
+```{r load-data}
+library(XSLmodels)
+# The modeled conditions are now XSLmodels::xsl_datasets (53 conditions:
+# the original 44 plus 9 added post-CogSci -- temporal contiguity x2,
+# Suanda et al. 2014 x3, Koehne et al. 2013 x4). The frozen
+# data/combined_data.RData (44 conditions) is kept only for the appendix
+# until that is repointed too.
+nConds  <- length(xsl_datasets)
+totItems <- sum(sapply(xsl_datasets, \(d) length(d$accuracy)))
+totSs    <- sum(sapply(xsl_datasets, \(d) d$n_subj))
+nTrials  <- sapply(xsl_datasets, \(d) length(d$train$words))
 ```
 
-The modeled data are average accuracies from `r totItems` word-object pairs in `r length(combined_data)` experimental conditions, in which a total of `r totSs` subjects participated.
-A table containing details of each condition is available on OSF[^2]. 
-The number of trials per condition ranged from 18 to 108, with 1-4 words and objects presented per trial, and a total of 12-24 pairs to be learned per condition.
+The modeled data are average accuracies from `r totItems` word-object pairs in `r nConds` experimental conditions, in which a total of `r format(totSs, big.mark=",")` subjects participated.
+A table containing details of each condition is available on OSF[^2], along with the full trial orderings and aggregate human performance.
+The number of trials per condition ranged from `r min(nTrials)` to `r max(nTrials)`, with 1-4 words and objects presented per trial, and a total of 12-24 pairs to be learned per condition.
+<!-- ToDo (revision): update provenance for the 53-condition set. The nine
+     post-CogSci conditions are Kachergis, Yu, & Shiffrin (2009; temporal
+     contiguity, x2), Suanda, Mugwanya, & Namy (2014; x3), and Koehne,
+     Trueswell, & Gleitman (2013; x4). Suanda 2014 and Koehne 2013 were
+     held-out generalization experiments in the CogSci version. -->
 The bulk of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
 However, data from several conditions are contributed by Chen Yu's lab at Indiana University, and have never before been published.
 Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
@@ -235,13 +263,21 @@ At test, participants heard each word and were asked to select the best referent
 # Results
 
 ```{r load-group-fits}
-load(here("fits/group_fits.Rdata"))
+# Group fits (all conditions fit jointly), recreated with the XSLmodels
+# package. Two files: the 11 original models + baseline + fazlyt
+# (group_fits_all_experiments.Rdata), and the four post-CogSci models
+# (group_fits_new_models.Rdata). See fits/fit_all_models_all_experiments.R
+# and fits/fit_new_models_all_experiments.R.
+local({
+  e1 <- new.env(); load(here("fits/group_fits_all_experiments.Rdata"), envir = e1)
+  e2 <- new.env(); load(here("fits/group_fits_new_models.Rdata"),       envir = e2)
+  gfd        <<- dplyr::bind_rows(e1$gfd_all, e2$gfd_new)
+  group_fits <<- c(e1$group_fits_all, e2$group_fits_new)
+})
 
-#gfd = get_model_dataframe(group_fits, combined_data)
-
-Nitems = nrow(gfd) / length(unique(gfd$Model)) # MSE per item? per condition?
+Nitems = nrow(gfd) / length(unique(gfd$Model))
 group_fit_tab <- gfd %>% filter(!is.na(HumanPerf)) %>%
-  group_by(Model) %>% 
+  group_by(Model) %>%
   summarise(SSE = sum((ModelPerf-HumanPerf)^2), #/ Nitems,
             r = cor(ModelPerf, HumanPerf)) %>%
   arrange(SSE)
@@ -249,40 +285,31 @@ group_fit_tab <- gfd %>% filter(!is.na(HumanPerf)) %>%
 
 
 ```{r load-cv-fits}
+# 5-fold cross-validated fits on the same 53 conditions. Two files, same
+# split as the group fits: cv_all_experiments.Rdata (11 original models)
+# and cv_new_models.Rdata (four post-CogSci models). See
+# fits/cv_all_experiments.R and fits/cv_new_models.R.
+# NOTE (revision, 2026-09): cv_new_models.Rdata is complete (all 4). The
+# cv_all_experiments.R run was still fitting kachergis_sampling (FUs) as of
+# this writing -- the code below binds whatever is present so the document
+# knits, and Table 1 / Table 2 gain the FUs row once that finishes and the
+# file is re-saved.
+local({
+  e1 <- new.env(); load(here("fits/cv_all_experiments.Rdata"), envir = e1)
+  e2 <- new.env(); load(here("fits/cv_new_models.Rdata"),       envir = e2)
+  cv_group_fits <<- c(e1$cv_all, e2$cv_new)
+})
+cvg <- purrr::list_rbind(lapply(cv_group_fits, `[[`, "testdf"))
 
-load(here("fits/cv_group_fits.Rdata"))
-cvg <- tibble()
-for(m in names(cv_group_fits)) {
-  cvg <- rbind(cvg, cv_group_fits[[m]]$testdf)
-}
-
-cvg_fit_tab <- cvg %>% group_by(Model) %>% 
+cvg_fit_tab <- cvg %>% group_by(Model) %>%
   summarise(SSE = sum((ModelPerf-HumanPerf)^2), #  / Nitems,
             r = cor(ModelPerf, HumanPerf)) %>%
   arrange(SSE) %>%
   rename(`CV SSE` = SSE,
          ` r` = r) %>% left_join(group_fit_tab) %>%
   rename(`All SSE` = SSE) %>%
-  mutate(Model = case_when(Model == 'kachergis' ~ 'FU',
-                             Model == 'fazly' ~ 'PA',
-                             Model == 'novelty' ~ 'Nov',
-                             Model == 'Bayesian_decay' ~ 'BD', 
-                             Model == 'strength' ~ 'Str',
-                             Model == 'uncertainty' ~ 'Unc',
-                             Model == 'rescorla-wagner' ~ 'R-W',
-                             Model == 'trueswell2012' ~ 'PbV',
-                             Model == 'guess-and-test' ~ 'GnT',
-                             Model == 'kachergis_sampling' ~ 'FUs',
-                             Model == 'pursuit' ~ 'Pur',
-                             #Model == 'baseline' ~ 'B',
-                          TRUE ~ Model))
-
-# ToDo: add baseline?
-# "group fit": baseline 31.8 0.617 (would be in 10th place, ahead of strength and pursuit)
-
-# ToDo: use case_when to make this robust to reordering
-#cvg_fit_tab$Model = c("FUs", "PA", "FU", "Nov", "Unc", "BD", "GnT", "R-W", "Str", "Pur", "PbV") 
-cvg_fit_tab$P = c(3, 2, 3, 3, 3, 3, 2, 3, 2, 3, 2)
+  left_join(select(model_meta, Model, P), by = "Model") %>%
+  mutate(Model = abbr_of(Model))
 ```
 
 Table 1 shows the sum of squared error (SSE) and correlation ($r$) for each model's best-fitting parameters vs. average human performance on the `r totItems` items, both for the CV fits and for the all-condition fits, along with the number of fitted parameters in each model (P).
@@ -294,24 +321,27 @@ Correlations between data and models are presented in Figure 1.
 # remove leading 0. to make table fit in 1 column
 numformat <- function(val) { sub("^(-?)0.", "\\1.", sprintf("%.2f", val)) }
 
-mod_names <- setdiff(group_fit_tab$Model, "baseline")
+# all fitted models except the 0-parameter baseline and the fazlyt bonus,
+# ordered by group-fit SSE (restricted to models present in the CV fits --
+# drop the intersect() once both CV runs finish)
+mod_names <- setdiff(group_fit_tab$Model, c("baseline", "fazlyt"))
+mod_names <- mod_names[mod_names %in% unique(cvg$Model)]
 mod_cors <- matrix(0, nrow=length(mod_names), ncol=length(mod_names))
 for(r in 1:nrow(mod_cors)) {
   for(c in 1:ncol(mod_cors)) {
-    #if(r>c) 
       mod_cors[r,c] = numformat(round(cor(subset(cvg, Model==mod_names[r])$ModelPerf,
                                 subset(cvg, Model==mod_names[c])$ModelPerf), 2))
   }
 }
 diag(mod_cors) = 0
-mod_names_short = c("FUs","PA","FU","Nov","Unc","BD","PbV","GnT","R-W","Str","Pur")
+mod_names_short <- abbr_of(mod_names)
 rownames(mod_cors) = mod_names_short
 colnames(mod_cors) = mod_names_short
 ```
 
 ```{r cv-fits-table, results="asis"}
 tab2 <- xtable::xtable(cvg_fit_tab, digits=c(0,0, 2, 2, 2, 2, 0), 
-                       caption = "Cross-validated and group model fits.")
+                       caption = "Sorted cross-validated and group model fits.")
 
 print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "H")
 ```
@@ -379,7 +409,7 @@ gfd %>% mutate(Model = case_when(Model == 'kachergis' ~ 'Fam./Unc.',
                    group=Condition, color=Condition)) + 
   geom_point(alpha=.3) + 
   facet_wrap(vars(Model)) + 
-  theme_bw() + 
+  theme_bw(base_size=10) + 
   ylab("Human Proportion Correct") + xlab("Model Proportion Correct") + 
   geom_abline(intercept=0, slope=1, linetype="dashed") + 
   theme(legend.position = "none") # save space for initial submission (maybe put legend at OSF link?)
@@ -395,7 +425,14 @@ gfd %>% mutate(Model = case_when(Model == 'kachergis' ~ 'Fam./Unc.',
 ## Generalization Experiment Results
 
 ```{r gen-exps}
-load(here("fits/generalization_exp_results.RData"))
+# ToDo (revision): this whole section still uses the pre-package research-code
+# results (fits/pre-package/generalization_exp_results.RData via the old path).
+# Rework needed:
+#  - Suanda 2014 and Koehne 2013 are now IN xsl_datasets (fit, not held out) --
+#    the held-out generalization set is now just Medina 2011 + Smith & Yu 2008.
+#  - Regenerate with package models + 53-condition group-fit parameters
+#    (new script fits/generalization_with_package.R -- not yet written).
+load(here("fits/pre-package/generalization_exp_results.RData"))
 
 # make a table of MSEs, model x exp?
 gen_tab <- gen_exps %>% mutate(RMSE = sqrt(MSE)) %>% select(-MSE) %>%
@@ -426,8 +463,8 @@ gen_tab <- gen_exps %>% mutate(RMSE = sqrt(MSE)) %>% select(-MSE) %>%
 Using the optimal parameters found for each model in the group fit, we simulated model performance for four other published (two adult, two developmental) for which we only have participants' average performance. 
 @Koehne2013 manipulated the temporal order with which words were assigned two meanings of different strengths across four conditions given to adults.
 @Medina2011 manipulated the informativeness (number of referents per trial) and order of trials across four conditions, again with adults.
-<!--The pattern of results from both of these experiments were seen as evidence that people learn via hypothesis testing, but we find that the Koehne et al. data is best accounted for by the novelty-biased model, and the Medina et al. data is best predicted by the Rescorla-Wagner model.-->
-@Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words repeated across 30 trials, and found that infants learned on average 4 words.
+The pattern of results from both of these experiments were seen as evidence that people learn via hypothesis testing, but we find that the Koehne et al. data is best accounted for by the novelty-biased model, and the Medina et al. data is best predicted by the Rescorla-Wagner model.
+@Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words repeated across 30 trials, and found that infants learned 4 words on average.
 @Suanda2014 tested 6-year-old children in three conditions with varying contextual diversity.
 Table 3 shows the root-mean-square error (RMSE) of each model vs. average human performance, as well as the total RMSE separately for the adult experiments and the developmental experiments.
 The models generally outperformed children and thus did not fit well to the developmental conditions.
@@ -461,7 +498,7 @@ RW_vs_baseline = cor(rw$ModelPerf, b$ModelPerf) # .999 -- but not 1!
 
 
 ```{r models-diverge}
-mw <- gfd %>% mutate(ID = rep(1:726, length(unique(gfd$Model)))) %>%
+mw <- gfd %>% group_by(Model) %>% mutate(ID = row_number()) %>% ungroup() %>%
   pivot_wider(names_from=Model, values_from=ModelPerf)
 
 divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) %>%
@@ -487,49 +524,40 @@ divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) 
 ```
 
 
-## Corpus Results
-
-Motivate use of a few representative CHILDES corpora - 
-large number of utterances, maybe diverse ages?, diverse/ordinary activities (e.g., guided/free play, book reading..)
-
-### Best-fitting Parameters
-
-```{r}
-# show model performance based on parameters fitted to above experiments
-# ToDo: sampling models ?
-```
-
-### Optimized Parameters
-
-<!-- maybe optimizing for short experiments is unfair: which models can do much better if optimized?  --> 
-
-<!-- noun bias vs. verb? only if it's counterintuitive wrt the statistics (if 1 verb/sentence, makes sense) --> 
-
 # Discussion
 
 We set out to conduct a systematic comparison of several models of cross-situational word learning models across a wide variety of experimental conditions. 
 Using a large dataset, we found best-fitting parameters for 11 models both by simultaneously fitting all of the data, and using cross-validation.
 The results of both fitting regimes were consistent and clear: shown in Table 1, the associative models generally achieved better fits (lower SSE and higher correlations) than the hypothesis-testing models (GnT; @Medina2011 and PbV; @Trueswell2013), which made correlated predictions (see Table 2: $r=.65$).
-The Rescorla-Wagner model, a prediction error-based associative model, performed similarly to the GnT model, with highly correlated predictions ($r=.87$), while PbV had the poorest fit, and made responses most similar to the R-W model ($r=.67$).
-Moreover, the predictions of the R-W model were also highly correlated with the baseline co-occurrence counting model ($r = .999$): such similar predictions yielded by seemingly different theories is surprising and warrants further investigation.
-However, some models' particular patterns of responses suggest certain theoretical shortcomings.
-For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{Pur} =$ `r round(mean(subset(gfd, Model=="pursuit")$ModelPerf), 2)`), $M_{hum} = 0.48$).
-Indeed, as shown in Figure 1, Pur, PbV, and GnT all showed a pattern of inhuman responses: for a subset of items, the models either always got them correct or always got them incorrect, while people were more stochastic.
-<!-- And yet Pur made responses that were most highly correlated with the FUs model (r=.74)--one of the best-fitting models. -->
+However, it was also striking how similar many models' predictions were, even to models representing disparate learning theories.
 
-Among the associative models, the PA model [@Fazly2010] and the FU model [@Kachergis2012gi] both fare quite well, and the sampling version of the FU model (FUs) performs slightly better, albeit with three free parameters compared to two in the PA model.
-The predictions of the top three models are more correlated with each other than with the human data (see Table 1): PA vs. FUs: .87, PA vs. FU: .84, FU vs. FUs: .92.
-But the PA model also showed a .84 correlation with the Rescorla-Wagner model, and both FU and FUs show a .87 correlation with the simpler novelty-biased associative model (N)--stronger than for the uncertainty-bias mechanism used by the FU models.
+The Rescorla-Wagner model, a prediction error-based associative model, performed similarly to the GnT model, with highly correlated predictions ($r=.87$), while PbV had the poorest fit, and made responses most similar to the R-W model ($r=.67$).
+Moreover, the predictions of the R-W model were also highly correlated with the baseline co-occurrence counting model ($r = .99$): such similar predictions yielded by seemingly different theories is surprising and warrants further investigation.
+However, some models' particular patterns of responses suggest certain theoretical shortcomings.
+For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{Pur} =$ `r round(mean(subset(gfd, Model=="pursuit")$ModelPerf), 2)`, $M_{hum} = 0.48$).
+Indeed, as shown in Figure 1, Pur, PbV, and GnT all showed a pattern of inhuman responses: for a subset of items, the models either always got them correct or always got them incorrect, while people were more stochastic.
+And yet Pur made responses that were most highly correlated with the FUs model ($r=.74$)--one of the best-fitting models.
+In summary, although the hypothesis testing models evaluated here did not fare well, it is worth nothing that models from different theories can often mimic each other--at least in some experimental conditions--and so it is necessary to both 1) test other instances of general theories (including hypothesis testing models with, say, a decaying memory to reduce ceiling performance), and 2) use models to generate predictions during experiment design, in order to choose more informative experiments. 
+
+<!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill-posed altogether [@Yu2012hyp]. -->
+
+Among the associative models, the PA model [@Fazly2010] and the FU model [@Kachergis2012gi] both fared quite well, and the sampling version of the FU model (FUs) performed slightly better, albeit with three free parameters compared to two in the PA model.
+The predictions of the top three models were more correlated with each other than with the human data (see Table 1): PA vs. FUs: .87, PA vs. FU: .84, FU vs. FUs: .92.
+But the PA model also showed a .84 correlation with the Rescorla-Wagner model, and both FU and FUs showed a .87 correlation with the simpler novelty-biased associative model (Nov)--stronger than for the uncertainty-bias mechanism used by the FU models.
+Examining the experimental conditions that were easiest for the models to fit can indicate what types of designs are less useful to conduct to test theories of learning. 
+For example, the condition best accounted for by six of the models had varied frequency (pairs appeared 3, 6, or 9 times) with low contextual diversity (i.e., the words of each frequency co-occurred only with each other): it turns out that showing a performance advantage for more frequent items is straightforward for many theories.
 Future work should aim to further explore when these models make overlapping predictions, but another approach is to find conditions where models make disparate predictions. 
-The FUs and PA models make maximally divergent predictions in the conditions with fewer words than objects per trial (esp. 1x3, 1x3 6/18 4AFC, and 1x4), which hints at a difference in mechanism for these models. 
-A fruitful next step would be to use optimal experiment design to generate a definitive experiment to differentiate these models. 
+The FUs and PA models make maximally divergent predictions in the conditions with fewer words than objects per trial (esp. 1 word x 3 referents and 1 word x 4 referents conditions), which hints at a difference in mechanism for these models. 
+A fruitful next step would be to use optimal experiment design to generate a definitive experiment to differentiate these models.
+Models also struggled with conditions that tested how learners relax their bias for mutually exclusive pairings in the face of evidence that two words may both map to two referents: five models had the worst fit for conditions from @Kachergis2012gi.
+
 
 Although we have aimed for broad coverage of models and experimental conditions, this study is far from complete in both respects.
 First, there are many other models that we have not yet implemented [e.g., @mcmurray2012word]. <!-- or that we have not finished fitting to the data [e.g., @YurovskyFrank2015].  @tilles2012minimal; -->
 Moreover, this dataset represents performance from a fairly homogeneous sample: English-speaking US college students. 
 Future work should aim to include not only more models, but a more broadly diverse sample, both in terms of language background and age.
 The small number of generalization experiments run here suggest that parameters fitted to adult experimental conditions do not generalize well to developmental experiments: future research should gather a larger set of developmental data and re-fit these models with cross-validation.
-We invite other researchers to contribute datasets and model implementations for future, larger-scale comparisons: data and model code will be open-sourced and available on [OSF](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5).
+We invite other researchers to contribute datasets and model implementations for future, larger-scale comparisons: data, model code, and fitting procedures will be open-sourced and available on [OSF](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5), as well as through an R package \texttt{XSLmodels} which we invite other to contribute to.
 
 In summary, we have shown not only how a large model comparison can help rank models from most to least able to account for human data, but also how such comparisons can identify models that mimic each other, as well as identifying experimental designs that might aid in distinguishing models.
 Future work should extend this comparison to cross-situational word learning models and extant datasets beyond those tested here, and design novel experiments designed to distinguish these models.
@@ -540,16 +568,16 @@ More broadly, we believe that structured model comparison is a critical step tow
 
 <!-- In three cross-situational learning experiments, Hendrickson gave participants word-object pairs occurring with Zipf (power-law) frequency distribution, and then compared two models:  -->
 
-<!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill-posed altogether [@Yu2012hyp]. -->
+
+
 
 <!--
 # Acknowledgements
-\vspace{-3pt}
+
 We thank Chen Yu for allowing us to include data from several previously-unpublished experimental conditions. 
 -->
 
 # References 
-
 ```{r}
 # References will be generated automatically by Pandoc and included here.
 # The following code is some latex to format the bibliography. Do not remove it.
@@ -561,7 +589,3 @@ We thank Chen Yu for allowing us to include data from several previously-unpubli
 \setlength{\leftskip}{0.125in}
 \noindent
 
-<!--
-```{r, child = "appendix.Rmd"}
-```
--->
