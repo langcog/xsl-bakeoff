@@ -75,20 +75,32 @@ And critically, do these mechanisms support naturalistic word learning?
 Computational models provide one strategy for instantiating proposals about mechanism. 
 Such models can then be applied to naturalistic data to make a first assessment of whether cross-situational learning could be a viable strategy for word learning "in the wild". 
 Accordingly, there has been great interest in creating and testing computational models of this task. 
-These models often represent distinct intuitions of how learning operates, variously representing the problem as logical inferencing [e.g., @Siskind1996], proposing and testing hypotheses [e.g., @Trueswell2013], or accumulating graded associations [e.g., @Fazly2010; @Kachergis2012gi]. <!-- @tilles2012minimal or as a blend of the former -->
+These models often represent distinct intuitions of how learning operates.
+At one extreme, *logical* accounts treat the learner as ruling out meanings that are logically inconsistent with the input [e.g., @Siskind1996].
+*Hypothesis-testing* accounts propose that learners entertain a single conjectured referent for a word and revise it only when it is disconfirmed on a later encounter, storing little or nothing about the alternatives [@Medina2011; @Trueswell2013].
+*Associative* accounts instead assume learners accumulate graded word-referent strengths across trials, whether by simple co-occurrence tallying, competitive normalization [@Fazly2010], attention weighted by familiarity and uncertainty [@Kachergis2012gi], or prediction-error-driven updating in the tradition of @Rescorla1972.
+Related *reinforcement-learning* accounts recast the problem as learning the value of choosing a referent for a word from a reward signal (here, whether the chosen referent is present), bridging the propose-and-verify logic of hypothesis testing with graded, error-driven value updates.
+A further question within the associative family is whether the learning rate is fixed or adapts to the learner's current uncertainty, either item-by-item -- as in a Kalman-filter formulation of associative learning [@Dayan2001; @Kruschke2008; @Gershman2015] -- or at the level of the whole system, with learners more alert on trials containing more uncertain items [@Fitneva2017].
 <!-- Extant cross-situational word learning models are too numerous to review exhaustively here.  -->
 
-It is unknown which of these models -- or even which broad class of models -- best fits the breadth of experimental data. 
-While most models of cross-situational learning have typically been tested against at least a few datasets, to our knowledge there has been no systematic comparison of models across a wide variety of experimental conditions. 
-Identifying the model(s) that best predict human performance is thus an important goal for consolidating this broad literature. 
+It is unknown which of these models -- or even which broad class of models -- best fits the breadth of experimental data.
+While most models of cross-situational learning have typically been tested against at least a few datasets, to our knowledge there has been no systematic comparison of models across a wide variety of experimental conditions.
+Identifying the model(s) that best predict human performance is thus an important goal for consolidating this broad literature.
 More broadly, identifying such models could be an important step in assessing the contribution of cross-situational learning to word learning more generally.
 
+A separate concern is that the experiments these models are usually evaluated on are small, tightly controlled, and drawn from a narrow population.
+A typical adult study presents on the order of a dozen unambiguously referential nonce words, each repeated a handful of times, to English-speaking undergraduates over a few minutes.
+Naturalistic input looks very different: word-referent co-occurrences in parent-child interaction are sparse, noisy, massively unbalanced in frequency, and only sometimes about anything present in the immediate scene [@Frank2009; @Medina2011].
+A model that captures the fine structure of laboratory performance need not recover word meanings from corpus data, and vice versa.
+We therefore also ask how the same models fare when run on transcribed parent-child interaction and scored against a gold-standard lexicon, both at their laboratory-fitted parameters and when re-fit to the corpora.
 
-Thus, the goal of our current study is to test the ability of a range of cross-situational word learning models in accounting for a wide range of experimental data. 
+
+Thus, the goal of our current study is to test the ability of a range of cross-situational word learning models in accounting for a wide range of experimental data.
 Our goal is to scale up both the number of models evaluated and the number of experiment designs (and participants) being used for evaluation.
-Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work, either because the parameters have been allowed to vary freely across multiple conditions, or because model performance is compared on different datasets. 
+Different models often contain a range of parameters that must be fit to data, an issue that has hindered previous comparison work, either because the parameters have been allowed to vary freely across multiple conditions, or because model performance is compared on different datasets.
 Thus, we focus on out-of-sample prediction of human data using cross-validated parameter fits.
-We end by examining results from generalization of models to other experiments not included in the initial evaluation and parameter fitting.
+We then examine how well models fit with those parameters generalize to further experiments held out of fitting, including developmental data, and how the models perform on naturalistic parent-child corpora.
+All of the models, datasets, and fitting procedures are released as an open-source R package, \texttt{XSLmodels}, so that the comparison can be extended and reproduced.
 <!-- Finally, we will interpret the results, and what they entail for theories of cross-situational word learning. -->
 
 # Method
@@ -143,10 +155,12 @@ model_meta <- tibble::tribble(
 )
 abbr_of <- function(m) model_meta$abbr[match(m, model_meta$Model)] |> dplyr::coalesce(m)
 ```
-We fit a baseline co-occurrence model along with several associative models, two hypothesis-testing models, a hybrid model, and a reinforcement-learning model.
-<!-- ToDo (revision): rewrite this sentence for the final 15-model roster. -->
-Four of the associative models (BAM+Attention, BAM+Prediction, the Kalman-filter model) and the reinforcement-learning model were added to the model set after the initial comparison.
-These models and their free parameters are briefly described below.
+We fit fifteen models together with a zero-parameter baseline co-occurrence model.
+The original evaluation included the baseline, six associative models (the probabilistic associative model, the familiarity- and uncertainty-biased model, its strength-, uncertainty-, and novelty-biased reductions, a Bayesian decay model, and a Rescorla-Wagner model), two hypothesis-testing models, and two hybrid models that store multiple graded hypotheses for only a subset of the possible associations.
+We later added four more: two variants of the familiarity- and uncertainty-biased model that make its learning rate depend on uncertainty, a Kalman-filter generalization of the Rescorla-Wagner model, and a reinforcement-learning model.
+All models and their free parameters are briefly described below.
+<!-- ToDo (revision): add a summary table (model x class x #params x key mechanism). -->
+
 
 
 ### Baseline Co-occurrence Model
@@ -229,6 +243,41 @@ If the strongest referent for $w$ is not present, the association is weakened (s
 Novel words are given an initial association of strength $\gamma$ with the available referent whose strongest association is the smallest, implementing an uncertainty bias in forming associations for novel words.
 A given word-object association only enters the lexicon if $p(o|w) > \theta$, a threshold parameter.
 At test, this model chooses the best referent for each word by Luce choice from the lexicon, which is not necessarily 1-to-1.
+
+
+The four models below were added after the initial comparison.
+
+
+### FU with Trial-Level Attention (FU-A)
+This variant of the FU model implements the "system-level" attention account of @Fitneva2017, on which learners are more alert -- allocating a higher learning rate -- on trials whose items are more uncertain (for instance early in training, or after many items have been mispaired).
+On each trial, the associative weight the FU model distributes (learning rate $\chi$) is additionally scaled by the ratio of that trial's mean object entropy to the mean entropy of all objects seen so far.
+The model has the same three free parameters as the FU model ($\chi$, $\lambda$, $\alpha$) and uses the same Luce choice rule at test.
+
+
+### FU with Item-Level Prediction Error (FU-P)
+This variant replaces the FU model's normalization step -- which distributes a fixed total amount of associative weight across the word-object pairings on a trial -- with an item-level, Rescorla-Wagner-style [@Rescorla1972] prediction error term: the amount learned about a given word-object association is scaled by how far the word's predicted strength (summed over the trial's objects) falls short of a maximum value.
+Surprising (e.g., initially mispaired) items therefore draw more learning than the normalized model allows.
+Because there is no normalization step, associations can be driven negative and are floored at zero.
+The model has the same three free parameters as the FU model and uses Luce choice at test.
+
+
+### Kalman Filter Model (KF)
+The Kalman filter model [@Dayan2001; @Kruschke2008; @Gershman2015] generalizes the Rescorla-Wagner model's error-driven update by tracking each word-object association as a Gaussian belief -- a mean strength $\mu_{w,o}$ and a variance $\sigma^2_{w,o}$ representing the learner's uncertainty about it.
+On each trial, an association's update toward its target is scaled by that association's *Kalman gain*, $\sigma^2_{w,o} / (\sigma^2_{w,o} + \sigma^2_{obs})$, which makes the effective learning rate adaptive: large while an association is still uncertain and automatically shrinking as evidence accumulates.
+Between trials, every association's variance grows by $\tau^2$, so the model can still revise a well-learned belief rather than freezing.
+The model has three parameters -- process noise $\tau^2$, observation noise $\sigma^2_{obs}$, and initial uncertainty $\sigma^2_0$ -- of which only two are identifiable (scaling all three by a constant leaves the learned matrix unchanged).
+At test, it uses Luce choice over the mean association matrix.
+<!-- ToDo (revision): decide whether to fix sigma2_obs and report P = 2 for KF in Table 1; currently all three are fit and P = 3. -->
+
+
+### Softmax Reinforcement Learning Model (RL)
+The reinforcement learning model recasts word learning as learning, from a reward signal, the value of choosing each referent for a word.
+Unlike every other model considered here -- all of which update every word-object pair that co-occurs on a trial -- this model makes a discrete choice: for each word heard, it samples a single candidate referent from a softmax policy over its current values for all known objects (its current best guess at that word's meaning), analogous to the way the propose-but-verify and pursuit models commit to a single hypothesis before checking it.
+It then observes whether that referent is present in the scene (reward $= 1$) or not (reward $= 0$) -- the only feedback available in a task with no trial-by-trial correct answer -- and updates only the chosen value by a delta rule, $Q_{w,o} \leftarrow Q_{w,o} + \eta\,(\text{reward} - Q_{w,o})$.
+It has two free parameters: the learning rate $\eta$ and a softmax inverse temperature $\beta$ governing how sharply choices favor the highest-valued referent.
+At test, the model's probability of choosing the correct referent for a word is read directly from the same softmax policy it learned with.
+This model thus shares the propose-and-verify logic of the hypothesis-testing models but replaces their all-or-none keep/discard rules with graded value learning and explicit, tunable exploration.
+
 
 ## Data
 
