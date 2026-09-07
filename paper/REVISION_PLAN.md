@@ -310,7 +310,7 @@ Status against scope C. Scripts exist unless noted; all live in `fits/`.
 | Group fit, 53 cond, 4 new models | `fit_new_models_all_experiments.R` | ✅ done → `group_fits_new_models.Rdata` |
 | **CV, 53 cond, 11 orig models** | `cv_all_experiments.R` | 🔄 **10/11 — `kachergis_sampling` (FUs) fitting now** (run PID 39640, started ~Sep 3). Will finish + re-save on its own. |
 | **CV, 53 cond, 4 new models** | `cv_new_models.R` | ✅ **done** — all 4 incl. `softmax_rl` (finished 2026-09-06) → `cv_new_models.Rdata` |
-| **Package generalization run** (Medina, Smith & Yu; + Suanda/Koehne as now-in-sample) | — | ❌ **new script needed.** Model: old `xsl-bake-off.Rmd` chunks that built `generalization_exp_results.RData`, but pointed at package models + `group_fits_all_experiments` params, and building xslData for Medina/SmithYu from `other_exps/`. |
+| **Package generalization run** (Medina, Smith & Yu; + Suanda/Koehne as now-in-sample) | `generalization_with_package.R` | ✅ **done** → `generalization_with_package.RData`. Section + table + prose rewritten. Re-check model names in the prose once the group fit is final. New finding: baseline / R-W / Kalman / RL generalize best to the held-out experiments; Koehne no longer best-fit by the novelty model. |
 | **Corpus results** (transfer + corpus-fitted, all models + fgt2009, both corpora) | adapt `XSLmodels/tests/bakeoff_comparison/corpus_gold_{comparison,fits}.R` | 🟡 largely done in the package; needs a paper-facing wrapper that emits the table/figure the Rmd will load |
 | Repoint paper + appendix at `xsl_datasets` / package fit files | — | ❌ Rmd edits (Action 0.3) |
 | Re-knit, diff every inline `\r` stat vs. `cogsci-final.pdf` | — | ❌ final pass |
@@ -335,7 +335,8 @@ machine that stays awake. Everything else is minutes-to-an-hour or pure writing.
    - Update Data section counts + provenance; write the Corpora subsection.
    - Switch the template to the target journal's; strip the CogSci `\vspace` hacks.
    - Draft author response / cover-letter notes on the model-implementation changes.
-4. **Generalization script** — write it, run it (fast once the group params exist).
+4. ~~**Generalization script**~~ — done (`generalization_with_package.R`). Re-run once
+   the group fit is final (it reads `group_fits_all_experiments.Rdata`).
 5. **Corpus results** — write the paper-facing wrapper around the package scripts, run,
    draft the section.
 6. **When CV lands** — regenerate Tables 1–3, Figure 1, supplementary; walk the §5 table
