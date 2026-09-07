@@ -21,34 +21,11 @@ library(purrr)
 library(caret)
 library(here)
 
+source(here("fits/new_model_specs.R")) # new_model_specs
+
 deoptim_reg <- DEoptim::DEoptim.control(reltol = .001, NP = 100, itermax = 100, trace = FALSE)
 deoptim_stoch <- DEoptim::DEoptim.control(reltol = .001, NP = 100, itermax = 30, trace = FALSE)
 run_control <- xslControl(n_sim = 200)
-
-new_model_specs <- list(
-  uncfam_attention = list(
-    constructor = \(p) uncfam_attention(X = p[1], B = p[2], C = p[3]),
-    lower = c(0.01, 0.8, 0.8), upper = c(0.5, 1.0, 1.0), stochastic = FALSE
-  ),
-  uncfam_predictive = list(
-    constructor = \(p) uncfam_predictive(X = p[1], B = p[2], C = p[3]),
-    lower = c(0.01, 0.8, 0.8), upper = c(0.5, 1.0, 1.0), stochastic = FALSE
-  ),
-  kalman_filter = list(
-    # bounds widened after an earlier fit pinned all three parameters at
-    # (or, for sigma2_0, right at) their original bounds -- see XSLmodels
-    # PR #7
-    constructor = \(p) kalman_filter(tau2 = p[1], sigma2_obs = p[2], sigma2_0 = p[3]),
-    lower = c(0.000001, 0.01, 0.001), upper = c(1, 500, 10), stochastic = FALSE
-  ),
-  softmax_rl = list(
-    # beta upper bound widened after an earlier fit landed at beta=18.3,
-    # essentially pinned against the old upper bound of 20 -- see
-    # XSLmodels PR #7
-    constructor = \(p) softmax_rl(alpha = p[1], beta = p[2]),
-    lower = c(0.01, 0.1), upper = c(1, 100), stochastic = TRUE
-  )
-)
 
 data_all <- xsl_datasets
 labels_all <- map_chr(data_all, "label")

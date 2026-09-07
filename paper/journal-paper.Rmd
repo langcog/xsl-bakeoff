@@ -474,69 +474,56 @@ gfd %>% mutate(Model = case_when(Model == 'kachergis' ~ 'Fam./Unc.',
 ## Generalization Experiment Results
 
 ```{r gen-exps}
-# ToDo (revision): this whole section still uses the pre-package research-code
-# results (fits/pre-package/generalization_exp_results.RData via the old path).
-# Rework needed:
-#  - Suanda 2014 and Koehne 2013 are now IN xsl_datasets (fit, not held out) --
-#    the held-out generalization set is now just Medina 2011 + Smith & Yu 2008.
-#  - Regenerate with package models + 53-condition group-fit parameters
-#    (new script fits/generalization_with_package.R -- not yet written).
-load(here("fits/pre-package/generalization_exp_results.RData"))
+# Generalization results from fits/generalization_with_package.R: each model
+# run at its 53-condition group-fit parameters on experiments outside that
+# fit. Two tiers: Medina 2011 and Smith & Yu 2008 are genuinely held out;
+# Koehne 2013 and Suanda 2014 were held out in the CogSci version but have
+# since been added to xsl_datasets, so their numbers here come straight from
+# the group fit (tier == "now in fit set").
+load(here("fits/generalization_with_package.RData"))
 
-# make a table of MSEs, model x exp?
-gen_tab <- gen_exps %>% mutate(RMSE = sqrt(MSE)) %>% select(-MSE) %>%
+gen_wide <- gen_exps %>%
+  select(model, exp, RMSE) %>%
   pivot_wider(names_from = exp, values_from = RMSE) %>%
-  rename(Model = model,
-         Koehne = `Koehne et al.`,
-         Medina = `Medina et al.`,
-         Suanda = `Suanda et al.`) %>%
-  mutate(`Adult RMSE` = rowSums(.[2:3]),
-         `Dev RMSE` = rowSums(.[4:5])) %>% 
-  arrange(`Adult RMSE`) %>% 
-  mutate(Model = case_when(Model == 'kachergis' ~ 'FU',
-                             Model == 'fazly' ~ 'PA',
-                             Model == 'novelty' ~ 'Nov',
-                             Model == 'Bayesian_decay' ~ 'BD', 
-                             Model == 'strength' ~ 'Str',
-                             Model == 'uncertainty' ~ 'Unc',
-                             Model == 'rescorla-wagner' ~ 'R-W',
-                             Model == 'trueswell2012' ~ 'PbV',
-                             Model == 'guess-and-test' ~ 'GnT',
-                             Model == 'kachergis_sampling' ~ 'FUs',
-                             Model == 'pursuit' ~ 'Pur',
-                             #Model == 'baseline' ~ 'B',
-                          TRUE ~ Model))
+  rename(Medina = `Medina et al.`, `Smith & Yu` = `Smith & Yu`,
+         Koehne = `Koehne et al.`, Suanda = `Suanda et al.`) %>%
+  mutate(`Held-out mean` = (Medina + `Smith & Yu`) / 2) %>%
+  arrange(`Held-out mean`) %>%
+  mutate(Model = abbr_of(model), .before = 1) %>%
+  select(Model, Medina, `Smith & Yu`, `Held-out mean`, Koehne, Suanda)
+
+gen_best <- gen_exps %>% group_by(exp) %>% slice_min(RMSE, n = 1) %>%
+  select(exp, model, RMSE) %>% mutate(model = abbr_of(model))
+best_of <- function(e) gen_best$model[gen_best$exp == e]
 ```
 
 
-Using the optimal parameters found for each model in the group fit, we simulated model performance for four other published (two adult, two developmental) for which we only have participants' average performance. 
-@Koehne2013 manipulated the temporal order with which words were assigned two meanings of different strengths across four conditions given to adults.
-@Medina2011 manipulated the informativeness (number of referents per trial) and order of trials across four conditions, again with adults.
-The pattern of results from both of these experiments were seen as evidence that people learn via hypothesis testing, but we find that the Koehne et al. data is best accounted for by the novelty-biased model, and the Medina et al. data is best predicted by the Rescorla-Wagner model.
-@Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words repeated across 30 trials, and found that infants learned 4 words on average.
-@Suanda2014 tested 6-year-old children in three conditions with varying contextual diversity.
-Table 3 shows the root-mean-square error (RMSE) of each model vs. average human performance, as well as the total RMSE separately for the adult experiments and the developmental experiments.
-The models generally outperformed children and thus did not fit well to the developmental conditions.
-Nevertheless, the Rescorla-Wagner model best matched both the Medina et al. adult data and the Smith & Yu developmental data.
-The novelty-biased model best predicted the Koehne et al. adult data, with FUs and the Strength-biased models just behind.
-Finally, the Suanda et al. developmental data was best fit by the Bayesian Decay model. 
+Using each model's group-fit parameters, we simulated its performance on four further published experiments for which only group-level human accuracy is available.
+@Medina2011 manipulated trial informativeness (the number of referents per trial) and the order of trials, over four between-subjects conditions with adults; @Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words across 30 trials, with infants learning about 4 words on average.
+Neither experiment is in the fitting set, so both are genuine tests of generalization.
+Two further experiments -- @Koehne2013, who manipulated the order in which adults encountered a noun's two differently-frequent referents, and @Suanda2014, who varied contextual diversity for 6-year-olds -- were held out in an earlier version of this comparison but have since been added to the fitting set; we report them here for continuity, with the caveat that the models were fit to them.
+Table 3 gives the root-mean-square error (RMSE) between each model and average human performance on each experiment.
+
+On the two genuinely held-out experiments, the models that generalize best are the simplest ones: the co-occurrence baseline, the Rescorla-Wagner and Kalman-filter models, and the reinforcement-learning model all predict the @Medina2011 trajectory and the @Smith2008vg data about as well as anything (RMSE near `r sprintf("%.2f", min(gen_wide$"Held-out mean"))`), while the more elaborate associative models -- the FU family and its variants -- fit these experiments worst.
+In other words, the models generalize to held-out data roughly to the extent that they resemble co-occurrence counting.
+The infant and child data (@Smith2008vg; @Suanda2014) are mostly underfit: the models tend to outperform the learners.
+Among the now-in-set experiments, the @Suanda2014 data is best captured by the Bayesian decay model (as in the earlier comparison), whereas the @Koehne2013 data -- previously best fit by the novelty-biased model -- is now best fit by the Rescorla-Wagner and Kalman-filter models, with the novelty model among the worst; this reversal is expected given the change in fitting set and group parameters.
+<!-- ToDo (revision): once cv_all finishes and the group fit is final, re-check every model name in this paragraph against Table 3. -->
 
 ```{r gen-exp-table, results="asis"}
-#gen_tab$model = c("R-W", "Nov", "FUs", "Str", "PA", "Pur", "", "PbV", "GnT", "Pur", "BD")
-
-gentab <- as.matrix(gen_tab)
-colnames(gentab)[5] = "Smith \\& Yu"
-
-# bold min value per col
-for(c in 2:ncol(gentab)) {
-  min_row = which(as.numeric(gentab[,c])==min(as.numeric(gentab[,c])))
-  gentab[,c] = round(as.numeric(gentab[,c]), 2)
-  #if(c!=ncol(gentab)) 
-  gentab[min_row,c] = cell_spec(gentab[min_row,c], "latex", bold = T)
+gentab <- as.matrix(gen_wide)
+# bold the minimum (best) RMSE in each experiment column
+for (cc in which(colnames(gentab) %in% c("Medina", "Smith & Yu", "Koehne", "Suanda"))) {
+  v <- as.numeric(gentab[, cc])
+  gentab[, cc] <- sprintf("%.2f", v)
+  gentab[which.min(v), cc] <- cell_spec(sprintf("%.2f", min(v)), "latex", bold = TRUE)
 }
-# ToDo: add separate Total RMSE column for adult and devo data
-kable(gentab, "latex", booktabs = T, digits=2, escape=F, caption = "Generalization experiment results.") %>%
-  kable_styling(latex_options = "scale_down")
+gentab[, "Held-out mean"] <- sprintf("%.2f", as.numeric(gentab[, "Held-out mean"]))
+colnames(gentab)[colnames(gentab) == "Smith & Yu"] <- "Smith \\& Yu"
+kable(gentab, "latex", booktabs = T, escape = F,
+      caption = "Generalization RMSE by model. Medina et al. and Smith \\& Yu are held out of fitting; Koehne et al. and Suanda et al. are in the fitting set (shown for continuity). Best (lowest) per column in bold.") %>%
+  kable_styling(latex_options = "scale_down") %>%
+  add_header_above(c(" " = 1, "Held out" = 3, "In fitting set" = 2))
 ```
 
 ```{r}
