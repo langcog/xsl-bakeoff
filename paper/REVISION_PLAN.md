@@ -254,14 +254,22 @@ Pursuit respond more extremely than people" caption claim survives.
 - Keep and update: identifiability, optimal experiment design, need for developmental
   data + diverse samples.
 
-### Supplementary material (was the appendix)
-- Repoint `cv_group_fits.Rdata` and `combined_data.RData` loads at package outputs /
-  `xsl_datasets`.
-- Parametrize the hard-coded 11-model assumptions (`xm_mat[,2:12]`, the `case_when`
-  relabel blocks) so they don't silently break at 15 models.
-- Regenerate the misfit heatmaps and best/worst-condition tables; re-check the `filt`-
-  condition and `freq369-3x3loCD` prose.
-- Add: full parameter tables for every model × fold, corpus gold-lexicon details.
+### Supplementary material (was the appendix) — ✅ mostly done (2026-09-13)
+- ✅ Repointed `cv_group_fits.Rdata`/`combined_data.RData` loads at package outputs /
+  `xsl_datasets`; generalized the hard-coded 11-model blocks (`xm_mat[,2:12]`, etc.).
+- ✅ Added "Which experimental designs are easy or hard, overall?" (mean SSE across all
+  models per condition) — the piece George asked about that wasn't there before.
+- ✅ Enabled "Best/Worst-Fitting Models per Experiment" (was `include=F`); fixed a
+  `left_join`→`full_join` bug that silently dropped models with zero worst-fits.
+- ✅ Fixed a real bug the repoint surfaced: the 4 Koehne + 3 Suanda conditions have only
+  condition-level human accuracy (flat across items), so correlation is undefined for
+  every model on them — was producing a bogus "NA-model" row in the best/worst tables.
+  Now excluded from every correlation-based view (kept in SSE-based ones).
+- Still to re-check once `cv_all` lands: the `filt`-condition / `freq369-3x3loCD` misfit
+  prose (written against the old 44-cond/11-model heatmap) and the specific
+  best/worst-condition names once FUs is in the CV set.
+- Not yet done: full parameter tables for every model × fold; corpus gold-lexicon detail
+  tables (the Corpus Results section in the main text covers the summary numbers).
 
 ---
 
@@ -308,38 +316,42 @@ Status against scope C. Scripts exist unless noted; all live in `fits/`.
 |---|---|---|
 | Group fit, 53 cond, 11 orig + baseline + fazlyt | `fit_all_models_all_experiments.R` | ✅ done → `group_fits_all_experiments.Rdata` |
 | Group fit, 53 cond, 4 new models | `fit_new_models_all_experiments.R` | ✅ done → `group_fits_new_models.Rdata` |
-| **CV, 53 cond, 11 orig models** | `cv_all_experiments.R` | 🔄 **10/11 — `kachergis_sampling` (FUs) fitting now** (run PID 39640, started ~Sep 3). Will finish + re-save on its own. |
+| **CV, 53 cond, 11 orig models** | `cv_all_experiments.R` | 🔄 **10/11 — `kachergis_sampling` (FUs) still fitting** (same PID 39640, running continuously since ~Sep 3 — over a week as of 2026-09-13). This is far slower than the equivalent softmax_rl CV run (~5 days) and worth checking on directly rather than assuming it will finish; see note below. |
 | **CV, 53 cond, 4 new models** | `cv_new_models.R` | ✅ **done** — all 4 incl. `softmax_rl` (finished 2026-09-06) → `cv_new_models.Rdata` |
-| **Package generalization run** (Medina, Smith & Yu; + Suanda/Koehne as now-in-sample) | `generalization_with_package.R` | ✅ **done** → `generalization_with_package.RData`. Section + table + prose rewritten. Re-check model names in the prose once the group fit is final. New finding: baseline / R-W / Kalman / RL generalize best to the held-out experiments; Koehne no longer best-fit by the novelty model. |
-| **Corpus results** (transfer + corpus-fitted, all models + fgt2009, both corpora) | adapt `XSLmodels/tests/bakeoff_comparison/corpus_gold_{comparison,fits}.R` | 🟡 largely done in the package; needs a paper-facing wrapper that emits the table/figure the Rmd will load |
-| Repoint paper + appendix at `xsl_datasets` / package fit files | — | ❌ Rmd edits (Action 0.3) |
-| Re-knit, diff every inline `\r` stat vs. `cogsci-final.pdf` | — | ❌ final pass |
+| **Package generalization run** (Medina, Smith & Yu; Suanda as now-in-sample) | `generalization_with_package.R` | ✅ **done** → `generalization_with_package.RData`. Koehne 2013 deliberately **dropped** from this comparison (2026-09-13, author feedback) — it's in the fit set like Suanda, but is no longer reported as a "formerly held out" result at all, just folded into Table 1 with everything else. New finding: baseline / R-W / Kalman / RL generalize best to the two genuinely held-out experiments. |
+| **Corpus results** | `corpus_results.R` (wraps `XSLmodels/tests/bakeoff_comparison/corpus_gold_{comparison,fits}.R`'s saved `.rds`, copied into `fits/corpus/`) | ✅ **done** → `corpus_results.RData` + Table 4 in the main text. Headline: Bayesian decay (mediocre in the lab) is the best corpus model on both corpora; FGT close behind with RSA a no-op; PA's lab rank holds on corpora, FUs's doesn't (Spearman ρ = 0.59 between lab and corpus rank). |
+| Repoint paper + appendix at `xsl_datasets` / package fit files | — | ✅ done (Action 0 + appendix pass) |
+| Re-knit, diff every inline `\r` stat vs. `cogsci-final.pdf` | — | ❌ final pass, blocked on `cv_all` |
 | Handle `fazly` beta (§3.1); adopt/annotate BD rule (§3.2) | `model_specs.R` | ❌ small |
-| Parametrize appendix's hard-coded 11-model blocks | `appendix.Rmd` | ❌ small |
+| Parametrize appendix's hard-coded 11-model blocks | `appendix.Rmd` | ✅ done |
 
-**Runtime note:** the two CV resumes are the long pole. FUs CV ≈ 5 folds of a stochastic
-fit at n_sim=200; softmax_rl CV is much slower. Budget for an overnight (or a few) on a
-machine that stays awake. Everything else is minutes-to-an-hour or pure writing.
+**Runtime note:** `cv_all_experiments.R`'s FUs fold has now run continuously for over a
+week — worth checking it's actually progressing (e.g. is DEoptim on a later fold, or
+hung?) rather than just waiting for it. Everything else needed for the fits is done.
 
 ---
 
 ## 7. Suggested sequence
 
-1. **Action 0** — consolidate to one `journal-paper.Rmd`, drop Liang, `git rm` the
-   duplicates, commit. (Cheap, unblocks everything.)
-2. **CV fits** — `cv_new_models.R` done; `cv_all_experiments.R` finishing FUs now.
-   Nothing to kick off; just wait for the FUs row and re-save.
-3. **While they run — number-independent writing:**
-   - Expand Intro (taxonomy + corpus motivation + package).
-   - Write the 4 new-model Method subsections.
-   - Update Data section counts + provenance; write the Corpora subsection.
-   - Switch the template to the target journal's; strip the CogSci `\vspace` hacks.
-   - Draft author response / cover-letter notes on the model-implementation changes.
-4. ~~**Generalization script**~~ — done (`generalization_with_package.R`). Re-run once
-   the group fit is final (it reads `group_fits_all_experiments.Rdata`).
-5. **Corpus results** — write the paper-facing wrapper around the package scripts, run,
-   draft the section.
-6. **When CV lands** — regenerate Tables 1–3, Figure 1, supplementary; walk the §5 table
-   and every inline stat.
-7. **Rewrite Discussion** against final numbers (esp. the PbV story).
-8. **Final knit + stat-by-stat diff** vs. `cogsci-final.pdf`; typeset pass for the venue.
+1. ~~**Action 0**~~ — done. Consolidated to one `journal-paper.Rmd`, dropped Liang.
+2. **CV fits** — `cv_new_models.R` done; `cv_all_experiments.R` still finishing FUs
+   (running over a week now — check it hasn't hung rather than just waiting further).
+3. **Number-independent writing — done:**
+   - ✅ Expanded Intro (taxonomy + corpus motivation + package).
+   - ✅ Wrote the 4 new-model Method subsections.
+   - ✅ Updated Data section counts/provenance; wrote the Corpora subsection.
+   - ❌ Still open: switch the template to the target journal's; strip the CogSci
+     `\vspace` hacks; author response / cover-letter notes.
+4. ~~**Generalization script**~~ — done (`generalization_with_package.R`), and revised
+   2026-09-13 to drop Koehne 2013 entirely (was double-counted as both "in fit set" and
+   "generalization"; now just an in-sample condition, not reported here at all).
+5. ~~**Corpus results**~~ — done: `corpus_results.R` wrapper + Table 4 + Results
+   subsection, built from the package's already-run `corpus_gold_{comparison,fits}.R`
+   output (copied into `fits/corpus/`).
+6. ~~**Appendix**~~ — done: repointed at package/53-cond data, added the "overall
+   easy/hard conditions" table, enabled the best/worst-models-per-condition table,
+   fixed the Koehne/Suanda zero-variance NA bug.
+7. **When `cv_all` lands** — regenerate Tables 1–3, Figure 1, the appendix heatmaps/
+   best-worst tables (currently 14/15 models); walk the §5 table and every inline stat.
+8. **Rewrite Discussion** against final numbers (esp. the PbV story; add corpus results).
+9. **Final knit + stat-by-stat diff** vs. `cogsci-final.pdf`; typeset pass for the venue.
