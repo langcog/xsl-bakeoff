@@ -309,6 +309,14 @@ At test, participants heard each word and were asked to select the best referent
 
 [^2]: Information about the dataset: [https://osf.io/REDACTED](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5)
 
+### Naturalistic Corpora
+
+To ask whether any of these models could plausibly learn from the input children actually receive, we also ran them on two transcribed corpora of caregiver speech to young children, bundled with XSLmodels.
+The **Rollins corpus** [@Rollins2003] is the CHILDES corpus that @Frank2009's Bayesian model was originally fit to: 619 caregiver utterances to 9-month-olds, 416 word types, 22 co-present object types, and a curated gold-standard lexicon of 34 word-object pairs.
+The **FM corpus** [@Frank2013fm] is larger and more naturalistic: 4,763 utterances, 1,122 word types, 30 object types, and a gold lexicon of 41 curated pairs (the corpus also ships stricter and more permissive gold-lexicon variants, not used here).
+Unlike the laboratory conditions above, neither corpus has human referent-selection data to compare against; instead, a model's learned word-object matrix is scored against the gold lexicon directly, as the best-threshold F-score over precision and recall (sweeping the matrix threshold that separates a "learned" pairing from noise).
+Because a large fraction of caregiver utterances are not about anything in the immediate scene at all, we also ran a Bayesian model built for exactly this setting -- @Frank2009's joint intentional inference over the whole corpus, optionally extended with a Rational Speech Act pragmatic listener [`fgt2009()`/`fgt2009_rsa()`; not part of the trial-by-trial models above, since it has no learning trajectory to compare against per-condition human accuracy].
+
 # Results
 
 ```{r load-group-fits}
@@ -562,6 +570,59 @@ divs <- mw %>% select(condnum, Condition, kachergis, fazly, kachergis_sampling) 
 #mean(subset(gfd, Model=="fazly" & Condition=="1x4")$ModelPerf) # .27
 #mean(subset(gfd, Model=="kachergis" & Condition=="1x4")$ModelPerf) # .40
 #mean(subset(gfd, Model=="fazly" & Condition=="1x4")$HumanPerf) # .19
+```
+
+
+## Corpus Results
+
+```{r corpus-results}
+# From fits/corpus_results.R, which reshapes the XSLmodels package's own
+# naturalistic-corpus comparison (tests/bakeoff_comparison/corpus_gold_*.R;
+# see corpus_report.md there) -- not re-run here.
+load(here("fits/corpus_results.RData"))
+
+corpus_wide <- corpus_tab %>%
+  filter(in_lab_roster | model %in% c("fgt2009", "fgt2009_rsa")) %>%
+  mutate(Model = ifelse(is.na(lab_model), model, abbr_of(lab_model)),
+         Model = case_when(model == "fgt2009" ~ "FGT",
+                            model == "fgt2009_rsa" ~ "FGT-RSA",
+                            TRUE ~ Model)) %>%
+  select(Model, corpus, f_default, f_fitted) %>%
+  pivot_wider(names_from = corpus, values_from = c(f_default, f_fitted),
+              names_glue = "{corpus}_{.value}") %>%
+  mutate(mean_fitted = rowMeans(select(., ends_with("f_fitted")), na.rm = TRUE)) %>%
+  arrange(desc(mean_fitted)) %>%
+  select(Model, Rollins_f_default, Rollins_f_fitted, FM_f_default, FM_f_fitted, mean_fitted)
+```
+
+The models above were all fit to maximize agreement with human choices on short, curated laboratory experiments.
+To ask whether the same mechanisms help recover word meanings from real caregiver speech, we ran every model (plus @Frank2009's batch Bayesian model, FGT, and its RSA-pragmatic extension, FGT-RSA) on the Rollins and FM corpora, scoring each model's learned matrix against the corpus's gold lexicon by best-threshold F.
+We report two regimes: *default* parameters (each model's XSLmodels registry starting values, informed by the lab fits but not tuned to either corpus) and *corpus-fitted* parameters (re-optimized on each corpus to maximize gold-lexicon F).
+Table 4 gives F for both regimes on both corpora, ordered by mean fitted F.
+
+Fitting to the corpus helps every model, often substantially -- unsurprisingly, since registry defaults were tuned on short controlled experiments with none of a corpus's sparsity or non-referential noise.
+The gain is largest for models whose defaults transfer worst: guess-and-test gains roughly .05-.06 F from fitting, and the item-level-prediction-error BAM variant (FU-P) gains .15-.32, while PA's defaults were already close to optimal for a corpus and barely move.
+Two findings stand out for the comparison between laboratory and corpus performance (Spearman's $\rho$ = `r round(cor(rank_compare$lab_rank, rank_compare$corpus_rank, method="spearman"), 2)` between each model's lab rank and its corpus rank, computed over the `r nrow(rank_compare)` models tested in both settings): first, the Bayesian decay model -- middling in the lab comparison -- is the strongest model on *both* corpora, and FGT, the model purpose-built for exactly this inference problem, is close behind (its RSA extension makes almost no difference: the learned lexicon is too sparse for a heard word to ever name two co-present objects, so the pragmatic listener collapses to the literal one).
+Second, the lab-best models diverge in how well they transfer: PA holds up as one of the strongest corpus models, while FUs -- the single best-fitting lab model -- falls to the middle of the corpus ranking, and the plain FU model it is built on fares only slightly better.
+The hybrid Pursuit model, already the weakest lab fit, is also the weakest here, collapsing to a near-flat, uninformative matrix on the larger FM corpus.
+<!-- ToDo (revision): re-check n_reversal / rank claims once the group fit is final. -->
+
+```{r corpus-results-table, results="asis"}
+ctab <- as.matrix(corpus_wide)
+for (cc in c("Rollins_f_default", "Rollins_f_fitted", "FM_f_default", "FM_f_fitted")) {
+  v <- suppressWarnings(as.numeric(ctab[, cc]))
+  ctab[, cc] <- ifelse(is.na(v), "--", sprintf("%.2f", v))
+  if (any(!is.na(v))) {
+    best_row <- which(v == max(v, na.rm = TRUE))
+    ctab[best_row, cc] <- cell_spec(sprintf("%.2f", max(v, na.rm = TRUE)), "latex", bold = TRUE)
+  }
+}
+ctab[, "mean_fitted"] <- sprintf("%.2f", as.numeric(ctab[, "mean_fitted"]))
+colnames(ctab) <- c("Model", "default", "fitted", "default", "fitted", "Mean fitted F")
+kable(ctab, "latex", booktabs = T, escape = F,
+      caption = "Best-threshold F recovering the gold lexicon on two naturalistic corpora, at registry-default and corpus-fitted parameters. FGT and FGT-RSA have no lab counterpart. Best per column in bold.") %>%
+  kable_styling(latex_options = "scale_down") %>%
+  add_header_above(c(" " = 1, "Rollins" = 2, "FM" = 2, " " = 1))
 ```
 
 
