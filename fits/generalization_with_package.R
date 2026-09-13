@@ -20,10 +20,16 @@
 #   B. Formerly held out in the CogSci paper, but added to xsl_datasets
 #      afterwards (XSLmodels 0.2.0) and therefore IN the group fit now:
 #        * Suanda et al. (2014)   -- 3 contextual-diversity conditions, 6yo
-#        * Koehne et al. (2013)   -- 4 meaning-order conditions, adults
-#      Reported so the paper can say "these were held out before, and here
-#      is how they look now that they are in the fit set" -- their numbers
-#      come straight from the group fit, no re-simulation.
+#      Reported so the paper can say "this was held out before, and here is
+#      how it looks now that it's in the fit set" -- its numbers come
+#      straight from the group fit, no re-simulation.
+#      NOTE: Koehne et al. (2013) is ALSO now in xsl_datasets/the group fit,
+#      but per revision feedback (2026-09-13) is no longer reported in this
+#      generalization comparison at all -- it's simply an in-sample
+#      condition set now, on the same footing as everything else in Table 1,
+#      not something we highlight as "formerly held out." Its numbers are
+#      still visible in gfd_all/group_fits_all_experiments.Rdata like any
+#      other condition, just not singled out here.
 #
 # Output: fits/generalization_with_package.RData with
 #   gen_exps       tibble(exp, model, MSE, RMSE, tier)      -- one row per (exp, model)
@@ -172,9 +178,9 @@ smith_yu_perf <- function(name) {
 }
 
 ## ---------------------------------------------------------------------------
-## Tier B -- Suanda 2014 & Koehne 2013: now in xsl_datasets / the group fit
+## Tier B -- Suanda 2014: now in xsl_datasets / the group fit
 ## ---------------------------------------------------------------------------
-# Pull their per-condition model-vs-human straight from the group fit
+# Pull its per-condition model-vs-human straight from the group fit
 # dataframe (gfd), rather than re-simulating: these conditions were fit
 # jointly with everything else.
 
@@ -207,15 +213,13 @@ smithyu_perf <- map_dfr(model_names, function(m) {
   message("  ", m); smith_yu_perf(m) %>% mutate(model = m)
 })
 
-message("Tier B: Suanda et al. (2014) & Koehne et al. (2013) from the group fit ...")
+message("Tier B: Suanda et al. (2014) from the group fit ...")
 suanda_perf <- tierB_from_gfd("^Suanda2014", "Suanda et al.")
-koehne_perf <- tierB_from_gfd("^Koehne2013", "Koehne et al.")
 
 gen_exps_perf <- bind_rows(
   medina_perf  %>% mutate(tier = "held out"),
   smithyu_perf %>% mutate(tier = "held out"),
-  suanda_perf  %>% mutate(tier = "now in fit set"),
-  koehne_perf  %>% mutate(tier = "now in fit set")
+  suanda_perf  %>% mutate(tier = "now in fit set")
 ) %>%
   select(exp, Condition, model, Human, Model, Model_sd, tier, everything())
 

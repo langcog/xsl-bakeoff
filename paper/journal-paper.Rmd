@@ -477,20 +477,24 @@ gfd %>% mutate(Model = case_when(Model == 'kachergis' ~ 'Fam./Unc.',
 # Generalization results from fits/generalization_with_package.R: each model
 # run at its 53-condition group-fit parameters on experiments outside that
 # fit. Two tiers: Medina 2011 and Smith & Yu 2008 are genuinely held out;
-# Koehne 2013 and Suanda 2014 were held out in the CogSci version but have
-# since been added to xsl_datasets, so their numbers here come straight from
-# the group fit (tier == "now in fit set").
+# Suanda 2014 was held out in the CogSci version but has since been added to
+# xsl_datasets, so its numbers here come straight from the group fit
+# (tier == "now in fit set").
+# NOTE (revision, 2026-09-13): Koehne et al. (2013) is likewise now in
+# xsl_datasets/the group fit, but per author feedback it is no longer
+# reported as a generalization result at all -- it's just an in-sample
+# condition set now (see Table 1), not something to single out here.
 load(here("fits/generalization_with_package.RData"))
 
 gen_wide <- gen_exps %>%
   select(model, exp, RMSE) %>%
   pivot_wider(names_from = exp, values_from = RMSE) %>%
   rename(Medina = `Medina et al.`, `Smith & Yu` = `Smith & Yu`,
-         Koehne = `Koehne et al.`, Suanda = `Suanda et al.`) %>%
+         Suanda = `Suanda et al.`) %>%
   mutate(`Held-out mean` = (Medina + `Smith & Yu`) / 2) %>%
   arrange(`Held-out mean`) %>%
   mutate(Model = abbr_of(model), .before = 1) %>%
-  select(Model, Medina, `Smith & Yu`, `Held-out mean`, Koehne, Suanda)
+  select(Model, Medina, `Smith & Yu`, `Held-out mean`, Suanda)
 
 gen_best <- gen_exps %>% group_by(exp) %>% slice_min(RMSE, n = 1) %>%
   select(exp, model, RMSE) %>% mutate(model = abbr_of(model))
@@ -498,22 +502,23 @@ best_of <- function(e) gen_best$model[gen_best$exp == e]
 ```
 
 
-Using each model's group-fit parameters, we simulated its performance on four further published experiments for which only group-level human accuracy is available.
+Using each model's group-fit parameters, we simulated its performance on further published experiments for which only group-level human accuracy is available.
 @Medina2011 manipulated trial informativeness (the number of referents per trial) and the order of trials, over four between-subjects conditions with adults; @Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words across 30 trials, with infants learning about 4 words on average.
 Neither experiment is in the fitting set, so both are genuine tests of generalization.
-Two further experiments -- @Koehne2013, who manipulated the order in which adults encountered a noun's two differently-frequent referents, and @Suanda2014, who varied contextual diversity for 6-year-olds -- were held out in an earlier version of this comparison but have since been added to the fitting set; we report them here for continuity, with the caveat that the models were fit to them.
+@Suanda2014, who varied contextual diversity for 6-year-olds, was held out in an earlier version of this comparison but has since been added to the fitting set; we report it here for continuity, with the caveat that the models were fit to it.
+(@Koehne2013 was also held out in the earlier version and has likewise since been added to the fitting set, but we no longer break it out separately here -- its conditions are simply part of the 53-condition fit reported in Table 1.)
 Table 3 gives the root-mean-square error (RMSE) between each model and average human performance on each experiment.
 
 On the two genuinely held-out experiments, the models that generalize best are the simplest ones: the co-occurrence baseline, the Rescorla-Wagner and Kalman-filter models, and the reinforcement-learning model all predict the @Medina2011 trajectory and the @Smith2008vg data about as well as anything (RMSE near `r sprintf("%.2f", min(gen_wide$"Held-out mean"))`), while the more elaborate associative models -- the FU family and its variants -- fit these experiments worst.
 In other words, the models generalize to held-out data roughly to the extent that they resemble co-occurrence counting.
 The infant and child data (@Smith2008vg; @Suanda2014) are mostly underfit: the models tend to outperform the learners.
-Among the now-in-set experiments, the @Suanda2014 data is best captured by the Bayesian decay model (as in the earlier comparison), whereas the @Koehne2013 data -- previously best fit by the novelty-biased model -- is now best fit by the Rescorla-Wagner and Kalman-filter models, with the novelty model among the worst; this reversal is expected given the change in fitting set and group parameters.
+Among the now-in-set experiments, the @Suanda2014 data is best captured by the Bayesian decay model, as in the earlier comparison.
 <!-- ToDo (revision): once cv_all finishes and the group fit is final, re-check every model name in this paragraph against Table 3. -->
 
 ```{r gen-exp-table, results="asis"}
 gentab <- as.matrix(gen_wide)
 # bold the minimum (best) RMSE in each experiment column
-for (cc in which(colnames(gentab) %in% c("Medina", "Smith & Yu", "Koehne", "Suanda"))) {
+for (cc in which(colnames(gentab) %in% c("Medina", "Smith & Yu", "Suanda"))) {
   v <- as.numeric(gentab[, cc])
   gentab[, cc] <- sprintf("%.2f", v)
   gentab[which.min(v), cc] <- cell_spec(sprintf("%.2f", min(v)), "latex", bold = TRUE)
@@ -521,9 +526,9 @@ for (cc in which(colnames(gentab) %in% c("Medina", "Smith & Yu", "Koehne", "Suan
 gentab[, "Held-out mean"] <- sprintf("%.2f", as.numeric(gentab[, "Held-out mean"]))
 colnames(gentab)[colnames(gentab) == "Smith & Yu"] <- "Smith \\& Yu"
 kable(gentab, "latex", booktabs = T, escape = F,
-      caption = "Generalization RMSE by model. Medina et al. and Smith \\& Yu are held out of fitting; Koehne et al. and Suanda et al. are in the fitting set (shown for continuity). Best (lowest) per column in bold.") %>%
+      caption = "Generalization RMSE by model. Medina et al. and Smith \\& Yu are held out of fitting; Suanda et al. is in the fitting set (shown for continuity). Best (lowest) per column in bold.") %>%
   kable_styling(latex_options = "scale_down") %>%
-  add_header_above(c(" " = 1, "Held out" = 3, "In fitting set" = 2))
+  add_header_above(c(" " = 1, "Held out" = 3, "In fitting set" = 1))
 ```
 
 ```{r}
