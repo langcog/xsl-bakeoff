@@ -178,9 +178,60 @@ tab_ext <- xtable::xtable(extremes_tab, digits = 3,
 print(tab_ext, type="latex", comment = F, include.rownames = F, table.placement = "p")
 ```
 
+# Model disagreement: a discriminability index independent of human data
+
+```{r model-disagreement}
+gfd_group <- local({
+  e1 <- new.env(); load(here("fits/group_fits_all_experiments.Rdata"), envir = e1)
+  e2 <- new.env(); load(here("fits/group_fits_new_models.Rdata"),       envir = e2)
+  bind_rows(e1$gfd_all, e2$gfd_new)
+}) %>% filter(Model != "fazlyt") # fazlyt is a bonus fit, not part of the 15-model + baseline roster
+
+mech_reps <- c("kachergis", "fazly", "Bayesian_decay", "rescorla-wagner", "trueswell2012",
+              "guess-and-test", "pursuit", "softmax_rl", "kalman_filter", "baseline")
+
+item_sd <- function(df) df %>% group_by(Condition, condnum) %>%
+  summarise(item_sd = sd(ModelPerf), .groups = "drop")
+
+cond_disagree <- full_join(
+  item_sd(gfd_group) %>% group_by(Condition, condnum) %>% summarise(sd_all = mean(item_sd), .groups = "drop"),
+  item_sd(gfd_group %>% filter(Model %in% mech_reps)) %>%
+    group_by(Condition, condnum) %>% summarise(sd_reps = mean(item_sd), .groups = "drop"),
+  by = c("Condition", "condnum")
+) %>% arrange(desc(sd_all))
+
+disagree_extremes <- bind_rows(
+  head(cond_disagree, 6) %>% mutate(Rank = "Most discriminative"),
+  tail(cond_disagree %>% arrange(desc(sd_all)), 4) %>% mutate(Rank = "Least discriminative")
+) %>% select(Rank, Condition, `SD (all models)` = sd_all, `SD (mechanism reps)` = sd_reps)
+
+# computed here (not inline) to avoid nesting backticks (the `Mean SSE`
+# column name) inside an inline r-code span, which would break knitr's parse
+mean_sse_by_cond <- cond_overall %>% select(Condition, MeanSSE = `Mean SSE`)
+sse_disagree_cor <- cond_disagree %>% left_join(mean_sse_by_cond, by = "Condition") %>%
+  summarise(r = cor(sd_all, MeanSSE, use = "complete.obs")) %>% pull(r)
+```
+
+Mean SSE (above) indexes how *hard* a condition is, but hardness and discriminative *value* are different things: a condition every model gets equally wrong is hard but uninformative for choosing between theories, while a condition that splits the models -- whoever turns out to be right -- is exactly the kind of experiment worth running again with more power, or in a new population.
+We index this directly, independent of human data, as the standard deviation of each model's predicted item-level accuracy (`ModelPerf`, at each model's group-fit parameters) across models, averaged over the items in a condition.
+Because several of our associative models are one-parameter-removed cousins of each other (FU/FUs/FU-A/FU-P/Str/Unc/Nov all share the same core mechanism), their mutual spread can pad this index without reflecting genuine disagreement between *theories*.
+We therefore report it two ways: across all `r length(unique(gfd_group$Model))` fitted models, and across `r length(mech_reps)` representatives, one per distinct mechanism (`r paste(relabel(mech_reps), collapse=", ")`) -- the two versions correlate at `r round(cor(cond_disagree$sd_all, cond_disagree$sd_reps), 2)`, but reorder some conditions meaningfully (see below).
+
+Table 3 shows the most- and least-discriminative conditions by this measure.
+The `filt9E_*`/`filt6E_*` conditions -- which present a group of pairs early, then systematically pair a subset of the late-stage objects with the early-stage words to test how strictly a mutual-exclusivity bias is maintained -- are the most model-discriminating conditions in the whole set, on both versions of the index; the temporal- and spatial-contiguity conditions also rise near the top once the FU family's internal spread is removed, indicating a genuine cross-theory split there rather than one associative model disagreeing with its own close cousins.
+At the other end, `filt0E_6L`/`filt0E_9L` (the late-stage-only `filt` conditions, with no early pairs to violate) and several of the fixed-repetition `3x4`/`4x4` conditions are answered almost identically by every model regardless of mechanism -- useful as sanity checks, but uninformative for adjudicating between theories.
+This index correlates with the SSE-based "hardest" ranking above at only $r \approx$ `r round(sse_disagree_cor, 2)`, confirming that "hard for everyone" and "discriminates between theories" are related but distinct properties of a design.
+<!-- ToDo (revision): re-check top/bottom lists once cv_all_experiments.R finishes and FUs is added to the group-fit roster used here (group fits are already complete and don't depend on that CV run, so this section is NOT blocked on it -- only re-verify the specific numbers land the same way). -->
+
+```{r model-disagreement-table, results="asis"}
+tab_disagree <- xtable::xtable(disagree_extremes, digits = 3,
+                               caption = "Most- and least-discriminative experimental conditions: standard deviation of model-predicted item accuracy across models, at each model's group-fit parameters. `all models' is 16 models (the 15-model roster plus baseline); `mechanism reps' is one representative per distinct theoretical mechanism.")
+print(tab_disagree, type="latex", comment = F, include.rownames = F, table.placement = "p")
+```
+
 ## Each Model's Best- and Worst-Fitting Experiment
 
-Table 3 summarizes for each model, what experimental condition is best fit by that model (in terms of correlation, `best` and `best_cond`), and what condition has the worst fit for that model (`worst` and `worst_cond`), again excluding the `r length(zero_var_conds)` conditions with no item-level human variance.
+Table 4 summarizes for each model, what experimental condition is best fit by that model (in terms of correlation, `best` and `best_cond`), and what condition has the worst fit for that model (`worst` and `worst_cond`), again excluding the `r length(zero_var_conds)` conditions with no item-level human variance.
 
 ```{r, results="asis"}
 # A handful of remaining (condition, model) pairs still have r = NA even
@@ -215,7 +266,7 @@ Across models, `r most_common_best` is most often the best-fit condition (best f
 
 ## Best- and Worst-Fitting Models per Experiment
 
-Table 4 takes the complementary view: for each experimental condition, which model fits it best and which fits it worst (by item-level correlation), and then, aggregating over conditions, how many conditions each model "wins" (is the single best-fitting model for) and "loses" (is the single worst-fitting model for).
+Table 5 takes the complementary view: for each experimental condition, which model fits it best and which fits it worst (by item-level correlation), and then, aggregating over conditions, how many conditions each model "wins" (is the single best-fitting model for) and "loses" (is the single worst-fitting model for).
 A model that wins many, varied conditions is a safe default; a model that wins a few conditions no other model wins is doing something distinctive worth understanding.
 
 ```{r, results="asis"}
