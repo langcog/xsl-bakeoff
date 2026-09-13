@@ -22,14 +22,27 @@
 # existing xsl_datasets condition already lives in.
 #
 # Search ---------------------------------------------------------------
-# Simple stochastic hill-climbing (a degenerate simulated annealing: only
-# accepts strict improvements here, since the objective is cheap enough to
-# just run many random restarts' worth of proposals instead of tuning a
-# temperature schedule). At each step: pick a random trial, replace one of
-# its members with a value not currently in that trial, and recompute the
-# objective; keep the mutation iff the objective improves. Rejects any
-# mutation that would drop an index out of the design entirely (every word
-# must appear at least once, or its performance is undefined).
+# Simulated annealing: pick a random trial, replace one of its members with
+# a value not currently in that trial, and recompute the objective; accept
+# improving moves always, accept worsening moves with probability
+# exp(delta / temperature) (temperature decays geometrically over the run),
+# so the search can escape local optima instead of getting stuck at the
+# first hill it climbs. Rejects any mutation that would drop an index out
+# of the design entirely (every word must appear at least once, or its
+# performance is undefined). Track the best genome seen at any point,
+# regardless of the annealing schedule's current acceptance.
+#
+# FIX (2026-09-13, in response to the first run's null result on the
+# already-good seed): the search-time objective is now computed on the 6
+# DETERMINISTIC models in the panel only (no Monte Carlo noise at all), so
+# every accepted improvement during the search is a real one, not a lucky
+# draw from a stochastic model's small-n_sim estimate. The 4 stochastic
+# models (PbV, GnT, Pursuit, RL) are reintroduced only for the final
+# verification of seed vs. best-found design, at full n_sim=200 -- which is
+# also where the number actually reported/compared against the appendix's
+# 10-model metric comes from. Because deterministic-only evaluation is
+# ~25x cheaper (~9ms vs. ~230ms per candidate), the iteration budget is
+# also increased substantially (15,000 vs. the original run's 1,200).
 #
 # Objective -----------------------------------------------------------
 # Same "model disagreement" index as appendix.Rmd's "Model disagreement"
@@ -37,7 +50,9 @@
 # one-per-mechanism models (see mech_reps below), each run ONCE at its
 # already-fit group-fit parameters (xsl_model_registry fits are NOT re-run
 # here -- the whole point is "more discriminative for the theories as they
-# currently stand", not moving-target parameters).
+# currently stand", not moving-target parameters). The search itself
+# optimizes the deterministic-subset version of this (det_reps); reported
+# scores are the full 10-model version, matching the appendix.
 #
 # Two seeds are searched: the current MOST discriminative real condition
 # (filt9E_9L) -- can we beat the best natural design? -- and the current
@@ -70,6 +85,9 @@ group_fits <- local({
 
 mech_reps <- c("kachergis", "fazly", "Bayesian_decay", "rescorla-wagner", "trueswell2012",
                "guess-and-test", "pursuit", "softmax_rl", "kalman_filter", "baseline")
+# the deterministic subset of mech_reps -- used for the (noise-free) search
+# objective; the full panel above is used only for final verification
+det_reps <- c("kachergis", "fazly", "Bayesian_decay", "rescorla-wagner", "kalman_filter", "baseline")
 
 specs <- c(model_specs, list(baseline = list(constructor = function(p) baseline(), stochastic = FALSE)))
 # softmax_rl/kalman_filter aren't in model_specs.R (that's the original-11 roster) --
@@ -107,9 +125,9 @@ genome_to_xsldata <- function(genome) {
   xslData(train = list(words = trials, objects = trials))
 }
 
-score_genome <- function(genome, n_sim = N_SIM_SEARCH) {
+score_genome <- function(genome, models = mech_reps, n_sim = N_SIM_SEARCH) {
   dat <- genome_to_xsldata(genome)
-  perf_mat <- sapply(mech_reps, function(m) {
+  perf_mat <- sapply(models, function(m) {
     ctrl <- if (is_stochastic(m)) xslControl(n_sim = n_sim) else xslControl()
     res <- xsl_run(build_model(m), list(dat), control = ctrl)
     mat <- res$fits[[1]]$matrix
@@ -119,6 +137,10 @@ score_genome <- function(genome, n_sim = N_SIM_SEARCH) {
   # perf_mat: n_words x n_models
   mean(apply(perf_mat, 1, sd))
 }
+
+# noise-free search-time objective: deterministic models only, so every
+# accepted improvement during the search is real, not Monte Carlo noise
+score_genome_det <- function(genome) score_genome(genome, models = det_reps)
 
 ## ---------------------------------------------------------------------------
 ## Mutation + hill-climbing search
@@ -141,22 +163,39 @@ mutate_genome <- function(genome, V) {
   }
 }
 
-hill_climb <- function(seed_genome, V, n_iter, n_sim = N_SIM_SEARCH, verbose_every = 100) {
+# Simulated annealing over the noise-free deterministic-only objective.
+# Temperature decays geometrically from t0 to (approximately) t_end over
+# n_iter steps; worsening moves are accepted with probability
+# exp(delta / temperature), so early iterations can cross small dips to
+# escape local optima while late iterations behave like plain hill-climbing.
+anneal <- function(seed_genome, V, n_iter, t0 = 0.02, t_end = 0.0003, verbose_every = 1000) {
+  decay <- (t_end / t0)^(1 / n_iter)
+  temp <- t0
+
   best_genome <- seed_genome
-  best_score <- score_genome(seed_genome, n_sim)
+  best_score <- score_genome_det(seed_genome)
   cur_genome <- best_genome; cur_score <- best_score
+  n_accepted_worse <- 0L
   trace <- numeric(n_iter)
+
   for (i in seq_len(n_iter)) {
     cand <- mutate_genome(cur_genome, V)
-    cand_score <- score_genome(cand, n_sim)
-    if (cand_score > cur_score) { cur_genome <- cand; cur_score <- cand_score }
+    cand_score <- score_genome_det(cand)
+    delta <- cand_score - cur_score
+    accept <- delta > 0 || runif(1) < exp(delta / temp)
+    if (accept) {
+      if (delta <= 0) n_accepted_worse <- n_accepted_worse + 1L
+      cur_genome <- cand; cur_score <- cand_score
+    }
     if (cur_score > best_score) { best_genome <- cur_genome; best_score <- cur_score }
     trace[i] <- best_score
+    temp <- temp * decay
     if (verbose_every > 0 && i %% verbose_every == 0) {
-      message(sprintf("  iter %d: current=%.4f best=%.4f", i, cur_score, best_score))
+      message(sprintf("  iter %d: temp=%.5f current=%.4f best=%.4f (accepted %d worse moves so far)",
+                      i, temp, cur_score, best_score, n_accepted_worse))
     }
   }
-  list(genome = best_genome, score = best_score, trace = trace)
+  list(genome = best_genome, score = best_score, trace = trace, n_accepted_worse = n_accepted_worse)
 }
 
 ## ---------------------------------------------------------------------------
@@ -169,42 +208,45 @@ seed_from_condition <- function(label) {
        V = length(unique(unlist(d$train$words))))
 }
 
-N_ITER <- 1200
+N_ITER <- 15000  # deterministic-only objective is ~25x cheaper than the mixed panel, so afford far more
 
 results <- list()
 for (seed_label in c("filt9E_9L", "filt0E_9L")) {
   message("\n=== Seed: ", seed_label, " ===")
   seed <- seed_from_condition(seed_label)
-  seed_score <- score_genome(seed$genome, N_SIM_FINAL)
-  message(sprintf("Seed score (n_sim=%d): %.4f", N_SIM_FINAL, seed_score))
+  seed_score_full <- score_genome(seed$genome, mech_reps, N_SIM_FINAL)
+  seed_score_det <- score_genome_det(seed$genome)
+  message(sprintf("Seed score: full 10-model panel (n_sim=%d) = %.4f; deterministic-only = %.4f",
+                  N_SIM_FINAL, seed_score_full, seed_score_det))
 
   t0 <- Sys.time()
-  hc <- hill_climb(seed$genome, seed$V, n_iter = N_ITER)
-  message(sprintf("Search done in %.1f s", as.numeric(Sys.time() - t0, units = "secs")))
+  an <- anneal(seed$genome, seed$V, n_iter = N_ITER)
+  message(sprintf("Search done in %.1f s (%d/%d worsening moves accepted)",
+                  as.numeric(Sys.time() - t0, units = "secs"), an$n_accepted_worse, N_ITER))
 
-  final_score <- score_genome(hc$genome, N_SIM_FINAL)
-  message(sprintf("Best-found score, re-verified at n_sim=%d: %.4f (search-time estimate was %.4f)",
-                  N_SIM_FINAL, final_score, hc$score))
+  final_score_full <- score_genome(an$genome, mech_reps, N_SIM_FINAL)
+  message(sprintf("Best-found design: deterministic-only (search objective) = %.4f; full 10-model panel (n_sim=%d) = %.4f",
+                  an$score, N_SIM_FINAL, final_score_full))
 
   n_trials_changed <- sum(!map_lgl(seq_along(seed$genome),
-                                   \(i) identical(seed$genome[[i]], hc$genome[[i]])))
+                                   \(i) identical(seed$genome[[i]], an$genome[[i]])))
 
   results[[seed_label]] <- list(
-    seed_genome = seed$genome, seed_score = seed_score,
-    best_genome = hc$genome, best_score = final_score,
-    trace = hc$trace, V = seed$V, n_trials_changed = n_trials_changed
+    seed_genome = seed$genome, seed_score_full = seed_score_full, seed_score_det = seed_score_det,
+    best_genome = an$genome, best_score_full = final_score_full, best_score_det = an$score,
+    trace = an$trace, V = seed$V, n_trials_changed = n_trials_changed
   )
   message(sprintf("%d / %d trials changed from the original design",
                   n_trials_changed, length(seed$genome)))
 }
 
-save(results, mech_reps, file = here("fits/discriminative_design_search.RData"))
+save(results, mech_reps, det_reps, file = here("fits/discriminative_design_search.RData"))
 message("\nSaved fits/discriminative_design_search.RData")
 
 for (seed_label in names(results)) {
   r <- results[[seed_label]]
-  cat(sprintf("\n%s: seed=%.4f -> best=%.4f (+%.1f%%), %d/%d trials changed\n",
-             seed_label, r$seed_score, r$best_score,
-             100 * (r$best_score - r$seed_score) / r$seed_score,
-             r$n_trials_changed, length(r$seed_genome)))
+  cat(sprintf("\n%s: seed=%.4f -> best=%.4f (+%.1f%%), full 10-model panel (n_sim=%d); %d/%d trials changed\n",
+             seed_label, r$seed_score_full, r$best_score_full,
+             100 * (r$best_score_full - r$seed_score_full) / r$seed_score_full,
+             N_SIM_FINAL, r$n_trials_changed, length(r$seed_genome)))
 }
