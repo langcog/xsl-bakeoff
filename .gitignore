@@ -4,3 +4,7 @@ models/.DS_Store
 .Rproj.user
 .Rhistory
 fits/*.log
+
+# round-2 (v0.4) refit: private package library + run logs
+fits/v04/Rlib/
+fits/v04/*.log

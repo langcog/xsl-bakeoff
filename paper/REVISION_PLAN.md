@@ -12,6 +12,58 @@ _2026-09-06 — decisions locked (see §3):_
 
 ---
 
+## 0. Round 2 (2026-10-02): what XSLmodels 0.4.0 changes
+
+Everything below §0 describes round 1, which ended with all fits complete (Sep 15)
+against the then-installed **0.3.0**. The package source is now **0.4.0** (installed
+copy is still 0.3.0), and the paper needs a second pass "using the package" as it
+now stands.
+
+**Every lab fit must be redone**, for two independent reasons:
+
+1. **Fitting set grew 53 → 56 conditions** — 3 more Kachergis, Yu & Shiffrin (2009)
+   temporal-contiguity conditions (`1olap3tr_contr`, `temp_cont_1olap2tr_contr`,
+   `temp_cont_2olap2tr_contr`). Now 2,359 participants, 872 items.
+2. **Package behavior changed for the uncfam family.** `fits/check_package_drift.R`
+   reruns each model at its *saved* parameters under 0.4.0 (no fitting):
+
+   | model(s) | at saved params under 0.4.0 | cause |
+   |---|---|---|
+   | FU, Nov, Unc, Str, FU-A, FU-P | **predictions change** (item max \|Δ\| 0.13–0.52; SSE ±0.7) | `update_known()` indexing fix (XSLmodels `6aaebcb`); FU-P also the cap-at-β fix |
+   | BD, R-W, KF, PA, PA-θ, baseline | bit-identical | — |
+   | PbV, GnT, Pur, FUs, RL | within Monte Carlo noise | — |
+
+   **The original research code (`models/kachergis.R` etc.) has the identical
+   `update_known()` bug**, so the *published* CogSci numbers for FU/Nov/Unc/Str carry
+   it. The journal version should say so (one sentence in Method + a footnote).
+
+**Other 0.4.0 changes that matter for the paper:**
+
+- **5 new models:** `uncfam_gamma` (free familiarity exponent), `uncfam_elimination`
+  (learning by elimination / ME), and three distributed/episodic memory models —
+  `minerva2`, `todam`, `rem`. Cost per objective evaluation on 56 conditions: the two
+  uncfam variants ~0.5 s (cheap); `minerva2` ~0.13 s/sim (≈ FUs); **`todam` ~2.3 s/sim
+  and `rem` ~5 s/sim — 20–40× FUs**, i.e. weeks for a full CV at the paper's
+  settings. `tests/bakeoff_comparison/memory_models_report.md` has reduced-budget
+  group fits on 53 conditions (minerva2 SSE .420 — competitive; todam .876; rem .537,
+  under-converged).
+- **Holdout registry** (`xsl_holdout_datasets`): two *scorable* held-out datasets with
+  per-item human accuracy — `benitez2020` (7 conditions, **children and adults**) and
+  `kachergis_initial_accuracy` (2) — plus `vlach_debrock2017` (children, overall mean
+  only). These make a much stronger generalization section than Medina + Smith & Yu
+  alone; `fits/generalization_test.R` (untracked) is a prototype.
+- **Bounds inconsistency inside the uncfam family (pre-existing, found now):** FU was
+  fit with the original paper's bounds (entropy weight `B ∈ [0.1, 15]`, landed at
+  **B ≈ 13.5**), but FU-A and FU-P were fit with the registry's `B ∈ [0.8, 1.0]`,
+  which excludes FU's own optimum. Their worse fits may partly be a bounds artifact.
+  The new `uncfam_gamma`/`uncfam_elimination` registry bounds inherit the same narrow
+  `B`. Refit should give every uncfam variant the same `X`/`B`/`C` bounds.
+- Unaffected: the #14 positional-label fix (no `xsl_datasets` condition has gapped
+  labels); the corpus section (being re-run separately in
+  `XSLmodels/tests/bakeoff_comparison/`).
+
+---
+
 ## 1. Where the manuscript stands
 
 Three overlapping Rmd files are in `paper/`:
