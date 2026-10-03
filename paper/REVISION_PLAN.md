@@ -91,7 +91,7 @@ rerun (2026-10-03) on the fixed build.
 |---|---|
 | Drift check, saved fits vs. 0.4.0 (`fits/check_package_drift.R`) | ✅ uncfam family changed; others identical / within noise |
 | Pinned package (`fits/v04/install_pinned_xslmodels.sh`, `XSLMODELS_COMMIT` = `d0e2230`, i.e. 0.4.0 + PR #25) | ✅ installed to `fits/v04/Rlib` (re-pinned from `2a7d291` before the refit started; lab results identical either way) |
-| Refit pipeline (`fits/v04/{specs,refit}.R`, `queue_refit.sh`) | ✅ smoke-tested; 🔄 **queued** behind the corpus reruns (PIDs 24431/24444) → `fits/v04/{group_fits,cv_fits}.Rdata`; progress in `fits/v04/refit_*.log` |
+| Refit pipeline (`fits/v04/{specs,refit}.R`, `queue_refit.sh`) | ❌ **first run failed** (2026-10-03 06:08): every parallel-worker evaluation errored, so all fits came back `bestval = Inf` (cause not reproduced; outputs quarantined in `fits/v04/failed_2026-10-03/`). `refit.R` now logs worker errors, runs a worker pre-flight, refuses non-finite fits, and QUICK uses the real parallel path -- **needs a smoke test, then relaunch** → `fits/v04/{group_fits,cv_fits}.Rdata`; progress in `fits/v04/refit_*.log` |
 | Methods: 4 new model subsections, implementation-notes paragraph, PbV/FU-P text fixes | ✅ |
 | Data: 56 conditions, provenance, computed ranges | ✅ |
 | Shared fit loader (`paper/load_fits.R`) + PRELIMINARY banner while refit runs | ✅ paper + appendix |
@@ -99,7 +99,7 @@ rerun (2026-10-03) on the fixed build.
 | Round-1 → round-2 "numbers that changed" table (0.3.0/53 cond → 0.4.0/56 cond, and vs. published) | ❌ after refit |
 | Results/Discussion prose, Tables 1–3, figures, appendix numbers | ❌ after refit |
 | `sample()` bug fix (XSLmodels PR #25) | ✅ merged (`08fac1f`) |
-| Corpus re-run on the fixed build (`XSLmodels/tests/bakeoff_comparison/corpus_gold_{comparison,fits}.R`, `R_LIBS=../XSLmodels-fix-sample/.Rlib-corpus`) | 🔄 running; logs `../XSLmodels-fix-sample/corpus_rerun_*.log`; overwrites the Oct 2 outputs |
+| Corpus re-run on the fixed build (`XSLmodels/tests/bakeoff_comparison/corpus_gold_{comparison,fits}.R`, `R_LIBS=../XSLmodels-fix-sample/.Rlib-corpus`) | ✅ done 2026-10-03 (comparison 02:14, fits 06:08); outputs in `XSLmodels/tests/bakeoff_comparison/` (uncommitted there); logs `../XSLmodels-fix-sample/corpus_rerun_*.log` |
 | Corpus section: pick up the re-run (+ new models) | ❌ after re-run |
 | Abstract/Intro: 19 models, 56 conditions, 2,359 participants, memory-model framing | ❌ |
 | Template: replace `cogsci2016::cogsci_paper` (not installed here) with the target journal's | ❌ needs journal choice |

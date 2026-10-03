@@ -80,20 +80,75 @@ meta <- list(xslmodels_commit = pinned, xslmodels_version = "0.4.0",
              deoptim = if (QUICK) "NP=8, itermax=2" else "reltol=.001, NP=100, itermax=100 (det) / 30 (stoch)",
              started = format(Sys.time()))
 
+# QUICK shrinks the budget but keeps the SAME parallel backend as a real run,
+# so a smoke test exercises the worker path. (A 2026-10-03 run had every
+# worker-side evaluation fail while a serial QUICK test had passed; see
+# fits/v04/failed_2026-10-03/.)
 deoptim_ctrl <- function(stochastic) {
   DEoptim::DEoptim.control(
     reltol = .001, trace = FALSE,
     NP = if (QUICK) 8 else 100,
     itermax = if (QUICK) 2 else if (stochastic) 30 else 100,
-    parallelType = if (QUICK) "none" else "parallel",
+    parallelType = "parallel",
     packages = list("XSLmodels"))
 }
 run_ctrl <- function(spec) if (spec$stochastic) xslControl(n_sim = N_SIM) else xslControl()
 
-fit_one <- function(spec, data) {
-  model <- spec$constructor(spec$lower)  # placeholder; xsl_fit only needs its shape
-  xsl_fit(model, data, lower = spec$lower, upper = spec$upper,
-          control = run_ctrl(spec), deoptim_control = deoptim_ctrl(spec$stochastic))[[1]]
+# Worker-side objective errors are appended here (one line per failed
+# evaluation) instead of vanishing: xsl_fit() turns any error into Inf, so a
+# run whose every evaluation fails otherwise "succeeds" with bestval = Inf.
+ERR_FILE <- file.path(OUT_DIR, "refit_objective_errors.log")
+
+# Same objective as XSLmodels::xsl_fit() -- SSE from xsl_run() at the
+# proposed parameters, Inf if that errors or is NA -- but logging errors, and
+# refusing to return a fit whose best objective isn't finite.
+fit_one <- function(spec, data, label = "") {
+  model <- spec$constructor(spec$lower)  # placeholder; only its shape is used
+  ctrl <- run_ctrl(spec)
+  err_file <- ERR_FILE
+  objective <- function(p) {
+    sse <- tryCatch(
+      XSLmodels::xsl_run(XSLmodels::update_params(model, p), data, control = ctrl)$sse,
+      error = function(e) {
+        cat(format(Sys.time(), "%F %T"), " pid ", Sys.getpid(), " [", label, "] p = ",
+            paste(signif(p, 4), collapse = ","), " :: ", conditionMessage(e), "\n",
+            sep = "", file = err_file, append = TRUE)
+        NA_real_
+      })
+    if (is.na(sse)) Inf else sse
+  }
+  fit <- if (length(spec$lower) == 0) {
+    list(optim = list(bestmem = numeric(0), bestval = objective(numeric(0))))
+  } else {
+    DEoptim::DEoptim(objective, lower = spec$lower, upper = spec$upper,
+                     control = deoptim_ctrl(spec$stochastic))
+  }
+  if (!is.finite(fit$optim$bestval)) {
+    stop("fit [", label, "] has a non-finite best objective -- every evaluation failed. ",
+         "First errors:\n", paste(utils::head(readLines(err_file, warn = FALSE), 3), collapse = "\n"),
+         "\n(full log: ", err_file, ")")
+  }
+  fit
+}
+
+# Pre-flight: before any real fitting, confirm DEoptim's parallel workers load
+# the pinned XSLmodels and can evaluate a real objective. Fails fast instead of
+# spending hours producing Inf fits.
+preflight <- function() {
+  pinned_path <- find.package("XSLmodels")
+  probe <- DEoptim::DEoptim(function(p) {
+    if (find.package("XSLmodels") != pinned_path)
+      stop("worker loaded XSLmodels from ", find.package("XSLmodels"), ", not ", pinned_path)
+    sum(p^2)
+  }, lower = c(-1, -1), upper = c(1, 1),
+  control = DEoptim::DEoptim.control(NP = 2 * N_WORKERS, itermax = 1, trace = FALSE,
+                                     parallelType = "parallel", packages = list("XSLmodels")))
+  spec <- specs_v04$fazly
+  tiny <- spec; tiny$stochastic <- FALSE
+  old_quick <- QUICK; QUICK <<- TRUE; on.exit(QUICK <<- old_quick)
+  f <- fit_one(tiny, data_all[1:3], label = "preflight fazly")
+  stamp("preflight OK: ", N_WORKERS, " workers load ", pinned_path,
+        "; tiny fazly fit bestval = ", signif(f$optim$bestval, 3))
 }
 
 perf_df <- function(name, spec, params, data) {
@@ -106,6 +161,8 @@ perf_df <- function(name, spec, params, data) {
 }
 
 stamp <- function(...) message(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "  ", ...)
+
+preflight()
 
 ## ---------------------------------------------------------------------------
 ## group phase
@@ -120,7 +177,7 @@ if (phase == "group") {
           if (spec$stochastic) "stochastic" else "deterministic", ")")
     t0 <- Sys.time()
     set.seed(2026)
-    group_fits[[m]] <- fit_one(spec, data_all)
+    group_fits[[m]] <- fit_one(spec, data_all, label = m)
     pd <- perf_df(m, spec, group_fits[[m]]$optim$bestmem, data_all)
     gfd <- bind_rows(if (nrow(gfd)) filter(gfd, Model != m), pd$df)
     meta$updated <- format(Sys.time())
@@ -150,7 +207,7 @@ if (phase == "cv") {
       t0 <- Sys.time()
       split <- get_train_test_split(folds[[i]], data_all)
       set.seed(2026 + i)
-      fit <- fit_one(spec, split$train)
+      fit <- fit_one(spec, split$train, label = paste0(m, " fold ", i))
       pd <- perf_df(m, spec, fit$optim$bestmem, split$test)
       cv_fits[[m]]$folds[[i]] <- list(par = fit$optim$bestmem, train_sse = fit$optim$bestval,
                                       test_sse = pd$sse, testdf = pd$df,
