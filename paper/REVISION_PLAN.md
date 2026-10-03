@@ -62,6 +62,38 @@ now stands.
   labels); the corpus section (being re-run separately in
   `XSLmodels/tests/bakeoff_comparison/`).
 
+**Decisions (2026-10-02):** add `uncfam_gamma` (FU-G), `uncfam_elimination` (FU-E),
+`minerva2` (M2), and `tilles` (TF) → **19 models + baseline**; `todam`/`rem` out
+(future-work mention only); every uncfam variant gets FU's `X`/`B`/`C` bounds;
+refit queued behind the corpus jobs that were running.
+
+**Package bug found (XSLmodels, not yet fixed):** `propose_but_verify()` (line 83) and
+`pursuit()` (line 91) call `sample(tr_o, ...)`; when a trial has exactly one object
+`k`, R samples from `1:k` instead, i.e. usually a referent not on the trial. No
+`xsl_datasets` condition has single-object trials, so **the lab refit is unaffected**,
+but `kachergis_initial_accuracy` (18 single-object familiarization trials per
+condition) and the naturalistic corpora (many single-object utterances) are — so
+PbV/Pursuit's holdout and corpus numbers are wrong until it's fixed. Fix:
+`tr_o[sample.int(length(tr_o), n, replace = TRUE)]` (as `guess_and_test()` already does).
+
+### Round-2 status
+
+| item | status |
+|---|---|
+| Drift check, saved fits vs. 0.4.0 (`fits/check_package_drift.R`) | ✅ uncfam family changed; others identical / within noise |
+| Pinned package (`fits/v04/install_pinned_xslmodels.sh`, `XSLMODELS_COMMIT` = `2a7d291`) | ✅ installed to `fits/v04/Rlib` |
+| Refit pipeline (`fits/v04/{specs,refit}.R`, `queue_refit.sh`) | ✅ smoke-tested; 🔄 **queued** behind PIDs 99875/99876 → `fits/v04/{group_fits,cv_fits}.Rdata`; progress in `fits/v04/refit_*.log` |
+| Methods: 4 new model subsections, implementation-notes paragraph, PbV/FU-P text fixes | ✅ |
+| Data: 56 conditions, provenance, computed ranges | ✅ |
+| Shared fit loader (`paper/load_fits.R`) + PRELIMINARY banner while refit runs | ✅ paper + appendix |
+| Generalization: rewrite around `xsl_holdout_datasets` (`benitez2020` kids+adults, `kachergis_initial_accuracy`, `vlach_debrock2017` mean) + Medina/Smith & Yu; fold in `fits/generalization_test.R` prototype | ❌ next — needs group fits, and the `sample()` fix for PbV/Pur on `kachergis_initial_accuracy` |
+| Round-1 → round-2 "numbers that changed" table (0.3.0/53 cond → 0.4.0/56 cond, and vs. published) | ❌ after refit |
+| Results/Discussion prose, Tables 1–3, figures, appendix numbers | ❌ after refit |
+| Corpus section: pick up the 0.4.0 corpus re-run (+ new models), after the `sample()` fix | ❌ |
+| Abstract/Intro: 19 models, 56 conditions, 2,359 participants, memory-model framing | ❌ |
+| Template: replace `cogsci2016::cogsci_paper` (not installed here) with the target journal's | ❌ needs journal choice |
+| Cite the CogSci 2024 conference version (ToDo in Method) | ❌ needs bib entry |
+
 ---
 
 ## 1. Where the manuscript stands
