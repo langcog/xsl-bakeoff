@@ -15,9 +15,13 @@ _2026-09-06 — decisions locked (see §3):_
 ## 0. Round 2 (2026-10-02): what XSLmodels 0.4.0 changes
 
 Everything below §0 describes round 1, which ended with all fits complete (Sep 15)
-against the then-installed **0.3.0**. The package source is now **0.4.0** (installed
-copy is still 0.3.0), and the paper needs a second pass "using the package" as it
-now stands.
+against the then-installed **0.3.0**. The package is now **0.4.0**, and the paper needs
+a second pass "using the package" as it now stands. All round-2 results use one
+build: XSLmodels **`d0e2230`** = `release-0.4.0-prep` (`2a7d291`) + the `sample()` fix
+below (PR #25), installed privately (`fits/v04/Rlib`, recorded in
+`fits/v04/XSLMODELS_COMMIT`). Note the *system* XSLmodels install reports "0.3.0" but
+is an Oct 2 build that already has the 0.4.0 models and the #14 change -- it was built
+before the version bump.
 
 **Every lab fit must be redone**, for two independent reasons:
 
@@ -67,29 +71,36 @@ now stands.
 (future-work mention only); every uncfam variant gets FU's `X`/`B`/`C` bounds;
 refit queued behind the corpus jobs that were running.
 
-**Package bug found (XSLmodels, not yet fixed):** `propose_but_verify()` (line 83) and
+**Package bug found and fixed (XSLmodels PR #25, merged to `master` as `08fac1f`; local branch `release-0.4.0-prep-sample-fix` = `d0e2230` is the release branch + fix -- `release-0.4.0-prep` itself still needs master merged in):** `propose_but_verify()` (line 83) and
 `pursuit()` (line 91) call `sample(tr_o, ...)`; when a trial has exactly one object
 `k`, R samples from `1:k` instead, i.e. usually a referent not on the trial. No
 `xsl_datasets` condition has single-object trials, so **the lab refit is unaffected**,
 but `kachergis_initial_accuracy` (18 single-object familiarization trials per
 condition) and the naturalistic corpora (many single-object utterances) are — so
-PbV/Pursuit's holdout and corpus numbers are wrong until it's fixed. Fix:
+PbV/Pursuit's holdout and corpus numbers were wrong. Fixed with
 `tr_o[sample.int(length(tr_o), n, replace = TRUE)]` (as `guess_and_test()` already does).
+Verified on the pre-#14 commit: corpora (string labels) were fine before #14, so the
+round-1 corpus results in the paper are unaffected; integer-labelled data was already
+affected. The Oct 2 night corpus runs (built with #14, without the fix) were affected
+-- ~40% of Rollins and ~18% of FM utterances have one object -- and were discarded and
+rerun (2026-10-03) on the fixed build.
 
 ### Round-2 status
 
 | item | status |
 |---|---|
 | Drift check, saved fits vs. 0.4.0 (`fits/check_package_drift.R`) | ✅ uncfam family changed; others identical / within noise |
-| Pinned package (`fits/v04/install_pinned_xslmodels.sh`, `XSLMODELS_COMMIT` = `2a7d291`) | ✅ installed to `fits/v04/Rlib` |
-| Refit pipeline (`fits/v04/{specs,refit}.R`, `queue_refit.sh`) | ✅ smoke-tested; 🔄 **queued** behind PIDs 99875/99876 → `fits/v04/{group_fits,cv_fits}.Rdata`; progress in `fits/v04/refit_*.log` |
+| Pinned package (`fits/v04/install_pinned_xslmodels.sh`, `XSLMODELS_COMMIT` = `d0e2230`, i.e. 0.4.0 + PR #25) | ✅ installed to `fits/v04/Rlib` (re-pinned from `2a7d291` before the refit started; lab results identical either way) |
+| Refit pipeline (`fits/v04/{specs,refit}.R`, `queue_refit.sh`) | ✅ smoke-tested; 🔄 **queued** behind the corpus reruns (PIDs 24431/24444) → `fits/v04/{group_fits,cv_fits}.Rdata`; progress in `fits/v04/refit_*.log` |
 | Methods: 4 new model subsections, implementation-notes paragraph, PbV/FU-P text fixes | ✅ |
 | Data: 56 conditions, provenance, computed ranges | ✅ |
 | Shared fit loader (`paper/load_fits.R`) + PRELIMINARY banner while refit runs | ✅ paper + appendix |
 | Generalization: rewrite around `xsl_holdout_datasets` (`benitez2020` kids+adults, `kachergis_initial_accuracy`, `vlach_debrock2017` mean) + Medina/Smith & Yu; fold in `fits/generalization_test.R` prototype | ❌ next — needs group fits, and the `sample()` fix for PbV/Pur on `kachergis_initial_accuracy` |
 | Round-1 → round-2 "numbers that changed" table (0.3.0/53 cond → 0.4.0/56 cond, and vs. published) | ❌ after refit |
 | Results/Discussion prose, Tables 1–3, figures, appendix numbers | ❌ after refit |
-| Corpus section: pick up the 0.4.0 corpus re-run (+ new models), after the `sample()` fix | ❌ |
+| `sample()` bug fix (XSLmodels PR #25) | ✅ merged (`08fac1f`) |
+| Corpus re-run on the fixed build (`XSLmodels/tests/bakeoff_comparison/corpus_gold_{comparison,fits}.R`, `R_LIBS=../XSLmodels-fix-sample/.Rlib-corpus`) | 🔄 running; logs `../XSLmodels-fix-sample/corpus_rerun_*.log`; overwrites the Oct 2 outputs |
+| Corpus section: pick up the re-run (+ new models) | ❌ after re-run |
 | Abstract/Intro: 19 models, 56 conditions, 2,359 participants, memory-model framing | ❌ |
 | Template: replace `cogsci2016::cogsci_paper` (not installed here) with the target journal's | ❌ needs journal choice |
 | Cite the CogSci 2024 conference version (ToDo in Method) | ❌ needs bib entry |

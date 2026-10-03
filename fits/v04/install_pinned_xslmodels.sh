@@ -9,7 +9,7 @@
 # Then run fit scripts with:  R_LIBS=fits/v04/Rlib Rscript fits/v04/refit.R ...
 # (R_LIBS, not .libPaths(), so DEoptim's PSOCK workers inherit it too.)
 set -euo pipefail
-COMMIT="${1:-2a7d291}"
+COMMIT="${1:-d0e2230}"
 PKG_REPO="../XSLmodels"
 LIB="fits/v04/Rlib"
 SRC="$(mktemp -d)/XSLmodels"
