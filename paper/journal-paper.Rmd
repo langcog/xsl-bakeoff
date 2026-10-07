@@ -370,7 +370,7 @@ Because a large fraction of caregiver utterances are not about anything in the i
 # Results
 
 ```{r prelim-banner, results="asis"}
-if (FITS_PRELIMINARY) cat("\\textbf{[DRAFT -- provisional numbers: some results below use round-1 fits (XSLmodels 0.3.0, 53 conditions) until the 0.4.0 refit completes: ",
+if (FITS_PRELIMINARY) cat("\\textbf{[DRAFT -- provisional numbers. Fits used: ",
                           paste(names(FITS_SOURCE), FITS_SOURCE, sep = " = ", collapse = "; "), ".]}\n\n")
 ```
 

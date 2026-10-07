@@ -98,6 +98,39 @@ Headlines for the rewrite:
    - TF also accounts for nearly all of the ~500 logged objective errors: numerical
      failures at extreme parameter values.
 
+### R3.1b Children are fit separately from adults (decided 2026-10-07)
+
+The 56-condition fits **include children**: Suanda et al. (2014), 3 conditions,
+252 children aged 5–7, ~11% of the participant weight in the objective. These are
+the only child conditions in `xsl_datasets`. The 9 conditions without an age in
+XSLmodels' metadata are all adults: Kachergis & Yu (2013), `orig_4x4`, and
+Koehne et al. (2013), confirmed by George. Plan:
+
+- **Adult fits = the main analysis:** 53 conditions, group + 5-fold CV, all 19
+  models. `FIT_SET=adults` → `fits/v04/adults/`. Adult holdouts: `benitez2020`
+  adults and `kachergis_initial_accuracy`.
+- **Child fits:**
+  - Suanda (3, condition-level accuracy) + `benitez2020` children (4, item-level):
+    group fit + leave-one-condition-out CV. `FIT_SET=children` →
+    `fits/v04/children/`.
+  - Score adult-fit parameters on the child data (adult→child transfer).
+  - Compare child vs. adult parameters (developmental differences as parameter
+    differences).
+  - Child holdouts: `vlach_debrock2017` (mean only) and Smith & Yu infants.
+- `refit.R` / `queue_refit.sh` support both sets (smoke-tested on the real
+  parallel path). `paper/load_fits.R` switches to the adult fits as soon as they
+  exist; until then Table 1 shows the 56-condition fits under the DRAFT banner.
+- **Not yet launched:** the machine is running the per-condition `uncfam_general`
+  fit. The adult run is ~3 days at 10 workers, as before; the child run is much
+  smaller.
+- **Knock-on edits:**
+  - Data section: adult set, plus a child-data paragraph; the current text still
+    describes 56 conditions with Suanda in the fit set.
+  - Generalization section: `benitez2020` children move from holdout to the child
+    fit set.
+  - Abstract.
+  - Appendix: Suanda's flat-accuracy note.
+
 ### R3.2 Decisions needed
 
 - **D1 — primary fit metric.** Recommend the fitted objective (participant-weighted

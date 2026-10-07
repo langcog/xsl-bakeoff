@@ -60,7 +60,17 @@ source(here("fits/v04/specs.R"))  # specs_v04, GROUP_ONLY, RUN_ORDER
 QUICK     <- identical(Sys.getenv("QUICK"), "1")
 N_WORKERS <- as.integer(Sys.getenv("N_WORKERS", "10"))
 N_SIM     <- if (QUICK) 5L else as.integer(Sys.getenv("N_SIM", "200"))
-OUT_DIR   <- if (QUICK) here("fits/v04/quick") else here("fits/v04")
+# FIT_SET (2026-10-07): which conditions to fit.
+#   all      -- all 56 xsl_datasets conditions (the original round-2 run; output fits/v04/)
+#   adults   -- the 53 adult conditions: xsl_datasets minus Suanda et al. 2014
+#               (5-7-year-olds; the only child data in xsl_datasets, per
+#               XSLmodels data-raw/XSL-dataset-fields.csv adult_data)
+#   children -- Suanda et al. 2014 (3) + benitez2020's 4 child conditions;
+#               leave-one-condition-out CV, since 5 folds of 7 conditions is too coarse
+FIT_SET   <- Sys.getenv("FIT_SET", "all")
+stopifnot(FIT_SET %in% c("all", "adults", "children"))
+BASE_DIR  <- if (FIT_SET == "all") here("fits/v04") else here("fits/v04", FIT_SET)
+OUT_DIR   <- if (QUICK) file.path(BASE_DIR, "quick") else BASE_DIR
 dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
 
 # DEoptim's managed parallel backend sizes its cluster from
@@ -71,12 +81,19 @@ models <- if (length(args) > 1) args[-1] else RUN_ORDER
 stopifnot(all(models %in% names(specs_v04)))
 if (phase == "cv") models <- setdiff(models, GROUP_ONLY)
 
-data_all <- xsl_datasets
+is_child_cond <- function(d) startsWith(d$label, "Suanda2014")
+data_all <- switch(FIT_SET,
+  all      = xsl_datasets,
+  adults   = Filter(Negate(is_child_cond), xsl_datasets),
+  children = c(Filter(is_child_cond, xsl_datasets),
+               unname(Filter(\(d) grepl(", kids$", d$condition), benitez2020))))
 labels   <- map_chr(data_all, "label")
-stopifnot(length(data_all) == 56)
+stopifnot(length(data_all) == c(all = 56, adults = 53, children = 7)[[FIT_SET]],
+          !anyDuplicated(labels))
 
 meta <- list(xslmodels_commit = pinned, xslmodels_version = "0.4.0",
-             n_conditions = length(data_all), n_sim = N_SIM, quick = QUICK,
+             fit_set = FIT_SET, n_conditions = length(data_all), conditions = labels,
+             n_sim = N_SIM, quick = QUICK,
              deoptim = if (QUICK) "NP=8, itermax=2" else "reltol=.001, NP=100, itermax=100 (det) / 30 (stoch)",
              started = format(Sys.time()))
 
@@ -200,7 +217,8 @@ if (phase == "group") {
 if (phase == "cv") {
   out <- file.path(OUT_DIR, "cv_fits.Rdata")
   set.seed(123)
-  folds <- caret::createFolds(labels, k = 5, list = TRUE)
+  folds <- if (FIT_SET == "children") as.list(seq_along(data_all)) else
+    caret::createFolds(labels, k = 5, list = TRUE)
   cv_fits <- list()
   if (file.exists(out)) load(out)
   for (m in models) {
@@ -208,7 +226,7 @@ if (phase == "cv") {
     if (is.null(cv_fits[[m]])) cv_fits[[m]] <- list(folds = list())
     for (i in seq_along(folds)) {
       if (length(cv_fits[[m]]$folds) >= i && !is.null(cv_fits[[m]]$folds[[i]])) next
-      stamp("cv     ", m, "  fold ", i, "/5")
+      stamp("cv     ", m, "  fold ", i, "/", length(folds))
       t0 <- Sys.time()
       split <- get_train_test_split(folds[[i]], data_all)
       set.seed(2026 + i)
@@ -217,7 +235,7 @@ if (phase == "cv") {
       cv_fits[[m]]$folds[[i]] <- list(par = fit$optim$bestmem, train_sse = fit$optim$bestval,
                                       test_sse = pd$sse, testdf = pd$df,
                                       test_conditions = labels[folds[[i]]])
-      if (length(compact(cv_fits[[m]]$folds)) == 5) {
+      if (length(compact(cv_fits[[m]]$folds)) == length(folds)) {
         cv_fits[[m]]$pars   <- do.call(rbind, map(cv_fits[[m]]$folds, "par"))
         cv_fits[[m]]$testdf <- list_rbind(map(cv_fits[[m]]$folds, "testdf"))
       }
@@ -228,5 +246,5 @@ if (phase == "cv") {
     }
   }
   stamp("cv phase complete: ", sum(map_lgl(cv_fits, \(x) !is.null(x$testdf))),
-        " models with all 5 folds in ", out)
+        " models with all ", length(folds), " folds in ", out)
 }

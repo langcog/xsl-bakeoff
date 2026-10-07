@@ -10,3 +10,5 @@ fits/v04/Rlib/
 fits/v04/*.log
 fits/v04/failed_*/
 fits/v04/quick/
+fits/v04/*/*.log
+fits/v04/*/quick/
