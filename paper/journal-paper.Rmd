@@ -387,21 +387,71 @@ group_fit_tab <- gfd %>% filter(!is.na(HumanPerf)) %>%
 
 
 ```{r load-cv-fits}
-# cv_group_fits / cvg come from paper/load_fits.R, sourced in the libraries chunk
-cvg_fit_tab <- cvg %>% group_by(Model) %>%
-  summarise(SSE = sum((ModelPerf-HumanPerf)^2), #  / Nitems,
-            r = cor(ModelPerf, HumanPerf)) %>%
-  arrange(SSE) %>%
-  rename(`CV SSE` = SSE,
-         ` r` = r) %>% left_join(group_fit_tab) %>%
-  rename(`All SSE` = SSE) %>%
-  left_join(select(model_meta, Model, P), by = "Model") %>%
-  mutate(Model = abbr_of(Model))
+# cv_group_fits / cvg come from paper/load_fits.R, sourced in the libraries chunk.
+#
+# Table 1 metric: the quantity the fits minimize -- each condition's SSE
+# (summed over its items), averaged over conditions weighted by n_subj.
+#  - CV SSE: every condition scored once, out of fold (at the parameters fit
+#    to the other four folds), pooled over all conditions.
+#  - Group SSE: recomputed from the group fit's predictions (gfd), NOT
+#    DEoptim's reported optimum: for stochastic models that optimum is the
+#    minimum over thousands of noisy evaluations and so is biased low (by
+#    .007-.033 here); gfd re-simulates at the best parameters (n_sim = 200),
+#    an unbiased estimate. For deterministic models the two are identical.
+#  - r: item-level correlation of out-of-fold predictions with human accuracy.
+wsse_by_model <- function(df) df %>% filter(!is.na(HumanPerf)) %>%
+  group_by(Model, condnum) %>%
+  summarise(sse = sum((ModelPerf - HumanPerf)^2), n = first(Nsubj), .groups = "drop") %>%
+  group_by(Model) %>% summarise(wSSE = sum(sse * n) / sum(n), .groups = "drop")
+
+fold_range <- function(m) {
+  f <- cv_group_fits[[m]]$folds
+  if (is.null(f)) return(c(NA_real_, NA_real_))   # round-1 fallback has no per-fold record
+  range(map_dbl(f, "test_sse"))
+}
+# the baseline has no parameters (not cross-validated): its out-of-fold
+# predictions are its group predictions, scored on each fold's conditions
+fold_conds <- map(cv_group_fits[[1]]$folds, "test_conditions")
+baseline_fold_sse <- if (length(fold_conds)) map_dbl(fold_conds, \(cc)
+  filter(wsse_by_model(filter(gfd, Model == "baseline", condnum %in% cc)), Model == "baseline")$wSSE) else NA
+
+fit_tab <- wsse_by_model(cvg) %>% rename(cv = wSSE) %>%
+  left_join(cvg %>% group_by(Model) %>% summarise(r = cor(ModelPerf, HumanPerf)), by = "Model") %>%
+  bind_rows(tibble(Model = "baseline",
+                   cv = filter(wsse_by_model(gfd), Model == "baseline")$wSSE,
+                   r = with(filter(gfd, Model == "baseline"), cor(ModelPerf, HumanPerf)))) %>%
+  left_join(wsse_by_model(gfd) %>% rename(group = wSSE), by = "Model") %>%
+  mutate(lo = map_dbl(Model, \(m) if (m == "baseline") min(baseline_fold_sse) else fold_range(m)[1]),
+         hi = map_dbl(Model, \(m) if (m == "baseline") max(baseline_fold_sse) else fold_range(m)[2])) %>%
+  left_join(select(model_meta, Model, abbr, class, P), by = "Model") %>%
+  arrange(cv)
+
+# unweighted alternative (SSE summed over items, ignoring sample size), for the text
+item_sse <- cvg %>% filter(!is.na(HumanPerf)) %>% group_by(Model) %>%
+  summarise(sse = sum((ModelPerf - HumanPerf)^2), .groups = "drop") %>% arrange(sse)
 ```
 
-Table 1 shows the sum of squared error (SSE) and correlation ($r$) for each model's best-fitting parameters vs. average human performance on the `r totItems` items, both for the CV fits and for the all-condition fits, along with the number of fitted parameters in each model (P).
-The results of the two fitting procedures mostly yielded similar SSEs and correlations, and a consistent rank-ordering of the models, with the Kachergis sampling model performing best, followed closely by the Fazly et al. model and then the associative Kachergis et al. model.
-The hypothesis testing models (Propose-but-Verify and Guess-and-Test), the Pursuit model, and R-W fit roughly as well as the 0-parameter baseline co-occurrence counting model, which had SSE = 32.0 and $r = 0.53$.
+```{r table1-text}
+fmt3 <- \(x) sub("^0\\.", ".", sprintf("%.3f", x))
+listify <- \(x) if (length(x) <= 2) paste(x, collapse = " and ") else paste0(paste(head(x, -1), collapse = ", "), ", and ", tail(x, 1))
+b_row  <- filter(fit_tab, Model == "baseline")
+models <- filter(fit_tab, Model != "baseline")
+cv_of  <- \(m) fmt3(fit_tab$cv[match(m, fit_tab$Model)])
+TOL <- .01  # "near the baseline": CV SSE within .01 of it
+better <- filter(models, cv < b_row$cv - TOL)$abbr
+near   <- filter(models, abs(cv - b_row$cv) <= TOL)$abbr
+worse  <- filter(models, cv > b_row$cv + TOL)$abbr
+item_top <- abbr_of(item_sse$Model[1:2])
+```
+
+Table 1 summarizes each model's fit.
+Because parameters were fit by minimizing each condition's squared error, weighted by its number of participants, we report that same quantity for the cross-validated (CV) fits -- in which each condition is scored once, at parameters fit without it -- and for the group fit to all `r nConds` conditions.
+The best CV fits were from `r models$abbr[1]` (SSE = `r fmt3(models$cv[1])`), `r models$abbr[2]` (`r fmt3(models$cv[2])`), and `r models$abbr[3]` (`r fmt3(models$cv[3])`), whose errors on the five folds' held-out conditions overlap substantially.
+<!-- ToDo (revision, D2): add the paired fold / bootstrap-over-conditions comparison of the top tier here. -->
+The order within this top group depends on how conditions are weighted: ranking by squared error summed over all `r totItems` items, ignoring sample size, puts `r item_top[1]` first and `r item_top[2]` second.
+Compared with the zero-parameter baseline co-occurrence model (CV SSE = `r fmt3(b_row$cv)`, $r$ = `r sub("^0\\.", ".", sprintf("%.2f", b_row$r))`), `r length(better)` models fit better by more than `r TOL` (`r listify(better)`), `r listify(near)` fit within `r TOL` of it, and `r listify(worse)` fit worse.
+<!-- ToDo (revision): the next sentence is model-specific -- re-check after any refit that R-W and KF still sit at the parameter bounds where they reduce to counting. -->
+The Rescorla-Wagner and Kalman filter models (CV SSE = `r cv_of("rescorla-wagner")` and `r cv_of("kalman_filter")`) are best fit at parameters where learning is so slow relative to the associations' asymptote that each co-occurrence adds a nearly constant increment: at their best, both reduce to tallying co-occurrences.
 Correlations between data and models are presented in Figure 1. 
 
 ```{r model-correlations}
@@ -427,10 +477,22 @@ colnames(mod_cors) = mod_names_short
 ```
 
 ```{r cv-fits-table, results="asis"}
-tab2 <- xtable::xtable(cvg_fit_tab, digits=c(0,0, 2, 2, 2, 2, 0), 
-                       caption = "Sorted cross-validated and group model fits.")
-
-print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "H")
+f3 <- \(x) sprintf("%.3f", x)
+tab1 <- fit_tab %>%
+  transmute(Model = abbr, Class = class, k = P,
+            `CV SSE` = f3(cv), `CV range (folds)` = paste0(f3(lo), "--", f3(hi)),
+            `Group SSE` = f3(group), `CV $r$` = sprintf("%.2f", r))
+best <- which.min(fit_tab$cv)
+tab1$`CV SSE`[best] <- paste0("\\textbf{", tab1$`CV SSE`[best], "}")
+kable(tab1, "latex", booktabs = TRUE, escape = FALSE, align = "llrrcrr",
+      caption = paste0("Model fits, sorted by cross-validated (CV) error. SSE is the quantity the fits minimize: ",
+                       "each condition's squared error summed over its items, averaged over conditions weighted by ",
+                       "their number of participants. CV SSE scores every condition once, at parameters fit to the ",
+                       "other four folds; the range is over the five folds' held-out sets. Group SSE is for parameters ",
+                       "fit to all ", nConds, " conditions (for stochastic models, from a fresh simulation of 200 learners ",
+                       "at the best parameters). CV $r$ is the item-level correlation of out-of-fold predictions with ",
+                       "human accuracy; $k$ is the number of free parameters.")) %>%
+  kable_styling(latex_options = c("scale_down", "hold_position"))
 ```
 
 <!--How related are these models?-->

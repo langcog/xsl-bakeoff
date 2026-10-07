@@ -76,10 +76,14 @@ Headlines for the rewrite:
    (.5005) is within .001 of the baseline (.5011), and their CV SSEs match the
    baseline to the second decimal. This explains round 1's R-W ≈ baseline (r ≈ 1)
    and is a substantive result.
-6. **Hypothesis testing:**
-   - PbV beats the baseline in CV (32.8 vs 35.5).
-   - GnT ≈ baseline.
-   - Pursuit, Strength and FU-P sit at the bottom.
+6. **Hypothesis testing ≈ baseline at best.** Under the fitted (participant-weighted)
+   metric, PbV ties the baseline (CV .503 vs .501) and GnT is worse (.536). PbV only
+   looked better under the unweighted item metric. Pursuit, Strength and FU-P are at the
+   bottom.
+   - **Winner's curse for stochastic models:** DEoptim's reported group optimum is
+     biased low by .007–.033, because it's the minimum over thousands of noisy
+     evaluations. Table 1 uses a fresh simulation at the best parameters instead.
+     `fits/v04/summarize.R` / `summary.md`'s `group_sse` still use the biased optimum.
 7. **Generalization to the holdouts** (`benitez2020` children and adults,
    `kachergis_initial_accuracy`):
    - **Adults:** the counting cluster (baseline, R-W, KF) and PA are best (MSE .028).
@@ -121,14 +125,15 @@ Headlines for the rewrite:
 
 ### R3.3 Work items (in order)
 
-1. **Housekeeping.**
+1. ✅ **Housekeeping** (2026-10-07: results committed in `71b7243`; quarantine removed).
+   Original item text:
    - Commit the round-2 outputs and scripts: `fits/v04/{group_fits,cv_fits,generalization}.Rdata`,
      `generalize.R`, `summarize.R`, `summary.{md,rds}`, and the `force(data)` fix in
      `refit.R`.
    - Delete `fits/v04/failed_2026-10-03/`.
    - Decide what happens to `fits/generalization_test.R` (superseded by
      `generalize.R`).
-2. **Table 1** — rebuild for 20 rows: model, class, k, CV (mean and fold range),
+2. ✅ **Table 1** (2026-10-07; participant-weighted objective per D1, computed text) — rebuild for 20 rows: model, class, k, CV (mean and fold range),
    group, r, using the D1 metric. Drop the hard-coded abbreviation/ordering code.
 3. **Table 2** — the model-by-model prediction correlation table at 20×20 is too big
    for a page. Replace it with a clustered heatmap figure, or a table restricted to
