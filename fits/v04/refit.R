@@ -103,6 +103,11 @@ ERR_FILE <- file.path(OUT_DIR, "refit_objective_errors.log")
 # proposed parameters, Inf if that errors or is NA -- but logging errors, and
 # refusing to return a fit whose best objective isn't finite.
 fit_one <- function(spec, data, label = "") {
+  # DEoptim ships `objective`'s closure to the PSOCK workers; an unforced
+  # argument is a promise that the worker would evaluate in its own empty
+  # global env ("object 'data_all' not found") -- the cause of the
+  # 2026-10-03 all-Inf run
+  force(data); force(label)
   model <- spec$constructor(spec$lower)  # placeholder; only its shape is used
   ctrl <- run_ctrl(spec)
   err_file <- ERR_FILE
