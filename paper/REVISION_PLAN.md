@@ -12,6 +12,156 @@ _2026-09-06 — decisions locked (see §3):_
 
 ---
 
+## R3. Round 3 (2026-10-07): writing up the 0.4.0 results — current plan
+
+**Supersedes the status tables in §0 and below.** XSLmodels 0.4.0 is released; the
+round-2 refit is complete: 19 models + baseline, 56 conditions, group fit + 5-fold CV,
+plus holdout generalization (`fits/v04/`, summary in `fits/v04/summary.md`). The fit
+build (`d0e2230`) has the same model code as the v0.4.0 release (only `xsl_fit()`
+differs, which the refit doesn't use), so the paper can say "XSLmodels 0.4.0".
+
+### R3.1 What the results say
+
+CV test SSE by round. Item-level SSE summed over items, as the paper's Table 1 reports
+it; ranks are within each round. Published = CogSci research code, 44 conditions /
+726 items. Rounds 1–2 = the package, 53 / 818 and 56 / 872 items. SSE magnitudes
+aren't comparable across rounds (different item counts); ranks are.
+
+| model | published rank | round 1 rank (0.3.0) | **round 2 rank (0.4.0)** | round 2 CV SSE | round 2 r |
+|---|---|---|---|---|---|
+| FUs | 1 | 1 | **1** | 21.97 | .72 |
+| PA | 2 | 2 | **2** | 23.43 | .68 |
+| BD | 6 | 3 | **3** | 25.33 | .64 |
+| RL (new) | – | 4 | **4** | 26.66 | .63 |
+| M2 (new, 1 param) | – | – | **5** | 27.35 | .61 |
+| FU-E (new) | – | – | **6** | 27.55 | .66 |
+| FU | 3 | 5 | **7** | 27.84 | .66 |
+| FU-G (new) | – | – | **8** | 28.24 | .65 |
+| FU-A | – | 6 | **9** | 28.45 | .66 |
+| Nov | 4 | 7 | **10** | 29.11 | .62 |
+| PbV | 11 | 9 | **11** | 32.79 | .53 |
+| Unc | 5 | 8 | **12** | 33.26 | .58 |
+| TF (new) | – | – | **13** | 34.05 | .54 |
+| GnT | 7 | 12 | **14** | 35.45 | .51 |
+| KF | – | 11 | **15** | 35.47 | .61 |
+| R-W | 8 | 10 | **16** | 35.50 | .61 |
+| Str | 9 | 15 | **17** | 48.80 | .41 |
+| Pur | 10 | 14 | **18** | 50.09 | .53 |
+| FU-P | – | 13 | **19** | 51.11 | .52 |
+| baseline (group fit) | – | – | – | 35.47 | .61 |
+
+Headlines for the rewrite:
+
+1. **The top two are stable across all three versions** (FUs and PA). Which one is
+   first depends on the metric (see D1): FUs by summed item SSE; PA by the fitted
+   objective (participant-weighted condition SSE, `summary.md`: PA .358, FUs .374,
+   BD .379). The CV fold ranges overlap heavily, so these three are not clearly
+   separable.
+2. **BD climbs from 6th to 3rd** in both package rounds. This comes from the
+   choice-rule correction, not the new data.
+3. **FU falls from 3rd to 7th** (update_known fix plus new competitors). Its variants
+   cluster around it, and none of the extensions helps out of sample:
+   - **FU-E's elimination weight goes to ε = 0** (pinned at its lower bound), so it
+     is FU exactly.
+   - **FU-G** (γ ≈ 0.5, diminishing returns on familiarity) fits better in-sample
+     (group SSE 23.8 vs 25.0) but not in CV (28.2 vs 27.8).
+   - **FU-A** ≈ FU once the bounds are harmonized.
+   - **FU-P** is worst: 0.4.0's cap-at-β made it worse, and its λ is pinned at the
+     upper bound. This was checked: round-1 parameters score worse under 0.4.0, so
+     it isn't an optimizer failure.
+4. **New entrants place well:** RL is 4th, and MINERVA 2 is 5th with a *single* free
+   parameter.
+5. **The error-driven models collapse onto co-occurrence counting.** R-W and KF have
+   their best fits at parameter bounds equivalent to counting; their group objective
+   (.5005) is within .001 of the baseline (.5011), and their CV SSEs match the
+   baseline to the second decimal. This explains round 1's R-W ≈ baseline (r ≈ 1)
+   and is a substantive result.
+6. **Hypothesis testing:**
+   - PbV beats the baseline in CV (32.8 vs 35.5).
+   - GnT ≈ baseline.
+   - Pursuit, Strength and FU-P sit at the bottom.
+7. **Generalization to the holdouts** (`benitez2020` children and adults,
+   `kachergis_initial_accuracy`):
+   - **Adults:** the counting cluster (baseline, R-W, KF) and PA are best (MSE .028).
+   - **Children:** BD is best (MSE .022).
+   - **No model tracks children's item-level pattern:** every child r is near 0. That
+     belongs in the abstract and Discussion.
+8. **Fitted parameters on a bound:**
+   - PA's β = 20000, the known issue (needs one sentence).
+   - Unc's χ = 5, at its upper bound.
+   - TF's α₀ = 1, which switches off its uncertainty-dependent efficiency.
+   - KF's σ²_obs is on a plateau (already documented).
+   - TF also accounts for nearly all of the ~500 logged objective errors: numerical
+     failures at extreme parameter values.
+
+### R3.2 Decisions needed
+
+- **D1 — primary fit metric.** Recommend the fitted objective (participant-weighted
+  condition SSE) as primary, since that's what was optimized, with item-level r
+  alongside and summed item SSE in the supplement. Say explicitly that PA and FUs
+  swap places between the two metrics.
+- **D2 — can the top models be told apart?** Recommend a paired comparison over CV
+  folds, or a bootstrap over conditions, for the top ~5. That would turn "PA, FUs,
+  BD" into a defensible "statistically indistinguishable top tier" (or not).
+  Analysis only, no refitting.
+- **D3 — `uncfam_general` (PR #27).** The per-condition fit is running now
+  (`fits/general_percond/`). Include it as a new section ("which BAM extensions does
+  each design prefer?"), put it in the supplement, or save it for a follow-up paper?
+  Decide once the results are in.
+- **D4 — generalization set.** Recommend the holdout registry (`benitez2020`,
+  `kachergis_initial_accuracy`; `vlach_debrock2017` as a mean-only check) **plus**
+  Medina 2011 and Smith & Yu 2008 rerun with round-2 parameters. Medina and Smith &
+  Yu are currently still round-1 numbers.
+- **D5 — the design-search work** (`fits/discriminative_design_search*`). Leave it
+  out, mention it as future work, or make it a short supplementary section? It's
+  round-1-based and its best design extrapolates far beyond the data (see its
+  report).
+- **D6 — target journal** (template; `cogsci2016` isn't installed) and the citation
+  for the CogSci 2024 conference version.
+
+### R3.3 Work items (in order)
+
+1. **Housekeeping.**
+   - Commit the round-2 outputs and scripts: `fits/v04/{group_fits,cv_fits,generalization}.Rdata`,
+     `generalize.R`, `summarize.R`, `summary.{md,rds}`, and the `force(data)` fix in
+     `refit.R`.
+   - Delete `fits/v04/failed_2026-10-03/`.
+   - Decide what happens to `fits/generalization_test.R` (superseded by
+     `generalize.R`).
+2. **Table 1** — rebuild for 20 rows: model, class, k, CV (mean and fold range),
+   group, r, using the D1 metric. Drop the hard-coded abbreviation/ordering code.
+3. **Table 2** — the model-by-model prediction correlation table at 20×20 is too big
+   for a page. Replace it with a clustered heatmap figure, or a table restricted to
+   the mechanism representatives; full matrix in the supplement.
+4. **Figure 1** — 20 panels; the facet order and labels are hard-coded for the
+   original 12, so the new models currently fall out of the figure.
+5. **"What changed" supplement** — the R3.1 table, plus the correction notes already
+   in Method. This also serves as material for the response letter.
+6. **Generalization** (D4) — rewrite the section around `fits/v04/generalization.Rdata`
+   plus a round-2 Medina / Smith & Yu run, and lead with the children result.
+7. **Corpus section** — the paper's copies in `fits/corpus/` predate the fixed 0.4.0
+   rerun (md5s differ from `v0.4.0:tests/bakeoff_comparison/`). Re-copy, re-run
+   `fits/corpus_results.R`, and add the new models.
+8. **Discussion** — rewrite around R3.1's headlines:
+   - the stable top tier;
+   - error-driven learning reducing to counting;
+   - FU extensions not generalizing;
+   - hypothesis testing ≈ baseline;
+   - a 1-parameter episodic model in the top five;
+   - children unexplained.
+
+   Drop the round-1 numbers still inline (PbV–GnT r = .65, etc.).
+9. **Abstract and Intro** — 19 models, 56 conditions, 2,359 participants, holdouts,
+   corpora.
+10. **Appendix** — regenerate everything with round-2 fits:
+    - the disagreement index with its 12 mechanism representatives;
+    - the best/worst tables;
+    - re-check the hand-written prose about specific conditions.
+11. **Final pass** — journal template (D6); render; check every inline number against
+    `fits/v04/summary.md`.
+
+---
+
 ## 0. Round 2 (2026-10-02): what XSLmodels 0.4.0 changes
 
 Everything below §0 describes round 1, which ended with all fits complete (Sep 15)
