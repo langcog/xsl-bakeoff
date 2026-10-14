@@ -8,8 +8,14 @@ require(here)
 require(gplots)
 require(tidyverse)
 require(RColorBrewer)
-require(XSLmodels)
 knitr::opts_chunk$set(echo=F, message=F, warning=F)
+# XSLmodels pinned to the commit the fits used (fits/v04/XSLMODELS_COMMIT)
+.libPaths(c(here("fits/v04/Rlib"), .libPaths()))
+require(XSLmodels)
+stopifnot(as.character(packageVersion("XSLmodels")) == "0.4.0")
+# gfd, group_fits, cv_group_fits, cvg, FITS_PRELIMINARY -- shared with
+# journal-paper.Rmd (round-2 refit, else round-1 fallback flagged PRELIMINARY)
+source(here("paper/load_fits.R"))
 
 # Model metadata (name -> abbreviation), kept in sync with the same table in
 # journal-paper.Rmd's `model-list` chunk. Duplicated here because this
@@ -30,8 +36,12 @@ model_meta <- tibble::tribble(
   "pursuit",            "Pursuit (Pur)",
   "uncfam_attention",   "FU + Attention (FU-A)",
   "uncfam_predictive",  "FU + Prediction (FU-P)",
+  "uncfam_gamma",       "FU + Familiarity Exponent (FU-G)",
+  "uncfam_elimination", "FU + Elimination (FU-E)",
   "kalman_filter",      "Kalman Filter (KF)",
+  "tilles",             "Reinforcement & Inference (TF)",
   "softmax_rl",         "Reinforcement Learning (RL)",
+  "minerva2",           "MINERVA 2 (M2)",
   "baseline",           "Baseline"
 )
 relabel <- function(m) dplyr::coalesce(model_meta$label[match(m, model_meta$Model)], m)
@@ -68,20 +78,10 @@ print(tab1, type="latex", comment = F, include.rownames = F, table.placement = "
 # Appendix B: Clustering experiments and models by misfit
 
 ```{r load-cv-appendix}
-# NOTE (revision): repointed at the package's 53-condition CV fits
-# (cv_all_experiments.Rdata + cv_new_models.Rdata) in place of the
-# 44-condition, 11-model fits/cv_group_fits.Rdata. As of this writing
-# cv_all_experiments.R is still finishing kachergis_sampling (FUs) -- the
-# code below uses whatever models are present, so this appendix will gain
-# a row/column once that completes (see journal-paper.Rmd's load-cv-fits
-# chunk, which has the same caveat).
-local({
-  e1 <- new.env(); load(here("fits/cv_all_experiments.Rdata"), envir = e1)
-  e2 <- new.env(); load(here("fits/cv_new_models.Rdata"),       envir = e2)
-  cv_group_fits <<- c(e1$cv_all, e2$cv_new)
-})
-cvg <- purrr::list_rbind(lapply(cv_group_fits, `[[`, "testdf")) %>%
-  mutate(Model = relabel(Model))
+# CV fits come from paper/load_fits.R (sourced in the setup chunk): the
+# round-2 refit (56 conditions, XSLmodels 0.4.0) once fits/v04/cv_fits.Rdata
+# exists, else round-1's 53-condition fits, flagged PRELIMINARY.
+cvg <- cvg %>% mutate(Model = relabel(Model))
 n_models_appendix <- length(unique(cvg$Model))
 
 # Seven conditions (the four Koehne et al. 2013 meaning-order conditions and
@@ -181,14 +181,14 @@ print(tab_ext, type="latex", comment = F, include.rownames = F, table.placement 
 # Model disagreement: a discriminability index independent of human data
 
 ```{r model-disagreement}
-gfd_group <- local({
-  e1 <- new.env(); load(here("fits/group_fits_all_experiments.Rdata"), envir = e1)
-  e2 <- new.env(); load(here("fits/group_fits_new_models.Rdata"),       envir = e2)
-  bind_rows(e1$gfd_all, e2$gfd_new)
-}) %>% filter(Model != "fazlyt") # fazlyt is a bonus fit, not part of the 15-model + baseline roster
+gfd_group <- gfd %>% filter(Model != "fazlyt") # gfd from paper/load_fits.R; fazlyt is a group-fit-only bonus
 
+# one representative per distinct mechanism (round 2 adds the
+# reinforcement-and-inference and episodic-memory mechanisms)
 mech_reps <- c("kachergis", "fazly", "Bayesian_decay", "rescorla-wagner", "trueswell2012",
-              "guess-and-test", "pursuit", "softmax_rl", "kalman_filter", "baseline")
+              "guess-and-test", "pursuit", "softmax_rl", "kalman_filter", "tilles",
+              "minerva2", "baseline")
+mech_reps <- intersect(mech_reps, unique(gfd_group$Model)) # round-1 fallback lacks tilles/minerva2
 
 item_sd <- function(df) df %>% group_by(Condition, condnum) %>%
   summarise(item_sd = sd(ModelPerf), .groups = "drop")
