@@ -10,6 +10,13 @@
 # The package version is still 0.4.0; the pinned commit
 # is in fits/v05/XSLMODELS_COMMIT.
 #
+# Re-pinned 2026-10-14 from 2999e8b to e70c10c (PR #31): condition 214's 4AFC
+# test is now the one its participants saw (213's), 211 item 17's missing
+# foil (2) is restored, and Bayesian_decay's ch_dec now also applies on
+# conditions with a test. Every model's fit changes (211 and 214 are in all
+# of them), so the group phase restarted from scratch; the 2999e8b outputs
+# are in fits/v05/stale_2999e8b_2026-10-14/.
+#
 # Round-2 refit for the journal paper: every model in fits/v05/specs.R, fit
 # to all of xsl_datasets (56 conditions) with XSLmodels pinned at
 # fits/v05/XSLMODELS_COMMIT (0.4.0).

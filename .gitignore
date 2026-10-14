@@ -16,6 +16,7 @@ fits/v04/*/quick/
 # v05 refit (after the XSLmodels filtering + freqCD data fixes): private
 # package library, run logs, smoke tests, and the stopped 2026-10-13 run
 fits/v05/Rlib/
+fits/v05/stale_*/Rlib/
 fits/v05/*.log
 fits/v05/*/*.log
 fits/v05/*/quick/
