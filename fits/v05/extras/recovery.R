@@ -206,9 +206,13 @@ summarize_recovery <- function() {
     pr <- map(pj, \(j) {
       s <- specs_v04[[j$gen]]
       logscale <- is_logscale(s)
+      # position within the bounds on the parameter's own scale: a linear
+      # tolerance would call anything below .002 "at the bound" for PA's
+      # lambda, whose bounds are [1e-10, 2]
+      pos <- ifelse(logscale, (log(j$par) - log(s$lower)) / (log(s$upper) - log(s$lower)),
+                    (j$par - s$lower) / (s$upper - s$lower))
       tibble(model = j$gen, draw = j$i, param = paste0("p", seq_along(j$par)), logscale = logscale,
-             true = j$true_par, fit = j$par,
-             at_bound = j$par <= s$lower + 1e-3 * (s$upper - s$lower) | j$par >= s$upper - 1e-3 * (s$upper - s$lower))
+             true = j$true_par, fit = j$par, at_bound = pos < 1e-3 | pos > 1 - 1e-3)
     }) |> list_rbind()
     # (scale with if(), not ifelse(): inside summarise() a length-1 logscale
     # made ifelse() return only the first draw)

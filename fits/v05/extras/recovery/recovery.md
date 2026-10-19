@@ -1,6 +1,6 @@
 # Model and parameter recovery (v05)
 
-Generated 2026-10-18 11:07:45 by `fits/v05/extras/recovery.R`.
+Generated 2026-10-18 23:14:10 by `fits/v05/extras/recovery.R`.
 
 ## Parameter recovery
 
@@ -11,12 +11,12 @@ r = correlation of true and recovered values across draws (log scale where marke
 |Bayesian_decay     |p1    | 20|              20|TRUE     |0.83 |        0.06490|0%       |
 |Bayesian_decay     |p2    | 20|              20|TRUE     |0.80 |        0.12500|0%       |
 |Bayesian_decay     |p3    | 20|              20|TRUE     |0.74 |        0.13800|0%       |
-|fazly              |p1    | 20|              20|TRUE     |0.90 |        0.69200|70%      |
-|fazly              |p2    | 20|              20|TRUE     |0.99 |        0.09870|30%      |
-|kachergis          |p1    | 20|              20|TRUE     |1.00 |        0.02580|25%      |
+|fazly              |p1    | 20|              20|TRUE     |0.90 |        0.69200|0%       |
+|fazly              |p2    | 20|              20|TRUE     |0.99 |        0.09870|0%       |
+|kachergis          |p1    | 20|              20|TRUE     |1.00 |        0.02580|0%       |
 |kachergis          |p2    | 20|              20|TRUE     |1.00 |        0.03920|0%       |
 |kachergis          |p3    | 20|              20|FALSE    |1.00 |        0.00113|0%       |
-|kachergis_sampling |p1    | 20|              20|TRUE     |0.99 |        0.16500|5%       |
+|kachergis_sampling |p1    | 20|              20|TRUE     |0.99 |        0.16500|0%       |
 |kachergis_sampling |p2    | 20|              20|TRUE     |0.78 |        0.19000|0%       |
 |kachergis_sampling |p3    | 20|              20|FALSE    |0.99 |        0.00733|0%       |
 |minerva2           |p1    | 20|              20|TRUE     |0.98 |        0.06370|0%       |

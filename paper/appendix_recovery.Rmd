@@ -1,0 +1,117 @@
+```{r recovery-setup, include=FALSE}
+# Appendix: model and parameter recovery. Included as a child of appendix.Rmd;
+# self-contained (its own packages and data), so it can also be rendered alone.
+# Data: fits/v05/extras/recovery/recovery.rds (fits/v05/extras/recovery.R).
+# Figures: paper/recovery_figs.R.
+source(here::here("paper/recovery_figs.R"))
+rec <- load_recovery()
+f2 <- \(x) sub("^(-?)0\\.", "\\1.", sprintf("%.2f", x))
+listify <- \(x) if (length(x) <= 2) paste(x, collapse = " and ") else
+  paste0(paste(head(x, -1), collapse = ", "), ", and ", tail(x, 1))
+
+ps <- rec$param$summary |>
+  mutate(idx = as.integer(sub("^p", "", param)),
+         abbr = rec_models[model],
+         sym = mapply(\(m, i) rec_params[[m]][i], model, idx))
+n_draws  <- max(ps$n)
+n_pmod   <- n_distinct(ps$model)
+n_par    <- nrow(ps)
+good     <- filter(ps, r >= .7)
+mr       <- rec$model
+n_reps   <- n_distinct(mr$fits$rep)
+n_mmod   <- n_distinct(mr$fits$gen)
+n_data   <- nrow(mr$margin)
+n_won    <- sum(mr$wins$gen == mr$wins$fitter)
+marg     <- mr$margin |> mutate(m = best_other - true_obj)
+base_m   <- filter(marg, gen == "baseline")
+nonbase_min <- min(filter(marg, gen != "baseline")$m)
+pa_lambda <- filter(rec$param$draws, model == "fazly", param == "p1")
+pa_hi    <- filter(pa_lambda, true > 1e-4)
+pa_hi_err <- median(abs(log10(pa_hi$fit) - log10(pa_hi$true)))
+pbv_a    <- filter(ps, model == "trueswell2012", idx == 1)
+# parameters recovered only loosely (.70 <= r < .85), named in the text
+loose    <- filter(ps, r >= .7, r < .85) |> arrange(r)
+poss <- \(a) ifelse(endsWith(a, "s"), paste0(a, "'"), paste0(a, "'s"))
+loose_txt <- listify(sprintf("%s $%s$ (%s)", poss(loose$abbr),
+                             sub("\\[0\\]", "_0", ifelse(loose$sym %in% c("x", "b", "X"), loose$sym, paste0("\\", loose$sym))),
+                             f2(loose$r)))
+rivals <- marg |> count(gen, best_other_model) |> group_by(gen) |> slice_max(n, n = 1, with_ties = FALSE) |>
+  ungroup() |> mutate(g = rec_models[gen], r = rec_models[best_other_model])
+```
+
+# Appendix C: Model and Parameter Recovery
+
+Two questions bear on how far the comparison can be trusted.
+First, if one of these models had generated the data, would fitting all of them have identified it, or do some mechanisms mimic each other so closely on these 47 designs that the comparison could not tell them apart?
+Second, are a model's fitted parameters interpretable, or could quite different parameter values produce the same predictions?
+We answered both with simulation, using a reduced version of the fitting procedure in the main text.
+
+**Synthetic data.**
+A generating model was run on all 47 conditions (with 500 simulated learners for stochastic models, to approximate its true predictions closely); each item's synthetic accuracy was then drawn as a binomial proportion with that item's real number of participants.
+Synthetic data are therefore exactly as noisy as the human data under the binomial noise model behind the noise ceiling, though they lack participant-level individual differences.
+
+**Fitting.**
+Synthetic data were fit with the same objective (participant-weighted SSE) and parameter bounds as the main analysis, but a reduced differential-evolution budget, so that several hundred fits were affordable: a population of 10 per free parameter (at least 20), and 60 generations for deterministic models or 25 for stochastic ones, whose fits used 50 simulated learners per evaluation.
+We used one representative of each mechanism: PA, FU, FUs, BD, TF, M2, RL, and PbV, plus the baseline in model recovery.
+
+**Parameter recovery.**
+For each of the `r n_pmod` models, `r n_draws` parameter vectors were drawn uniformly within the fitting bounds (log-uniformly for scale parameters whose bounds span two or more orders of magnitude), discarding draws whose mean predicted accuracy fell below .1 or above .95, since such designs carry little information.
+Each synthetic dataset was then fit by the model that generated it.
+
+**Model recovery.**
+Each of the `r n_mmod` models generated `r n_reps` synthetic datasets at its group-fit parameters from the main analysis, and every dataset was fit by all `r n_mmod` models.
+The winner was the model with the lowest objective; stochastic models were re-evaluated with 200 simulated learners at their best parameters, since the minimum the optimizer reports for a noisy objective is biased low.
+
+## Results
+
+**Parameters are mostly recoverable.**
+Figure \ref{fig:recovery-param-fig} plots recovered against generating values, and Table \ref{tab:recovery-table} summarizes them.
+`r nrow(good)` of the `r n_par` parameters were recovered with $r \ge .70$ (on a log scale for the log-scaled ones), and `r sum(ps$r >= .95)` with $r \ge .95$.
+No recovered value fell on a fitting bound.
+There are three caveats.
+
+- **The propose-but-verify model's recall probability $\alpha$ is not identifiable** ($r$ = `r f2(pbv_a$r)`): recovered values cluster near .5 whatever the generating value, plausibly because $\alpha$ and the recall increment $\epsilon$ both control how often a proposed referent survives to be verified, so different combinations predict similar accuracy. PbV's fitted $\alpha$ should not be interpreted on its own.
+- **PA's smoothing constant $\lambda$ is identifiable only when it is not negligible.** Above about $10^{-4}$ it is recovered closely (median error `r sprintf("%.2f", pa_hi_err)` log~10~ units); below that, any small value predicts the same accuracies, so the recovered value is arbitrary.
+- **Several parameters are recovered only loosely:** `r loose_txt`. Their occasional large misses (Figure \ref{fig:recovery-param-fig}) suggest partial trade-offs with the same model's other parameters, so these values should be interpreted with caution.
+
+**Models are perfectly recoverable at their fitted parameters.**
+In every one of the `r n_data` synthetic datasets, the generating model fit best (`r n_won` of `r n_data`; Figure \ref{fig:recovery-model-fig}).
+For every generator except the baseline, the closest rival's objective exceeded the generator's by at least `r f2(nonbase_min)` (Figure \ref{fig:recovery-margin-fig}).
+The baseline is the hardest case: its data were best fit by the baseline every time, but by margins of only `r f2(min(base_m$m))`--`r f2(max(base_m$m))` over the reinforcement-learning model.
+The closest rivals are mostly the expected ones: FU and FUs for each other; PA for BD, TF and M2; M2 for RL; and RL for PbV, the two models that commit to one referent per word on each trial.
+
+**What this does and does not show.**
+Perfect recovery means that the 47 designs, at their real sample sizes, are informative enough to distinguish these mechanisms *when the data sit where each model's best fit to the human data puts them*.
+It does not show that every region of each model's parameter space is distinguishable, and the reduced fitting budget and in-sample selection make it, if anything, a lenient test.
+Nor does it make the human-data ranking any less dependent on the models' specific assumptions: a model can be recoverable and still be wrong.
+
+```{r recovery-table, results="asis"}
+tabC1 <- ps |>
+  arrange(factor(model, names(rec_models)), idx) |>
+  transmute(Model = abbr,
+            Parameter = paste0("$\\", sub("\\[0\\]", "_0", sym), "$") |>
+              sub(pattern = "^\\$\\\\(x|b|X)\\$$", replacement = "$\\1$"),
+            Scale = ifelse(logscale, "log", "linear"),
+            r = f2(r),
+            `Median abs. error` = as.character(signif(median_abs_err, 2)))
+# a gap between models, not booktabs' default of every 5 rows
+model_end <- c(tabC1$Model[-1] != head(tabC1$Model, -1), FALSE)
+knitr::kable(tabC1, "latex", booktabs = TRUE, escape = FALSE, align = "llcrr", label = "recovery-table",
+             linesep = ifelse(model_end, "\\addlinespace", ""),
+             caption = paste0("Parameter recovery: correlation between generating and recovered values over ",
+                              n_draws, " synthetic datasets per model, and the median absolute error, both on the ",
+                              "scale shown (natural log for log-scaled parameters).")) |>
+  kableExtra::kable_styling(latex_options = "hold_position")
+```
+
+```{r recovery-param-fig, fig.width=7, fig.height=7.4, fig.cap="Parameter recovery.\\label{fig:recovery-param-fig} Each panel is one parameter of one model; each point is one synthetic dataset, generated at the value on the x axis and fit by the same model. Points on the dashed identity line are recovered exactly."}
+fig_param_recovery(rec)
+```
+
+```{r recovery-model-fig, fig.width=6, fig.height=6.4, fig.cap="Model recovery.\\label{fig:recovery-model-fig} Rows: the model that generated the synthetic data (at its group-fit parameters); columns: the model fit to them. Off-diagonal cells give the mean amount by which the fitting model's objective exceeded the generating model's (darker = easier to tell apart); the diagonal gives the number of datasets the generating model won."}
+fig_model_recovery(rec)
+```
+
+```{r recovery-margin-fig, fig.width=6, fig.height=3.2, fig.cap="Margin of victory:\\label{fig:recovery-margin-fig} for each synthetic dataset, how much worse the best-fitting rival model's objective was than the generating model's, with the rival that came closest most often."}
+fig_recovery_margin(rec)
+```

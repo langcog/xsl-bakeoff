@@ -196,12 +196,20 @@ The package currently gets one sentence and a footnote.
       Caveat: the generators sit at their group-fit parameters and winners are picked by
       in-sample objective. So this shows the 47-condition design *can* separate the
       mechanisms. It doesn't show that the real data sit where they're separable.
-    - **Parameter recovery is mostly good**, r ≥ .74 for nearly every parameter, with two
-      exceptions:
-      - **PbV's recall probability α: r = .33, essentially not identifiable.**
-      - **PA's λ ends at a bound in 70% of draws** (β in 30%).
-    - FUs' entropy weight (r = .78) and RL's softmax temperature (.80) are the weakest of
-      the rest.
+    - **Parameter recovery is mostly good:** 18 of 19 parameters have r ≥ .70, and 9 have
+      r ≥ .95.
+      - **PbV's recall probability α (r = .33) is essentially not identifiable.**
+      - **PA's smoothing constant λ** is recovered closely above about 1e-4. Below that it
+        is arbitrary.
+      - **Loose (.74–.83):** BD's τ, δ and α; FUs' λ; RL's β; TF's b; and PbV's ε.
+      - **Correction (2026-10-18):** no recovered value is on a fitting bound. The
+        earlier "PA λ at a bound in 70% of draws" came from a linear-scale tolerance
+        (anything below .002 counted for λ ∈ [1e-10, 2]). `recovery.R` now checks on the
+        parameter's own scale.
+    - **Written up as Appendix C** (`paper/appendix_recovery.Rmd`, a child of
+      `appendix.Rmd`). It has one table and three figures (`paper/recovery_figs.R`;
+      standalone PNG/PDF copies in `paper/figs/recovery/`). Every number in its text is
+      computed from `recovery.rds`.
 24. 📝 **The `uncfam_general` nested comparison (D3)** — the design is in
     `fits/v05/extras/nested_comparison_design.md`. A factorial over
     familiarity × uncertainty × elimination × attention gives 36 cells, each with group

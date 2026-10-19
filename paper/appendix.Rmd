@@ -294,3 +294,8 @@ tab3 <- xtable::xtable(best_worst_tab, digits=0,
 
 print(tab3, type="latex", comment = F, include.rownames = F, table.placement = "p")
 ```
+
+\clearpage
+
+```{r appendix-recovery, child = "appendix_recovery.Rmd"}
+```
