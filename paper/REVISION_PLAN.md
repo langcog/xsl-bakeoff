@@ -153,17 +153,111 @@ The package currently gets one sentence and a footnote.
 
 19. ❌ **Top-tier comparison (D2):** a bootstrap over conditions, or a paired test over
     the 47 out-of-fold condition SSEs.
-20. ❌ **Noise ceiling:** split-half reliability of the human item accuracies (from the
-    raw responses), so readers can see how much SSE is irreducible and interpret r.
+20. ✅ **Noise ceiling** — `fits/v05/extras/noise_ceiling.R` → `noise_ceiling.{rds,md}`
+    (rerun 2026-10-18 on the final v05 fits, pinned to e70c10c). The noise is analytic
+    (binomial: `a(1-a)/(n-1)` per item), so it needs no raw data.
+    - **SSE floor .117** on the fitted objective. Best group fit: PA .473, which leaves
+      .356 of excess error; the baseline is at 1.628.
+    - Reliability .865, so the **item-level r ceiling is .93**. The best models reach .72,
+      i.e. .77 of the ceiling.
+    - A choice-level ceiling: leave-one-participant-out, plus the in-sample upper bound.
+    - The most explainable error left is in freq369-3x3hiCD, freq369_39mx, 212 and 301.
 21. ❌ **Leave-one-experiment-out CV** alongside the random 5-fold. Conditions from the
     same paper share structure, so it's a stronger generalization test.
-22. ❌ **Choice-level evaluation from `response_matrix`:** multinomial likelihood, or
-    foil-choice agreement. This is where models that mimic each other on accuracy
-    could separate (e.g. the filtering AtoB items).
-23. ❌ **Model and parameter recovery**, to back the identifiability claims.
-24. ❌ **The `uncfam_general` nested comparison (D3).** `fits/general_percond`,
-    `fits/short_trace` and `fits/filtering_refit` all ran on pre-v05 data (56
-    conditions); rerun them on the 47 before including any of them.
+22. ✅ **Choice-level evaluation** — `fits/v05/extras/choice_level.R` →
+    `choice_level.{rds,md}` (2026-10-18; final v05 fits, all 924 items). It scores the
+    multinomial log-likelihood, split into a correct/error part and a which-foil part,
+    plus top-foil hits, with a lapse fit per model and part. It runs in two regimes:
+    **out-of-fold** (each condition at parameters fit without it; primary) and group.
+    - **The ranking mostly survives the choice level:** Spearman ρ = .88 against CV SSE
+      (after the FU-P refit below).
+      - The top six by out-of-fold choice likelihood are PA, FUs, Nov, FU-P, FU-G and BD.
+      - Nov (7th by CV SSE) moves up to 3rd, FU-P from 9th to 4th, and BD from 12th to
+        6th. All three gain through their foil predictions.
+    - **Foil choice is barely predictable, even from other people.** The leave-one-out
+      ceiling is −2.588 nats per error against chance's −2.631.
+    - **What predicts foils is unrelated to accuracy fit** (ρ = −.10).
+      - BD and M2 lead, at 54% and 53% of the attainable gain.
+      - The co-occurrence baseline (52%), FU-P (50%) and RL (48%) come next.
+      - Str gets 40%, PA 38%, Nov 36% and FUs 33%.
+      - FU and its A/E/G variants, TF and the hypothesis-testing models get 17–23%.
+
+      So people's wrong answers lean toward co-occurring objects about as much as a
+      counting model predicts, and the FU family's attention bias doesn't capture it.
+    - Still to do: break the foil results down by condition type (filtering AtoB; 4AFC
+      vs all-object tests).
+23. ✅ **Model and parameter recovery** — `fits/v05/extras/recovery.R` →
+    `recovery/recovery.{rds,md}` (finished 2026-10-18; 160 parameter-recovery fits and
+    405 model-recovery fits on the final v05 fits).
+    - **Model recovery is perfect.** All 45 synthetic datasets (9 generators × 5 reps)
+      are won by their generator. Even the baseline, whose closest rival is RL, wins every
+      time, though only narrowly (a mean margin of .018).
+
+      Caveat: the generators sit at their group-fit parameters and winners are picked by
+      in-sample objective. So this shows the 47-condition design *can* separate the
+      mechanisms. It doesn't show that the real data sit where they're separable.
+    - **Parameter recovery is mostly good**, r ≥ .74 for nearly every parameter, with two
+      exceptions:
+      - **PbV's recall probability α: r = .33, essentially not identifiable.**
+      - **PA's λ ends at a bound in 70% of draws** (β in 30%).
+    - FUs' entropy weight (r = .78) and RL's softmax temperature (.80) are the weakest of
+      the rest.
+24. 📝 **The `uncfam_general` nested comparison (D3)** — the design is in
+    `fits/v05/extras/nested_comparison_design.md`. A factorial over
+    familiarity × uncertainty × elimination × attention gives 36 cells, each with group
+    and 5-fold CV fits on the Table 1 objective and folds. Then knock-in/knock-out factor
+    effects with a paired condition bootstrap, then sampling and the short-term trace on
+    the top cells. It needs:
+    - a new pin with `uncfam_general` (990ef49 or 0.5.0; `data/` is unchanged from
+      2999e8b);
+    - a fix for `uncfam_general`'s registry bounds (`B ∈ [.8, 1]` excludes FU's
+      optimum).
+
+    `fits/general_percond`, `fits/short_trace` and `fits/filtering_refit` ran on pre-v05
+    data (56 conditions); they're superseded or need rerunning.
+
+**Package and manuscript bugs found while building 20–24 (2026-10-14):**
+- **XSLmodels: Bayesian decay's choice exponent.** `ch_dec` is applied only on the 31
+  conditions without an explicit `test` (`get_perf(mat, d = ch_dec)`). `mafc_test()` →
+  `predict_referent()` ignores it on the 16 4AFC/filtering conditions
+  (`fitting.R:66`). The v04 and v05 BD fits carry this. It needs a package fix, then a BD
+  refit (group + CV, cheap).
+- **XSLmodels: test specs.**
+  - Condition `214` (3x4 6/8 4AFC): 175 of 648 human responses are to objects not in the
+    listed alternatives, on every item, so the listed foils look wrong.
+  - `211` item 17: the alternatives list object 17 twice and omit the foil people chose
+    (2).
+
+  Both distort accuracy predictions for those items. Fixed in XSLmodels PR #31
+  (e70c10c): 214's participants actually saw 213's test displays, and 211 item 17's foil
+  is 2. BD's `ch_dec` is fixed in the same PR. The final v05 fits use e70c10c.
+- **v05 FU-P (`uncfam_predictive`) group fit failed (found 2026-10-18).**
+  - The group fit ended at X = 3.55, B = 15, C = .69, with SSE 2.492.
+  - Fold 2's parameters (X = .070, B = .31, C = .999) score **.667 on all 47
+    conditions**. Its surface has two basins, and the group fit and CV folds 1 and 3
+    ended up in the bad one.
+  - So FU-P's group SSE (2.492) and CV SSE (1.462) are both wrong. It belongs around
+    10th, near Unc, not last, and the "FU-P is worst" headline (R3.1, item 3) likely has
+    the same cause in v04.
+  - ✅ **Refit 2026-10-18** (`fits/v05/refit_fup.R`, log in
+    `fits/v05/adults/fup_refit.log`; the originals are backed up as
+    `*.pre_fup_refit.Rdata`). Each fit took the best of 5 random-start DEoptim runs
+    (refit.R settings); the group fit also had one run seeded with the fold optima. The
+    CV folds were not seeded, which would leak held-out conditions.
+    - Group: 2.492 → **.663**.
+    - Fold 1: train 2.411 → .677 (test 3.187 → .619).
+    - Fold 3: train 2.163 → .709 (test 1.590 → .503).
+    - **FU-P's CV SSE is now .702**, 9th of 19 (between TF .639 and Unc .730), not
+      last. The R3.1 claim that "0.4.0's cap-at-β made it worse" (item 3) is withdrawn.
+    - About a third of single runs (5 of 16) landed in the bad basin (X ≈ 3.6, B = 15).
+      So say in Method that FU-P was fit with restarts, and why. The good basin is flat
+      (.66–.69 across runs), which suggests that X and B trade off there.
+  - Every other deterministic model's group fit is at least as good as its best fold's
+    parameters (checked). The stochastic models can't be checked this way, because of
+    simulation noise.
+- **Manuscript, :225:** the novelty model does *not* lack the strength bias.
+  `uncfam(variant = "novelty")` keeps the familiarity term; only the uncertainty-only
+  variant drops it.
 
 ### R4.5 Housekeeping
 
