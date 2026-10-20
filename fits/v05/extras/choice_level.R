@@ -120,6 +120,18 @@ if (length(failed)) stop("failed: ", paste(jobs$model[failed], jobs$regime[faile
                                            map_chr(scores[failed], conditionMessage), sep = ": ", collapse = "; "))
 
 ## ---- combine ---------------------------------------------------------------
+# every model's current result, from the cache (so a run for one model, e.g.
+# `choice_level.R tilles`, still rebuilds the full tables); refuse to mix in
+# a cached result whose parameters are stale
+scores <- c(map(names(pars), \(m) list(model = m, regime = "group", key = pars[[m]])),
+            map(names(cv_pars), \(m) list(model = m, regime = "cv", key = cv_pars[[m]]))) |>
+  map(function(j) {
+    f <- file.path(cache_dir, j$regime, paste0(j$model, ".rds"))
+    if (!file.exists(f)) stop("no choice-level result for ", j$model, " (", j$regime, "); run choice_level.R ", j$model)
+    s <- readRDS(f)
+    if (!isTRUE(all.equal(s$key, j$key))) stop("stale choice-level result for ", j$model, " (", j$regime, "); run choice_level.R ", j$model)
+    s
+  })
 ch_all  <- filter(ceiling, part == "all responses")
 ch_acc  <- filter(ceiling, part == "correct vs error")
 ch_foil <- filter(ceiling, part == "errors only (which foil)")

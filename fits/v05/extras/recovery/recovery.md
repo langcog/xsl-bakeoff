@@ -1,6 +1,6 @@
 # Model and parameter recovery (v05)
 
-Generated 2026-10-18 23:14:10 by `fits/v05/extras/recovery.R`.
+Generated 2026-10-20 14:53:38 by `fits/v05/extras/recovery.R`.
 
 ## Parameter recovery
 
@@ -22,9 +22,9 @@ r = correlation of true and recovered values across draws (log scale where marke
 |minerva2           |p1    | 20|              20|TRUE     |0.98 |        0.06370|0%       |
 |softmax_rl         |p1    | 20|              20|FALSE    |0.88 |        0.05800|0%       |
 |softmax_rl         |p2    | 20|              20|TRUE     |0.80 |        0.35000|0%       |
-|tilles             |p1    | 20|              20|FALSE    |0.95 |        0.00803|0%       |
-|tilles             |p2    | 20|              20|FALSE    |0.81 |        0.01170|0%       |
-|tilles             |p3    | 20|              20|FALSE    |0.98 |        0.00199|0%       |
+|tilles             |p1    | 20|              20|FALSE    |0.96 |        0.01440|0%       |
+|tilles             |p2    | 20|              20|FALSE    |0.93 |        0.01360|0%       |
+|tilles             |p3    | 20|              20|FALSE    |0.99 |        0.00600|0%       |
 |trueswell2012      |p1    | 20|              20|FALSE    |0.33 |        0.17700|0%       |
 |trueswell2012      |p2    | 20|              20|FALSE    |0.82 |        0.14900|0%       |
 
@@ -69,5 +69,5 @@ Margin: the generator's own objective minus the best other model's (negative = g
 |kachergis_sampling |     -0.1150|kachergis          |
 |minerva2           |     -0.0783|fazly              |
 |softmax_rl         |     -0.0892|minerva2           |
-|tilles             |     -0.2270|fazly              |
+|tilles             |     -0.2200|fazly              |
 |trueswell2012      |     -0.0762|softmax_rl         |

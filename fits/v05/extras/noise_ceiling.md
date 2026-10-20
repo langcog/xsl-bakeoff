@@ -1,6 +1,6 @@
 # Noise ceiling (v05 data)
 
-Generated 2026-10-18 21:46:00 by `fits/v05/extras/noise_ceiling.R`. Models: v05 group fits (`fits/v05/adults/group_fits.Rdata`, 21 models so far).
+Generated 2026-10-20 01:44:18 by `fits/v05/extras/noise_ceiling.R`. Models: v05 group fits (`fits/v05/adults/group_fits.Rdata`, 21 models so far).
 
 ## Accuracy level
 
@@ -16,7 +16,7 @@ Generated 2026-10-18 21:46:00 by `fits/v05/extras/noise_ceiling.R`. Models: v05 
 |kachergis          |0.555     |0.438             |71%                                |0.71 |0.76        |
 |uncfam_elimination |0.555     |0.438             |71%                                |0.71 |0.76        |
 |uncfam_attention   |0.560     |0.443             |71%                                |0.71 |0.76        |
-|tilles             |0.613     |0.495             |67%                                |0.60 |0.64        |
+|tilles             |0.606     |0.489             |68%                                |0.60 |0.65        |
 |novelty            |0.620     |0.502             |67%                                |0.67 |0.72        |
 |uncfam_predictive  |0.663     |0.545             |64%                                |0.58 |0.62        |
 |uncertainty        |0.678     |0.561             |63%                                |0.63 |0.68        |
@@ -42,11 +42,11 @@ Conditions with the most explainable error left (best model's SSE minus the floo
 |filt0E_3L                |filt0E_3L                     |     31|      24|0.177 |Bayesian_decay |0.461    |0.283  |
 |2_x8_39_4x4              |2_x8_39_4x4                   |     30|      18|0.134 |fazlyt         |0.414    |0.279  |
 |1olap3tr_contr           |1 overlap per 3 trials, contr |     31|      18|0.117 |trueswell2012  |0.378    |0.261  |
-|freq369-3x3loCD          |freq369-3x3loCD               |     34|      18|0.110 |tilles         |0.348    |0.238  |
-|205                      |2x4                           |     33|      18|0.107 |tilles         |0.350    |0.244  |
-|213                      |2x4 6/12 4AFC                 |     31|      18|0.133 |tilles         |0.378    |0.245  |
+|freq369-3x3loCD          |freq369-3x3loCD               |     34|      18|0.110 |tilles         |0.346    |0.236  |
+|211                      |1x3 6/18 4AFC                 |     43|      18|0.090 |tilles         |0.245    |0.155  |
+|205                      |2x4                           |     33|      18|0.107 |tilles         |0.306    |0.199  |
+|213                      |2x4 6/12 4AFC                 |     31|      18|0.133 |tilles         |0.344    |0.211  |
 |temp_cont_1olap2tr_contr |1 overlap per 2 trials, contr |     31|      18|0.110 |strength       |0.313    |0.204  |
-|225                      |2x2                           |     19|      18|0.155 |trueswell2012  |0.479    |0.324  |
 
 ## Choice level (log-likelihood per response)
 

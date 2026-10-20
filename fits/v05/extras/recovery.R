@@ -58,6 +58,13 @@ N_SIM_TRUE <- if (QUICK) 5 else 500
 N_SIM_FIT  <- if (QUICK) 5 else 50
 N_SIM_EVAL <- if (QUICK) 5 else 200
 if (QUICK) { REC_MODELS <- c("baseline", "fazly", "trueswell2012"); PARAM_MODELS <- c("fazly", "trueswell2012") }
+# PARAM_ONLY=tilles restricts the param phase to the named models, e.g. to
+# redo one model's draws under fits/v05/tilles/Rlib without touching the rest
+if (nzchar(Sys.getenv("PARAM_ONLY"))) {
+  only <- strsplit(Sys.getenv("PARAM_ONLY"), ",")[[1]]
+  stopifnot(all(only %in% PARAM_MODELS))
+  PARAM_MODELS <- only
+}
 
 ## ---- synthetic data ------------------------------------------------------------
 # scale parameters spanning >= 100x are drawn (and scored) on a log scale;

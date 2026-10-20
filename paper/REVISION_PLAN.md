@@ -169,14 +169,14 @@ The package currently gets one sentence and a footnote.
     multinomial log-likelihood, split into a correct/error part and a which-foil part,
     plus top-foil hits, with a lapse fit per model and part. It runs in two regimes:
     **out-of-fold** (each condition at parameters fit without it; primary) and group.
-    - **The ranking mostly survives the choice level:** Spearman ρ = .88 against CV SSE
-      (after the FU-P refit below).
+    - **The ranking mostly survives the choice level:** Spearman ρ = .87 against CV SSE
+      (after the FU-P and tilles refits below).
       - The top six by out-of-fold choice likelihood are PA, FUs, Nov, FU-P, FU-G and BD.
-      - Nov (7th by CV SSE) moves up to 3rd, FU-P from 9th to 4th, and BD from 12th to
+      - Nov (8th by CV SSE) moves up to 3rd, FU-P from 9th to 4th, and BD from 12th to
         6th. All three gain through their foil predictions.
     - **Foil choice is barely predictable, even from other people.** The leave-one-out
       ceiling is −2.588 nats per error against chance's −2.631.
-    - **What predicts foils is unrelated to accuracy fit** (ρ = −.10).
+    - **What predicts foils is unrelated to accuracy fit** (ρ = −.20).
       - BD and M2 lead, at 54% and 53% of the attainable gain.
       - The co-occurrence baseline (52%), FU-P (50%) and RL (48%) come next.
       - Str gets 40%, PA 38%, Nov 36% and FUs 33%.
@@ -188,10 +188,13 @@ The package currently gets one sentence and a footnote.
       vs all-object tests).
 23. ✅ **Model and parameter recovery** — `fits/v05/extras/recovery.R` →
     `recovery/recovery.{rds,md}` (finished 2026-10-18; 160 parameter-recovery fits and
-    405 model-recovery fits on the final v05 fits).
+    405 model-recovery fits on the final v05 fits). Tilles' 20 parameter-recovery fits
+    and its 85 model-recovery fits were redone 2026-10-20 with the corrected model; the
+    old ones are in `recovery/superseded_tilles_2026-10-19/`.
     - **Model recovery is perfect.** All 45 synthetic datasets (9 generators × 5 reps)
-      are won by their generator. Even the baseline, whose closest rival is RL, wins every
-      time, though only narrowly (a mean margin of .018).
+      are won by their generator, including with the corrected tilles (mean margin .220
+      over PA). Even the baseline, whose closest rival is RL, wins every time, though only
+      narrowly (a mean margin of .018).
 
       Caveat: the generators sit at their group-fit parameters and winners are picked by
       in-sample objective. So this shows the 47-condition design *can* separate the
@@ -201,7 +204,9 @@ The package currently gets one sentence and a footnote.
       - **PbV's recall probability α (r = .33) is essentially not identifiable.**
       - **PA's smoothing constant λ** is recovered closely above about 1e-4. Below that it
         is arbitrary.
-      - **Loose (.74–.83):** BD's τ, δ and α; FUs' λ; RL's β; TF's b; and PbV's ε.
+      - **Loose (.74–.83):** BD's τ, δ and α; FUs' λ; RL's β; and PbV's ε.
+      - TF's b went from .81 to .93 with the corrected model, and TF's x and α₀ are at .96
+        and .99.
       - **Correction (2026-10-18):** no recovered value is on a fitting bound. The
         earlier "PA λ at a bound in 70% of draws" came from a linear-scale tolerance
         (anything below .002 counted for λ ∈ [1e-10, 2]). `recovery.R` now checks on the
@@ -255,11 +260,34 @@ The package currently gets one sentence and a footnote.
     - Group: 2.492 → **.663**.
     - Fold 1: train 2.411 → .677 (test 3.187 → .619).
     - Fold 3: train 2.163 → .709 (test 1.590 → .503).
-    - **FU-P's CV SSE is now .702**, 9th of 19 (between TF .639 and Unc .730), not
+    - **FU-P's CV SSE is now .702**, 9th of 19 (between Nov .638 and Unc .730), not
       last. The R3.1 claim that "0.4.0's cap-at-β made it worse" (item 3) is withdrawn.
     - About a third of single runs (5 of 16) landed in the bad basin (X ≈ 3.6, B = 15).
       So say in Method that FU-P was fit with restarts, and why. The good basin is flat
       (.66–.69 across runs), which suggests that X and B trade off there.
+- **v05 tilles (TF) used the uncorrected model; refit 2026-10-19/20.**
+  - XSLmodels PRs #32–#34 (merged after the v05 pin, master b44b9fa) correct `tilles()`
+    to match Tilles & Fontanari (2013):
+    - eq 7's entropy is normalized by log2(n_o), not ln(n_o);
+    - α is recomputed for absent words;
+    - eqs 1–2 count objects;
+    - eq 5's flux is spread evenly when there's nothing to be proportional to.
+
+    Between e70c10c and b44b9fa the only change is `R/model-tilles.R`, with no data
+    changes, so every other model's v05 fit stands.
+  - ✅ **Refit** (`fits/v05/tilles/refit_tilles.R`, run by `queue_tilles.sh`; library
+    `fits/v05/tilles/Rlib` at b44b9fa). Group fit plus all 5 CV folds, with the best of
+    3 restarts each. All 3 restarts agreed on every fit, so there's no basin problem.
+    - Group SSE .613 → **.606**, at (.124, .129, .979).
+    - CV SSE .639 → **.632**, now **7th of 19** (Nov, .638, drops to 8th).
+    - Merged into `fits/v05/adults/` (backups: `*.pre_tilles_refit.Rdata`). Each
+      file's `meta$tilles_refit` records the mixed provenance.
+  - ✅ Downstream analyses redone with the corrected model: the noise-ceiling table,
+    tilles' choice-level results (11th by out-of-fold choice likelihood; 17% of the
+    attainable foil gain), and its parameter and model recovery (above).
+  - **For Method:** "tilles was fit with XSLmodels b44b9fa, which differs from the pin
+    used for the other models only in `tilles()`." Or re-pin everything to the 0.5.0
+    release, which should reproduce every other model exactly.
   - Every other deterministic model's group fit is at least as good as its best fold's
     parameters (checked). The stochastic models can't be checked this way, because of
     simulation noise.

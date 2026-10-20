@@ -4,6 +4,9 @@
 #
 #   R_LIBS=fits/v05/Rlib Rscript fits/v05/extras/<script>.R
 #
+# (or R_LIBS=fits/v05/tilles/Rlib for tilles' corrected model; XSL_LIB_USED
+# says which library a run used)
+#
 # Defines: specs_v04 (fits/v05/specs.R), load_group_pars(), run_model(),
 # choice_items(), EXCLUDE_CHOICE, lapse(), stamp().
 
@@ -14,9 +17,14 @@ suppressMessages({
   library(here)
 })
 
-if (!startsWith(find.package("XSLmodels"), here("fits/v05/Rlib"))) {
-  stop("XSLmodels must come from fits/v05/Rlib (found ", find.package("XSLmodels"),
-       "). Run with R_LIBS=fits/v05/Rlib.")
+# fits/v05/Rlib is the v05 pin; fits/v05/tilles/Rlib (XSLmodels b44b9fa) adds
+# only the corrected tilles() (PRs #32-#34), so use it for tilles' analyses
+# (identical results for every other model; see fits/v05/tilles/refit_tilles.R)
+XSL_LIB <- c(v05 = here("fits/v05/Rlib"), tilles = here("fits/v05/tilles/Rlib"))
+XSL_LIB_USED <- names(XSL_LIB)[startsWith(find.package("XSLmodels"), XSL_LIB)]
+if (!length(XSL_LIB_USED)) {
+  stop("XSLmodels must come from fits/v05/Rlib or fits/v05/tilles/Rlib (found ", find.package("XSLmodels"),
+       "). Run with R_LIBS=fits/v05/Rlib (or fits/v05/tilles/Rlib for tilles).")
 }
 source(here("fits/v05/specs.R"))  # specs_v04, GROUP_ONLY, RUN_ORDER
 
