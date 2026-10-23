@@ -49,9 +49,12 @@ separately. Since then:
    - Bump to **0.5.0**, then tag and release.
    - Point `.libPaths` and the version check at `fits/v05`.
    - Change the text at :135 to "0.5.0".
-5. ❌ **`load_fits.R`:** collapse it to a single v05 source once v05 CV exists. Remove
-   the adults/children/round-1 fallback logic and the children text. Keep the DRAFT
-   banner only until then. (Don't mix v05 group with v04 CV.)
+5. ✅ **`load_fits.R`** (2026-10-23): now a single v05 source (`fits/v05/adults/`), with
+   no adults/children/round-1 fallbacks; it stops if the v05 files are missing.
+   `FITS_PRELIMINARY` is always FALSE, so the DRAFT banner is off, and `FITS_META`
+   exposes the fits' provenance (e70c10c; tilles at b44b9fa). Both documents now use
+   `fits/v05/Rlib`. Every journal-paper chunk runs (checked with `knitr::knit`; the
+   PDF format still needs switching to APA), and the appendix renders.
 6. ❌ **Generalization section is reversed relative to the data now.**
    - It loads round-1 `generalization_with_package.RData`, says Suanda is "in the
      fitting set", and says Koehne is "no longer reported".

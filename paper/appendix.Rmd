@@ -9,12 +9,12 @@ require(gplots)
 require(tidyverse)
 require(RColorBrewer)
 knitr::opts_chunk$set(echo=F, message=F, warning=F)
-# XSLmodels pinned to the commit the fits used (fits/v04/XSLMODELS_COMMIT)
-.libPaths(c(here("fits/v04/Rlib"), .libPaths()))
+# XSLmodels pinned to the commit the v05 fits used (fits/v05/XSLMODELS_COMMIT)
+.libPaths(c(here("fits/v05/Rlib"), .libPaths()))
 require(XSLmodels)
 stopifnot(as.character(packageVersion("XSLmodels")) == "0.4.0")
-# gfd, group_fits, cv_group_fits, cvg, FITS_PRELIMINARY -- shared with
-# journal-paper.Rmd (round-2 refit, else round-1 fallback flagged PRELIMINARY)
+# gfd, group_fits, cv_group_fits, cvg, FITS_META -- shared with
+# journal-paper.Rmd (the v05 refit, fits/v05/adults/)
 source(here("paper/load_fits.R"))
 
 # Model metadata (name -> abbreviation), kept in sync with the same table in
@@ -78,9 +78,8 @@ print(tab1, type="latex", comment = F, include.rownames = F, table.placement = "
 # Appendix B: Clustering experiments and models by misfit
 
 ```{r load-cv-appendix}
-# CV fits come from paper/load_fits.R (sourced in the setup chunk): the
-# round-2 refit (56 conditions, XSLmodels 0.4.0) once fits/v04/cv_fits.Rdata
-# exists, else round-1's 53-condition fits, flagged PRELIMINARY.
+# CV fits come from paper/load_fits.R (sourced in the setup chunk): the v05
+# refit's 5-fold CV over the 47 conditions.
 cvg <- cvg %>% mutate(Model = relabel(Model))
 n_models_appendix <- length(unique(cvg$Model))
 

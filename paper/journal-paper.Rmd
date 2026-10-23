@@ -47,13 +47,15 @@ library(ggplot2)
 library(xtable)
 library(kableExtra)
 library(here)
-# XSLmodels pinned to the same commit the fits used (fits/v04/XSLMODELS_COMMIT),
-# installed privately by fits/v04/install_pinned_xslmodels.sh
-.libPaths(c(here("fits/v04/Rlib"), .libPaths()))
+# XSLmodels pinned to the commit the v05 fits used (fits/v05/XSLMODELS_COMMIT),
+# installed privately by fits/v05/install_pinned_xslmodels.sh. (tilles was
+# refit at a later commit, fits/v05/tilles/; the documents only read its stored
+# fits, so this library is used just for datasets and model metadata.)
+.libPaths(c(here("fits/v05/Rlib"), .libPaths()))
 library(XSLmodels)
 stopifnot(as.character(packageVersion("XSLmodels")) == "0.4.0")
-# group + CV fits (gfd, group_fits, cv_group_fits, cvg, FITS_PRELIMINARY):
-# round-2 refit in fits/v04/, else round-1 fallback flagged PRELIMINARY
+# group + CV fits (gfd, group_fits, cv_group_fits, cvg, FITS_META): the v05
+# refit in fits/v05/adults/
 source(here("paper/load_fits.R"))
 ```
 
@@ -148,7 +150,7 @@ Finally, we gave every variant of the FU model the same bounds on the parameters
 # Canonical model metadata: package name -> paper abbreviation, model
 # class, and number of free parameters. Single source of truth for every
 # downstream table/figure so nothing hard-codes a fixed-size roster.
-# Must match the fitted roster in fits/v04/specs.R (round 2, XSLmodels 0.4.0).
+# Must match the fitted roster in fits/v05/specs.R (v05 refit).
 model_meta <- tibble::tribble(
   ~Model,               ~abbr,   ~class,                 ~P,
   "kachergis",          "FU",    "associative",          3,
