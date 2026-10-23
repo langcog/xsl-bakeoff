@@ -55,7 +55,12 @@ separately. Since then:
    exposes the fits' provenance (e70c10c; tilles at b44b9fa). Both documents now use
    `fits/v05/Rlib`. Every journal-paper chunk runs (checked with `knitr::knit`; the
    PDF format still needs switching to APA), and the appendix renders.
-6. ❌ **Generalization section is reversed relative to the data now.**
+6. ◐ **Generalization section is reversed relative to the data now.** *Computation done
+   2026-10-23:* `fits/v05/generalize.R` (run both libraries with `run_generalize.sh`)
+   writes `fits/v05/generalization/generalization.Rdata`, covering everything listed
+   below. Vlach & DeBrock is scored as 2AFC averaged over every possible foil, since the
+   paper doesn't report the foil assignment. Medina is scored as trial-by-trial guesses
+   among each trial's objects. The paper section itself still needs rebuilding on it.
    - It loads round-1 `generalization_with_package.RData`, says Suanda is "in the
      fitting set", and says Koehne is "no longer reported".
    - Rebuild it on a v05 `generalize.R` covering:
