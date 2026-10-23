@@ -12,6 +12,625 @@ _2026-09-06 — decisions locked (see §3):_
 
 ---
 
+## R4. Round 4 (2026-10-14): review of the draft against v05 — current plan
+
+**Supersedes R3 wherever they conflict.** The draft (`journal-paper.Rmd`) still describes
+the 0.4.0 / v04 world: 56 conditions, Suanda and Koehne in the fit set, children fit
+separately. Since then:
+
+- **XSLmodels master (`2999e8b`, PRs #29/#30):** `xsl_datasets` has **47 conditions,
+  924 test items, 1,609 participants**, all adult, all with a `response_matrix`.
+  - The filtering conditions were re-scored (AtoA + AtoB, 24 items each).
+  - The freqCD `n_subj` and pooling errors are fixed.
+  - The `orig_3x3`/`orig_4x4` duplicates are dropped.
+  - Suanda 2014 and Koehne 2013 are now holdouts (`suanda2014`, `koehne2013`).
+- **The children fit set is dropped** (George, 2026-10-14). Children are scored only
+  as generalization: the `benitez2020` children and `suanda2014`.
+- **The v05 refit** (`fits/v05/adults/`, pinned to `2999e8b`) is running, group phase
+  then 5-fold CV. Until it's done, every number in the paper is stale.
+
+### R4.1 Blockers: the text describes data that's no longer being fit
+
+1. ❌ **Data section counts and provenance.**
+   - The inline values are computed, but the prose isn't: :357-358 still puts
+     Suanda/Koehne in the fit set.
+   - Say that the original 44 contained two duplicates, so the set is 42 + 5 = 47.
+   - Re-verify the "13 / 12 / 9 conditions from…" provenance sentence.
+2. ❌ **"What changed since CogSci" must include the data fixes**, not only the model
+   fixes (:136-140). These are the filtering re-scoring, the freqCD `n_subj`
+   mis-assignment (it changed the participant weighting), the pooled priming blocks
+   (accuracies off by up to .51), and the 6L exclusions. The published CogSci numbers
+   carry these errors too.
+3. ❌ **"Items" ≠ "pairs."** :351 says "accuracies from N word-object pairs", but
+   filtering words are tested twice. Add one sentence on how AtoB items are scored
+   (`correct` object per test trial).
+4. ❌ **Pin the paper to a release.** The `2999e8b` build still reports `Version: 0.4.0`,
+   so `stopifnot(... == "0.4.0")` (:54) passes vacuously.
+   - Bump to **0.5.0**, then tag and release.
+   - Point `.libPaths` and the version check at `fits/v05`.
+   - Change the text at :135 to "0.5.0".
+5. ✅ **`load_fits.R`** (2026-10-23): now a single v05 source (`fits/v05/adults/`), with
+   no adults/children/round-1 fallbacks; it stops if the v05 files are missing.
+   `FITS_PRELIMINARY` is always FALSE, so the DRAFT banner is off, and `FITS_META`
+   exposes the fits' provenance (e70c10c; tilles at b44b9fa). Both documents now use
+   `fits/v05/Rlib`. Every journal-paper chunk runs (checked with `knitr::knit`; the
+   PDF format still needs switching to APA), and the appendix renders.
+6. ◐ **Generalization section is reversed relative to the data now.** *Computation done
+   2026-10-23:* `fits/v05/generalize.R` (run both libraries with `run_generalize.sh`)
+   writes `fits/v05/generalization/generalization.Rdata`, covering everything listed
+   below. Vlach & DeBrock is scored as 2AFC averaged over every possible foil, since the
+   paper doesn't report the foil assignment. Medina is scored as trial-by-trial guesses
+   among each trial's objects. The paper section itself still needs rebuilding on it.
+   - It loads round-1 `generalization_with_package.RData`, says Suanda is "in the
+     fitting set", and says Koehne is "no longer reported".
+   - Rebuild it on a v05 `generalize.R` covering:
+     - `benitez2020` children and adults (item-level);
+     - `kachergis_initial_accuracy`;
+     - `suanda2014` and `koehne2013` (condition means);
+     - `vlach_debrock2017` (mean);
+     - Medina 2011 and Smith & Yu 2008, rerun at v05 parameters.
+   - Lead with the children result: in v04, no model tracks children's item-level
+     pattern (every child r ≈ 0).
+   - Table 3's "Held-out mean" currently averages only two columns.
+7. ❌ **Corpus section is round-1 based and incomplete.**
+   - `corpus_tab` lacks FU-G, FU-E, M2, Nov, Unc and Str.
+   - `rank_compare` uses round-1 group SSE (so FUs is "lab rank 1").
+   - The inputs predate the fixed 0.4.0 rerun.
+   - The Intro (:103) promises runs "at their laboratory-fitted parameters", but the
+     section uses registry defaults. **Recommended:** run at the v05 group-fit
+     parameters, which is the real transfer test; otherwise reword the Intro.
+8. ❌ **Hard-coded stale numbers in the Discussion** (:724-746). Compute all of these
+   inline:
+   - "11 models";
+   - r = .65 / .87 / .67 / .99 / .74 / .84 / .92;
+   - M_hum = 0.48;
+   - "condition best fit by six models";
+   - "five models worst on Kachergis2012gi";
+   - "FUs — the single best-fitting lab model" (:698). PA was first under the
+     weighted objective in v04.
+
+### R4.2 Presenting the package (the biggest gap)
+
+The package currently gets one sentence and a footnote.
+
+9. ❌ **New section (or Box): "The XSLmodels package."** Cover:
+   - the object model (`xslData` / `xslMod` / `xslControl` / `xslFit`);
+   - `show_models()` and the registry;
+   - `xsl_run()` → `mafc_test()` / `get_perf()`;
+   - `get_group_model_fit()` / `get_crossvalidated_model_fit()`;
+   - `xsl_holdout_datasets`;
+   - corpus scoring (`get_fscore` / `get_roc_max`);
+   - how to add a model or a dataset.
+10. ❌ **A short code listing (~10 lines):** fit one model to `xsl_datasets`, then
+    score it on a holdout.
+11. ❌ **What the package offers beyond this paper:**
+    - `response_matrix` for every condition;
+    - `uncfam_general()` nesting the FU family, with bit-exact reproduction tests;
+    - TODAM and REM;
+    - `predict_referent()`;
+    - the extra standalone datasets (`gangwani2011_category`,
+      `kachergis2012_highlighting`).
+12. ❌ **Reproducibility statement:** pinned commit, seeds, n_sim, and compute cost
+    (CPU-days per model). Archive a release DOI (Zenodo) instead of the anonymized OSF
+    `view_only` link, which is also inconsistent with the "REDACTED" text at :360.
+
+### R4.3 Section-by-section edits
+
+13. ❌ **Abstract:** full rewrite.
+    - Cover: 19 models + baseline, 47 conditions, CV, holdouts incl. children,
+      corpora, the package.
+    - Headlines: a top tier that can't be separated; error-driven models collapsing to
+      counting; FU extensions not helping out of sample; children unexplained.
+    - Drop "two best-fitting models".
+14. ❌ **Intro:**
+    - Expand the prior-comparison review: Yu & Smith 2012 (currently only in a
+      comment), Smith, Smith & Blythe 2011, Yurovsky & Frank 2015, Stevens et al.
+      2017, Khoe et al. 2019, Roembke & McMurray 2016. Verify the bib entries.
+    - State model mimicry / identifiability as a goal.
+    - Fix "10–20 pairs" (the data have 12–24).
+    - Note that no logical (Siskind-style) model is tested.
+15. ❌ **Procedure:**
+    - :121 calls the correlation the primary outcome, which contradicts Table 1
+      (n-weighted SSE, D1).
+    - Add DEoptim settings, bounds, and how the folds were built.
+    - Justify n-weighted SSE over a likelihood.
+16. ❌ **Models:**
+    - Summary table (ToDo :182): class × k × mechanism × choice rule.
+    - Equations for every model in the supplement. BD is "previously unpublished" and
+      has none.
+    - A notation note (λ, α, β mean different things across models).
+    - Resolve KF's k = 3 vs 2 (ToDo :305).
+    - One sentence each on the bound-railing parameters: PA's β = 20000, Unc's χ at
+      its upper bound, TF's α₀ = 1, FU-E's ε = 0. Re-check all of these on v05.
+17. ❌ **Results:**
+    - Table 2 says "group-optimized parameters" (:499), but the code correlates CV
+      predictions (`cvg`, :469). Pick one.
+    - At 19×19 the table is too big: use a clustered heatmap in the main text and put
+      the full table in the supplement.
+    - Figure 1's facet levels are hard-coded to the original 12 models (:538-556), so
+      the new models fall to NA. Drive it from `model_meta`.
+    - "BAM" (:696) is never defined; use FU-P.
+18. ❌ **Discussion:** rebuild around the R3.1 headlines (re-checked on v05), plus the
+    corpus and children results, plus a limitations paragraph:
+    - SSE on accuracy ignores which foil people pick;
+    - the sample is homogeneous;
+    - the n_sim = 200 Monte Carlo noise;
+    - parameters at their bounds.
+
+### R4.4 Additions that would strengthen it
+
+19. ❌ **Top-tier comparison (D2):** a bootstrap over conditions, or a paired test over
+    the 47 out-of-fold condition SSEs.
+20. ✅ **Noise ceiling** — `fits/v05/extras/noise_ceiling.R` → `noise_ceiling.{rds,md}`
+    (rerun 2026-10-18 on the final v05 fits, pinned to e70c10c). The noise is analytic
+    (binomial: `a(1-a)/(n-1)` per item), so it needs no raw data.
+    - **SSE floor .117** on the fitted objective. Best group fit: PA .473, which leaves
+      .356 of excess error; the baseline is at 1.628.
+    - Reliability .865, so the **item-level r ceiling is .93**. The best models reach .72,
+      i.e. .77 of the ceiling.
+    - A choice-level ceiling: leave-one-participant-out, plus the in-sample upper bound.
+    - The most explainable error left is in freq369-3x3hiCD, freq369_39mx, 212 and 301.
+21. ❌ **Leave-one-experiment-out CV** alongside the random 5-fold. Conditions from the
+    same paper share structure, so it's a stronger generalization test.
+22. ✅ **Choice-level evaluation** — `fits/v05/extras/choice_level.R` →
+    `choice_level.{rds,md}` (2026-10-18; final v05 fits, all 924 items). It scores the
+    multinomial log-likelihood, split into a correct/error part and a which-foil part,
+    plus top-foil hits, with a lapse fit per model and part. It runs in two regimes:
+    **out-of-fold** (each condition at parameters fit without it; primary) and group.
+    - **The ranking mostly survives the choice level:** Spearman ρ = .87 against CV SSE
+      (after the FU-P and tilles refits below).
+      - The top six by out-of-fold choice likelihood are PA, FUs, Nov, FU-P, FU-G and BD.
+      - Nov (8th by CV SSE) moves up to 3rd, FU-P from 9th to 4th, and BD from 12th to
+        6th. All three gain through their foil predictions.
+    - **Foil choice is barely predictable, even from other people.** The leave-one-out
+      ceiling is −2.588 nats per error against chance's −2.631.
+    - **What predicts foils is unrelated to accuracy fit** (ρ = −.20).
+      - BD and M2 lead, at 54% and 53% of the attainable gain.
+      - The co-occurrence baseline (52%), FU-P (50%) and RL (48%) come next.
+      - Str gets 40%, PA 38%, Nov 36% and FUs 33%.
+      - FU and its A/E/G variants, TF and the hypothesis-testing models get 17–23%.
+
+      So people's wrong answers lean toward co-occurring objects about as much as a
+      counting model predicts, and the FU family's attention bias doesn't capture it.
+    - Still to do: break the foil results down by condition type (filtering AtoB; 4AFC
+      vs all-object tests).
+23. ✅ **Model and parameter recovery** — `fits/v05/extras/recovery.R` →
+    `recovery/recovery.{rds,md}` (finished 2026-10-18; 160 parameter-recovery fits and
+    405 model-recovery fits on the final v05 fits). Tilles' 20 parameter-recovery fits
+    and its 85 model-recovery fits were redone 2026-10-20 with the corrected model; the
+    old ones are in `recovery/superseded_tilles_2026-10-19/`.
+    - **Model recovery is perfect.** All 45 synthetic datasets (9 generators × 5 reps)
+      are won by their generator, including with the corrected tilles (mean margin .220
+      over PA). Even the baseline, whose closest rival is RL, wins every time, though only
+      narrowly (a mean margin of .018).
+
+      Caveat: the generators sit at their group-fit parameters and winners are picked by
+      in-sample objective. So this shows the 47-condition design *can* separate the
+      mechanisms. It doesn't show that the real data sit where they're separable.
+    - **Parameter recovery is mostly good:** 18 of 19 parameters have r ≥ .70, and 9 have
+      r ≥ .95.
+      - **PbV's recall probability α (r = .33) is essentially not identifiable.**
+      - **PA's smoothing constant λ** is recovered closely above about 1e-4. Below that it
+        is arbitrary.
+      - **Loose (.74–.83):** BD's τ, δ and α; FUs' λ; RL's β; and PbV's ε.
+      - TF's b went from .81 to .93 with the corrected model, and TF's x and α₀ are at .96
+        and .99.
+      - **Correction (2026-10-18):** no recovered value is on a fitting bound. The
+        earlier "PA λ at a bound in 70% of draws" came from a linear-scale tolerance
+        (anything below .002 counted for λ ∈ [1e-10, 2]). `recovery.R` now checks on the
+        parameter's own scale.
+    - **Written up as Appendix C** (`paper/appendix_recovery.Rmd`, a child of
+      `appendix.Rmd`). It has one table and three figures (`paper/recovery_figs.R`;
+      standalone PNG/PDF copies in `paper/figs/recovery/`). Every number in its text is
+      computed from `recovery.rds`.
+24. 📝 **The `uncfam_general` nested comparison (D3)** — the design is in
+    `fits/v05/extras/nested_comparison_design.md`. A factorial over
+    familiarity × uncertainty × elimination × attention gives 36 cells, each with group
+    and 5-fold CV fits on the Table 1 objective and folds. Then knock-in/knock-out factor
+    effects with a paired condition bootstrap, then sampling and the short-term trace on
+    the top cells. It needs:
+    - a new pin with `uncfam_general` (990ef49 or 0.5.0; `data/` is unchanged from
+      2999e8b);
+    - a fix for `uncfam_general`'s registry bounds (`B ∈ [.8, 1]` excludes FU's
+      optimum).
+
+    `fits/general_percond`, `fits/short_trace` and `fits/filtering_refit` ran on pre-v05
+    data (56 conditions); they're superseded or need rerunning.
+
+**Package and manuscript bugs found while building 20–24 (2026-10-14):**
+- **XSLmodels: Bayesian decay's choice exponent.** `ch_dec` is applied only on the 31
+  conditions without an explicit `test` (`get_perf(mat, d = ch_dec)`). `mafc_test()` →
+  `predict_referent()` ignores it on the 16 4AFC/filtering conditions
+  (`fitting.R:66`). The v04 and v05 BD fits carry this. It needs a package fix, then a BD
+  refit (group + CV, cheap).
+- **XSLmodels: test specs.**
+  - Condition `214` (3x4 6/8 4AFC): 175 of 648 human responses are to objects not in the
+    listed alternatives, on every item, so the listed foils look wrong.
+  - `211` item 17: the alternatives list object 17 twice and omit the foil people chose
+    (2).
+
+  Both distort accuracy predictions for those items. Fixed in XSLmodels PR #31
+  (e70c10c): 214's participants actually saw 213's test displays, and 211 item 17's foil
+  is 2. BD's `ch_dec` is fixed in the same PR. The final v05 fits use e70c10c.
+- **v05 FU-P (`uncfam_predictive`) group fit failed (found 2026-10-18).**
+  - The group fit ended at X = 3.55, B = 15, C = .69, with SSE 2.492.
+  - Fold 2's parameters (X = .070, B = .31, C = .999) score **.667 on all 47
+    conditions**. Its surface has two basins, and the group fit and CV folds 1 and 3
+    ended up in the bad one.
+  - So FU-P's group SSE (2.492) and CV SSE (1.462) are both wrong. It belongs around
+    10th, near Unc, not last, and the "FU-P is worst" headline (R3.1, item 3) likely has
+    the same cause in v04.
+  - ✅ **Refit 2026-10-18** (`fits/v05/refit_fup.R`, log in
+    `fits/v05/adults/fup_refit.log`; the originals are backed up as
+    `*.pre_fup_refit.Rdata`). Each fit took the best of 5 random-start DEoptim runs
+    (refit.R settings); the group fit also had one run seeded with the fold optima. The
+    CV folds were not seeded, which would leak held-out conditions.
+    - Group: 2.492 → **.663**.
+    - Fold 1: train 2.411 → .677 (test 3.187 → .619).
+    - Fold 3: train 2.163 → .709 (test 1.590 → .503).
+    - **FU-P's CV SSE is now .702**, 9th of 19 (between Nov .638 and Unc .730), not
+      last. The R3.1 claim that "0.4.0's cap-at-β made it worse" (item 3) is withdrawn.
+    - About a third of single runs (5 of 16) landed in the bad basin (X ≈ 3.6, B = 15).
+      So say in Method that FU-P was fit with restarts, and why. The good basin is flat
+      (.66–.69 across runs), which suggests that X and B trade off there.
+- **v05 tilles (TF) used the uncorrected model; refit 2026-10-19/20.**
+  - XSLmodels PRs #32–#34 (merged after the v05 pin, master b44b9fa) correct `tilles()`
+    to match Tilles & Fontanari (2013):
+    - eq 7's entropy is normalized by log2(n_o), not ln(n_o);
+    - α is recomputed for absent words;
+    - eqs 1–2 count objects;
+    - eq 5's flux is spread evenly when there's nothing to be proportional to.
+
+    Between e70c10c and b44b9fa the only change is `R/model-tilles.R`, with no data
+    changes, so every other model's v05 fit stands.
+  - ✅ **Refit** (`fits/v05/tilles/refit_tilles.R`, run by `queue_tilles.sh`; library
+    `fits/v05/tilles/Rlib` at b44b9fa). Group fit plus all 5 CV folds, with the best of
+    3 restarts each. All 3 restarts agreed on every fit, so there's no basin problem.
+    - Group SSE .613 → **.606**, at (.124, .129, .979).
+    - CV SSE .639 → **.632**, now **7th of 19** (Nov, .638, drops to 8th).
+    - Merged into `fits/v05/adults/` (backups: `*.pre_tilles_refit.Rdata`). Each
+      file's `meta$tilles_refit` records the mixed provenance.
+  - ✅ Downstream analyses redone with the corrected model: the noise-ceiling table,
+    tilles' choice-level results (11th by out-of-fold choice likelihood; 17% of the
+    attainable foil gain), and its parameter and model recovery (above).
+  - **For Method:** "tilles was fit with XSLmodels b44b9fa, which differs from the pin
+    used for the other models only in `tilles()`." Or re-pin everything to the 0.5.0
+    release, which should reproduce every other model exactly.
+  - Every other deterministic model's group fit is at least as good as its best fold's
+    parameters (checked). The stochastic models can't be checked this way, because of
+    simulation noise.
+- **Manuscript, :225:** the novelty model does *not* lack the strength bias.
+  `uncfam(variant = "novelty")` keeps the familiarity term; only the uncertainty-only
+  variant drops it.
+
+### R4.5 Housekeeping
+
+25. ❌ **Template (D6):** replace `cogsci2016::cogsci_paper`, `\cogscifinalcopy`, the
+    "152 words" comment, the affiliations block and the `fig.env` hacks.
+26. ❌ **Bib and back matter:**
+    - Cite CogSci 2024 (ToDo :136).
+    - Un-comment the Chen Yu acknowledgement.
+    - Add author contributions, data/code availability, and an AI-assistance
+      disclosure if the venue requires one.
+27. ❌ **Typos:**
+    - "worth nothing" → "worth noting" (:734)
+    - "invite other to" → "others" (:754)
+    - "models of … models" (:723)
+    - "(see Table 1)" → Table 2 (:739)
+28. ❌ **Appendix:** drop the 53/56-condition comments, the Koehne/Suanda NA handling
+    (both are out of the fit set now) and the stale ToDos. Repoint it at `fits/v05`.
+
+### R4.6 Order of work
+
+- **Now, not blocked on v05:** 2–4, 9–12, 14–16, 25–28.
+- **After the v05 group phase:** 6 (generalization), 7 (corpus transfer at lab
+  parameters), 24 (if D3 = include).
+- **After v05 CV:** 5, then 1, 8, 13, 17–23.
+- **Final:** knit, then check every inline number against a v05 `summary.md`.
+
+---
+
+## R3. Round 3 (2026-10-07): writing up the 0.4.0 results
+
+> **⚠ Partly superseded by R4 (2026-10-14).** Everything here describes the v04 /
+> 56-condition fits:
+> - XSLmodels has since moved to 47 conditions, with Suanda/Koehne as holdouts.
+> - The children fit set (R3.1b) is dropped.
+> - The R3.1 numbers are v04 and must be re-checked on v05.
+>
+> R3.1's headlines stay as hypotheses to confirm. The open decisions D1–D6 still stand,
+> but D4 is replaced by R4.1 item 6. Where R3.3 conflicts with R4, follow R4.
+
+**Supersedes the status tables in §0 and below.** XSLmodels 0.4.0 is released; the
+round-2 refit is complete: 19 models + baseline, 56 conditions, group fit + 5-fold CV,
+plus holdout generalization (`fits/v04/`, summary in `fits/v04/summary.md`). The fit
+build (`d0e2230`) has the same model code as the v0.4.0 release (only `xsl_fit()`
+differs, which the refit doesn't use), so the paper can say "XSLmodels 0.4.0".
+
+### R3.1 What the results say
+
+CV test SSE by round. Item-level SSE summed over items, as the paper's Table 1 reports
+it; ranks are within each round. Published = CogSci research code, 44 conditions /
+726 items. Rounds 1–2 = the package, 53 / 818 and 56 / 872 items. SSE magnitudes
+aren't comparable across rounds (different item counts); ranks are.
+
+| model | published rank | round 1 rank (0.3.0) | **round 2 rank (0.4.0)** | round 2 CV SSE | round 2 r |
+|---|---|---|---|---|---|
+| FUs | 1 | 1 | **1** | 21.97 | .72 |
+| PA | 2 | 2 | **2** | 23.43 | .68 |
+| BD | 6 | 3 | **3** | 25.33 | .64 |
+| RL (new) | – | 4 | **4** | 26.66 | .63 |
+| M2 (new, 1 param) | – | – | **5** | 27.35 | .61 |
+| FU-E (new) | – | – | **6** | 27.55 | .66 |
+| FU | 3 | 5 | **7** | 27.84 | .66 |
+| FU-G (new) | – | – | **8** | 28.24 | .65 |
+| FU-A | – | 6 | **9** | 28.45 | .66 |
+| Nov | 4 | 7 | **10** | 29.11 | .62 |
+| PbV | 11 | 9 | **11** | 32.79 | .53 |
+| Unc | 5 | 8 | **12** | 33.26 | .58 |
+| TF (new) | – | – | **13** | 34.05 | .54 |
+| GnT | 7 | 12 | **14** | 35.45 | .51 |
+| KF | – | 11 | **15** | 35.47 | .61 |
+| R-W | 8 | 10 | **16** | 35.50 | .61 |
+| Str | 9 | 15 | **17** | 48.80 | .41 |
+| Pur | 10 | 14 | **18** | 50.09 | .53 |
+| FU-P | – | 13 | **19** | 51.11 | .52 |
+| baseline (group fit) | – | – | – | 35.47 | .61 |
+
+Headlines for the rewrite:
+
+1. **The top two are stable across all three versions** (FUs and PA). Which one is
+   first depends on the metric (see D1): FUs by summed item SSE; PA by the fitted
+   objective (participant-weighted condition SSE, `summary.md`: PA .358, FUs .374,
+   BD .379). The CV fold ranges overlap heavily, so these three are not clearly
+   separable.
+2. **BD climbs from 6th to 3rd** in both package rounds. This comes from the
+   choice-rule correction, not the new data.
+3. **FU falls from 3rd to 7th** (update_known fix plus new competitors). Its variants
+   cluster around it, and none of the extensions helps out of sample:
+   - **FU-E's elimination weight goes to ε = 0** (pinned at its lower bound), so it
+     is FU exactly.
+   - **FU-G** (γ ≈ 0.5, diminishing returns on familiarity) fits better in-sample
+     (group SSE 23.8 vs 25.0) but not in CV (28.2 vs 27.8).
+   - **FU-A** ≈ FU once the bounds are harmonized.
+   - **FU-P** is worst: 0.4.0's cap-at-β made it worse, and its λ is pinned at the
+     upper bound. This was checked: round-1 parameters score worse under 0.4.0, so
+     it isn't an optimizer failure.
+4. **New entrants place well:** RL is 4th, and MINERVA 2 is 5th with a *single* free
+   parameter.
+5. **The error-driven models collapse onto co-occurrence counting.** R-W and KF have
+   their best fits at parameter bounds equivalent to counting; their group objective
+   (.5005) is within .001 of the baseline (.5011), and their CV SSEs match the
+   baseline to the second decimal. This explains round 1's R-W ≈ baseline (r ≈ 1)
+   and is a substantive result.
+6. **Hypothesis testing ≈ baseline at best.** Under the fitted (participant-weighted)
+   metric, PbV ties the baseline (CV .503 vs .501) and GnT is worse (.536). PbV only
+   looked better under the unweighted item metric. Pursuit, Strength and FU-P are at the
+   bottom.
+   - **Winner's curse for stochastic models:** DEoptim's reported group optimum is
+     biased low by .007–.033, because it's the minimum over thousands of noisy
+     evaluations. Table 1 uses a fresh simulation at the best parameters instead.
+     `fits/v04/summarize.R` / `summary.md`'s `group_sse` still use the biased optimum.
+7. **Generalization to the holdouts** (`benitez2020` children and adults,
+   `kachergis_initial_accuracy`):
+   - **Adults:** the counting cluster (baseline, R-W, KF) and PA are best (MSE .028).
+   - **Children:** BD is best (MSE .022).
+   - **No model tracks children's item-level pattern:** every child r is near 0. That
+     belongs in the abstract and Discussion.
+8. **Fitted parameters on a bound:**
+   - PA's β = 20000, the known issue (needs one sentence).
+   - Unc's χ = 5, at its upper bound.
+   - TF's α₀ = 1, which switches off its uncertainty-dependent efficiency.
+   - KF's σ²_obs is on a plateau (already documented).
+   - TF also accounts for nearly all of the ~500 logged objective errors: numerical
+     failures at extreme parameter values.
+
+### R3.1b ~~Children are fit separately from adults (decided 2026-10-07)~~
+
+> **Superseded (2026-10-14):** the children fit set is dropped. `xsl_datasets` is now
+> 47 adult conditions, and Suanda moved to the holdouts. Children are scored only by
+> generalization (`benitez2020` kids, `suanda2014`). See R4.
+
+The 56-condition fits **include children**: Suanda et al. (2014), 3 conditions,
+252 children aged 5–7, ~11% of the participant weight in the objective. These are
+the only child conditions in `xsl_datasets`. The 9 conditions without an age in
+XSLmodels' metadata are all adults: Kachergis & Yu (2013), `orig_4x4`, and
+Koehne et al. (2013), confirmed by George. Plan:
+
+- **Adult fits = the main analysis:** 53 conditions, group + 5-fold CV, all 19
+  models. `FIT_SET=adults` → `fits/v04/adults/`. Adult holdouts: `benitez2020`
+  adults and `kachergis_initial_accuracy`.
+- **Child fits:**
+  - Suanda (3, condition-level accuracy) + `benitez2020` children (4, item-level):
+    group fit + leave-one-condition-out CV. `FIT_SET=children` →
+    `fits/v04/children/`.
+  - Score adult-fit parameters on the child data (adult→child transfer).
+  - Compare child vs. adult parameters (developmental differences as parameter
+    differences).
+  - Child holdouts: `vlach_debrock2017` (mean only) and Smith & Yu infants.
+- `refit.R` / `queue_refit.sh` support both sets (smoke-tested on the real
+  parallel path). `paper/load_fits.R` switches to the adult fits as soon as they
+  exist; until then Table 1 shows the 56-condition fits under the DRAFT banner.
+- **Not yet launched:** the machine is running the per-condition `uncfam_general`
+  fit. The adult run is ~3 days at 10 workers, as before; the child run is much
+  smaller.
+- **Knock-on edits:**
+  - Data section: adult set, plus a child-data paragraph; the current text still
+    describes 56 conditions with Suanda in the fit set.
+  - Generalization section: `benitez2020` children move from holdout to the child
+    fit set.
+  - Abstract.
+  - Appendix: Suanda's flat-accuracy note.
+
+### R3.2 Decisions needed
+
+- **D1 — primary fit metric.** Recommend the fitted objective (participant-weighted
+  condition SSE) as primary, since that's what was optimized, with item-level r
+  alongside and summed item SSE in the supplement. Say explicitly that PA and FUs
+  swap places between the two metrics.
+- **D2 — can the top models be told apart?** Recommend a paired comparison over CV
+  folds, or a bootstrap over conditions, for the top ~5. That would turn "PA, FUs,
+  BD" into a defensible "statistically indistinguishable top tier" (or not).
+  Analysis only, no refitting.
+- **D3 — `uncfam_general` (PR #27).** The per-condition fit is running now
+  (`fits/general_percond/`). Include it as a new section ("which BAM extensions does
+  each design prefer?"), put it in the supplement, or save it for a follow-up paper?
+  Decide once the results are in.
+- **D4 — generalization set.** _(Superseded by R4.1 item 6: the holdouts now also
+  include `suanda2014` and `koehne2013`.)_ Recommend the holdout registry (`benitez2020`,
+  `kachergis_initial_accuracy`; `vlach_debrock2017` as a mean-only check) **plus**
+  Medina 2011 and Smith & Yu 2008 rerun with round-2 parameters. Medina and Smith &
+  Yu are currently still round-1 numbers.
+- **D5 — the design-search work** (`fits/discriminative_design_search*`). Leave it
+  out, mention it as future work, or make it a short supplementary section? It's
+  round-1-based and its best design extrapolates far beyond the data (see its
+  report).
+- **D6 — target journal** (template; `cogsci2016` isn't installed) and the citation
+  for the CogSci 2024 conference version.
+
+### R3.3 Work items (in order)
+
+> **Superseded by R4** for items 3–11: they're re-scoped there against v05, and R4.6
+> gives the order. Items 1–2 were done on v04. Table 1's code carries over, but its
+> numbers need v05.
+
+1. ✅ **Housekeeping** (2026-10-07: results committed in `71b7243`; quarantine removed).
+   Original item text:
+   - Commit the round-2 outputs and scripts: `fits/v04/{group_fits,cv_fits,generalization}.Rdata`,
+     `generalize.R`, `summarize.R`, `summary.{md,rds}`, and the `force(data)` fix in
+     `refit.R`.
+   - Delete `fits/v04/failed_2026-10-03/`.
+   - Decide what happens to `fits/generalization_test.R` (superseded by
+     `generalize.R`).
+2. ✅ **Table 1** (2026-10-07; participant-weighted objective per D1, computed text) — rebuild for 20 rows: model, class, k, CV (mean and fold range),
+   group, r, using the D1 metric. Drop the hard-coded abbreviation/ordering code.
+3. **Table 2** — the model-by-model prediction correlation table at 20×20 is too big
+   for a page. Replace it with a clustered heatmap figure, or a table restricted to
+   the mechanism representatives; full matrix in the supplement.
+4. **Figure 1** — 20 panels; the facet order and labels are hard-coded for the
+   original 12, so the new models currently fall out of the figure.
+5. **"What changed" supplement** — the R3.1 table, plus the correction notes already
+   in Method. This also serves as material for the response letter.
+6. **Generalization** (D4) — rewrite the section around `fits/v04/generalization.Rdata`
+   plus a round-2 Medina / Smith & Yu run, and lead with the children result.
+7. **Corpus section** — the paper's copies in `fits/corpus/` predate the fixed 0.4.0
+   rerun (md5s differ from `v0.4.0:tests/bakeoff_comparison/`). Re-copy, re-run
+   `fits/corpus_results.R`, and add the new models.
+8. **Discussion** — rewrite around R3.1's headlines:
+   - the stable top tier;
+   - error-driven learning reducing to counting;
+   - FU extensions not generalizing;
+   - hypothesis testing ≈ baseline;
+   - a 1-parameter episodic model in the top five;
+   - children unexplained.
+
+   Drop the round-1 numbers still inline (PbV–GnT r = .65, etc.).
+9. **Abstract and Intro** — 19 models, 56 conditions, 2,359 participants, holdouts,
+   corpora.
+10. **Appendix** — regenerate everything with round-2 fits:
+    - the disagreement index with its 12 mechanism representatives;
+    - the best/worst tables;
+    - re-check the hand-written prose about specific conditions.
+11. **Final pass** — journal template (D6); render; check every inline number against
+    `fits/v04/summary.md`.
+
+---
+
+## 0. Round 2 (2026-10-02): what XSLmodels 0.4.0 changes
+
+Everything below §0 describes round 1, which ended with all fits complete (Sep 15)
+against the then-installed **0.3.0**. The package is now **0.4.0**, and the paper needs
+a second pass "using the package" as it now stands. All round-2 results use one
+build: XSLmodels **`d0e2230`** = `release-0.4.0-prep` (`2a7d291`) + the `sample()` fix
+below (PR #25), installed privately (`fits/v04/Rlib`, recorded in
+`fits/v04/XSLMODELS_COMMIT`). Note the *system* XSLmodels install reports "0.3.0" but
+is an Oct 2 build that already has the 0.4.0 models and the #14 change -- it was built
+before the version bump.
+
+**Every lab fit must be redone**, for two independent reasons:
+
+1. **Fitting set grew 53 → 56 conditions** — 3 more Kachergis, Yu & Shiffrin (2009)
+   temporal-contiguity conditions (`1olap3tr_contr`, `temp_cont_1olap2tr_contr`,
+   `temp_cont_2olap2tr_contr`). Now 2,359 participants, 872 items.
+2. **Package behavior changed for the uncfam family.** `fits/check_package_drift.R`
+   reruns each model at its *saved* parameters under 0.4.0 (no fitting):
+
+   | model(s) | at saved params under 0.4.0 | cause |
+   |---|---|---|
+   | FU, Nov, Unc, Str, FU-A, FU-P | **predictions change** (item max \|Δ\| 0.13–0.52; SSE ±0.7) | `update_known()` indexing fix (XSLmodels `6aaebcb`); FU-P also the cap-at-β fix |
+   | BD, R-W, KF, PA, PA-θ, baseline | bit-identical | — |
+   | PbV, GnT, Pur, FUs, RL | within Monte Carlo noise | — |
+
+   **The original research code (`models/kachergis.R` etc.) has the identical
+   `update_known()` bug**, so the *published* CogSci numbers for FU/Nov/Unc/Str carry
+   it. The journal version should say so (one sentence in Method + a footnote).
+
+**Other 0.4.0 changes that matter for the paper:**
+
+- **5 new models:** `uncfam_gamma` (free familiarity exponent), `uncfam_elimination`
+  (learning by elimination / ME), and three distributed/episodic memory models —
+  `minerva2`, `todam`, `rem`. Cost per objective evaluation on 56 conditions: the two
+  uncfam variants ~0.5 s (cheap); `minerva2` ~0.13 s/sim (≈ FUs); **`todam` ~2.3 s/sim
+  and `rem` ~5 s/sim — 20–40× FUs**, i.e. weeks for a full CV at the paper's
+  settings. `tests/bakeoff_comparison/memory_models_report.md` has reduced-budget
+  group fits on 53 conditions (minerva2 SSE .420 — competitive; todam .876; rem .537,
+  under-converged).
+- **Holdout registry** (`xsl_holdout_datasets`): two *scorable* held-out datasets with
+  per-item human accuracy — `benitez2020` (7 conditions, **children and adults**) and
+  `kachergis_initial_accuracy` (2) — plus `vlach_debrock2017` (children, overall mean
+  only). These make a much stronger generalization section than Medina + Smith & Yu
+  alone; `fits/generalization_test.R` (untracked) is a prototype.
+- **Bounds inconsistency inside the uncfam family (pre-existing, found now):** FU was
+  fit with the original paper's bounds (entropy weight `B ∈ [0.1, 15]`, landed at
+  **B ≈ 13.5**), but FU-A and FU-P were fit with the registry's `B ∈ [0.8, 1.0]`,
+  which excludes FU's own optimum. Their worse fits may partly be a bounds artifact.
+  The new `uncfam_gamma`/`uncfam_elimination` registry bounds inherit the same narrow
+  `B`. Refit should give every uncfam variant the same `X`/`B`/`C` bounds.
+- Unaffected: the #14 positional-label fix (no `xsl_datasets` condition has gapped
+  labels); the corpus section (being re-run separately in
+  `XSLmodels/tests/bakeoff_comparison/`).
+
+**Decisions (2026-10-02):** add `uncfam_gamma` (FU-G), `uncfam_elimination` (FU-E),
+`minerva2` (M2), and `tilles` (TF) → **19 models + baseline**; `todam`/`rem` out
+(future-work mention only); every uncfam variant gets FU's `X`/`B`/`C` bounds;
+refit queued behind the corpus jobs that were running.
+
+**Package bug found and fixed (XSLmodels PR #25, merged to `master` as `08fac1f`; local branch `release-0.4.0-prep-sample-fix` = `d0e2230` is the release branch + fix -- `release-0.4.0-prep` itself still needs master merged in):** `propose_but_verify()` (line 83) and
+`pursuit()` (line 91) call `sample(tr_o, ...)`; when a trial has exactly one object
+`k`, R samples from `1:k` instead, i.e. usually a referent not on the trial. No
+`xsl_datasets` condition has single-object trials, so **the lab refit is unaffected**,
+but `kachergis_initial_accuracy` (18 single-object familiarization trials per
+condition) and the naturalistic corpora (many single-object utterances) are — so
+PbV/Pursuit's holdout and corpus numbers were wrong. Fixed with
+`tr_o[sample.int(length(tr_o), n, replace = TRUE)]` (as `guess_and_test()` already does).
+Verified on the pre-#14 commit: corpora (string labels) were fine before #14, so the
+round-1 corpus results in the paper are unaffected; integer-labelled data was already
+affected. The Oct 2 night corpus runs (built with #14, without the fix) were affected
+-- ~40% of Rollins and ~18% of FM utterances have one object -- and were discarded and
+rerun (2026-10-03) on the fixed build.
+
+### Round-2 status
+
+| item | status |
+|---|---|
+| Drift check, saved fits vs. 0.4.0 (`fits/check_package_drift.R`) | ✅ uncfam family changed; others identical / within noise |
+| Pinned package (`fits/v04/install_pinned_xslmodels.sh`, `XSLMODELS_COMMIT` = `d0e2230`, i.e. 0.4.0 + PR #25) | ✅ installed to `fits/v04/Rlib` (re-pinned from `2a7d291` before the refit started; lab results identical either way) |
+| Refit pipeline (`fits/v04/{specs,refit}.R`, `queue_refit.sh`) | ❌ **first run failed** (2026-10-03 06:08): every parallel-worker evaluation errored, so all fits came back `bestval = Inf` (cause not reproduced; outputs quarantined in `fits/v04/failed_2026-10-03/`). `refit.R` now logs worker errors, runs a worker pre-flight, refuses non-finite fits, and QUICK uses the real parallel path -- **needs a smoke test, then relaunch** → `fits/v04/{group_fits,cv_fits}.Rdata`; progress in `fits/v04/refit_*.log` |
+| Methods: 4 new model subsections, implementation-notes paragraph, PbV/FU-P text fixes | ✅ |
+| Data: 56 conditions, provenance, computed ranges | ✅ |
+| Shared fit loader (`paper/load_fits.R`) + PRELIMINARY banner while refit runs | ✅ paper + appendix |
+| Generalization: rewrite around `xsl_holdout_datasets` (`benitez2020` kids+adults, `kachergis_initial_accuracy`, `vlach_debrock2017` mean) + Medina/Smith & Yu; fold in `fits/generalization_test.R` prototype | ❌ next — needs group fits, and the `sample()` fix for PbV/Pur on `kachergis_initial_accuracy` |
+| Round-1 → round-2 "numbers that changed" table (0.3.0/53 cond → 0.4.0/56 cond, and vs. published) | ❌ after refit |
+| Results/Discussion prose, Tables 1–3, figures, appendix numbers | ❌ after refit |
+| `sample()` bug fix (XSLmodels PR #25) | ✅ merged (`08fac1f`) |
+| Corpus re-run on the fixed build (`XSLmodels/tests/bakeoff_comparison/corpus_gold_{comparison,fits}.R`, `R_LIBS=../XSLmodels-fix-sample/.Rlib-corpus`) | ✅ done 2026-10-03 (comparison 02:14, fits 06:08); outputs in `XSLmodels/tests/bakeoff_comparison/` (uncommitted there); logs `../XSLmodels-fix-sample/corpus_rerun_*.log` |
+| Corpus section: pick up the re-run (+ new models) | ❌ after re-run |
+| Abstract/Intro: 19 models, 56 conditions, 2,359 participants, memory-model framing | ❌ |
+| Template: replace `cogsci2016::cogsci_paper` (not installed here) with the target journal's | ❌ needs journal choice |
+| Cite the CogSci 2024 conference version (ToDo in Method) | ❌ needs bib entry |
+
+---
+
 ## 1. Where the manuscript stands
 
 Three overlapping Rmd files are in `paper/`:

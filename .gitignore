@@ -4,3 +4,21 @@ models/.DS_Store
 .Rproj.user
 .Rhistory
 fits/*.log
+
+# round-2 (v0.4) refit: private package library + run logs
+fits/v04/Rlib/
+fits/v04/*.log
+fits/v04/failed_*/
+fits/v04/quick/
+fits/v04/*/*.log
+fits/v04/*/quick/
+
+# v05 refit (after the XSLmodels filtering + freqCD data fixes): private
+# package library, run logs, smoke tests, and the stopped 2026-10-13 run
+fits/v05/Rlib/
+fits/v05/stale_*/Rlib/
+fits/v05/*.log
+fits/v05/*/*.log
+fits/v05/*/quick/
+fits/v05/stopped_*/
+fits/v05/tilles/Rlib/

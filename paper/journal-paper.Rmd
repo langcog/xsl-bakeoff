@@ -47,6 +47,16 @@ library(ggplot2)
 library(xtable)
 library(kableExtra)
 library(here)
+# XSLmodels pinned to the commit the v05 fits used (fits/v05/XSLMODELS_COMMIT),
+# installed privately by fits/v05/install_pinned_xslmodels.sh. (tilles was
+# refit at a later commit, fits/v05/tilles/; the documents only read its stored
+# fits, so this library is used just for datasets and model metadata.)
+.libPaths(c(here("fits/v05/Rlib"), .libPaths()))
+library(XSLmodels)
+stopifnot(as.character(packageVersion("XSLmodels")) == "0.4.0")
+# group + CV fits (gfd, group_fits, cv_group_fits, cvg, FITS_META): the v05
+# refit in fits/v05/adults/
+source(here("paper/load_fits.R"))
 ```
 
 # Introduction
@@ -121,8 +131,17 @@ For the stochastic models, each parameter setting was evaluated using a simulate
 
 We conducted two evaluations of models. 
 First, we optimize each model's parameters on 80% of data and evaluate on the remaining 20% (5-fold cross-validation).
-Second, in the *group fit* regime, we fit each model to all conditions and datasets and evaluate across all data. 
-Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature. 
+Second, in the *group fit* regime, we fit each model to all conditions and datasets and evaluate across all data.
+Though slightly overfit, this evaluation allows us to make the best test of generalization to other experiments from the literature.
+
+All models, datasets, and fitting procedures are implemented in the open-source R package \texttt{XSLmodels}[^pkg], and every fit reported here was produced with version 0.4.0 of that package.
+Porting the models from the research code behind an earlier conference report of this comparison <!-- ToDo (revision): cite the CogSci 2024 proceedings paper once it's in refs.bib --> surfaced several implementation errors, which we corrected, so some results here differ from that report.
+Most consequentially, the routine shared by the familiarity- and uncertainty-biased family for seeding initial associations to newly familiar words and objects placed those values in the wrong cells whenever some object had not yet been seen; this affected FU and all of its variants.
+In addition, the guess-and-test model never discarded a hypothesis once formed (its disconfirmation step was unreachable), the probabilistic associative model's test-time accuracy was not normalized over referents, and the Bayesian decay model's choice rule normalized over words rather than over referents.
+When several words on one trial need new hypotheses at once, the propose-but-verify model now draws each word's proposal independently from the referents present, whereas the earlier implementation drew distinct referents for them.
+Finally, we gave every variant of the FU model the same bounds on the parameters they share with FU ($\chi$, $\lambda$, $\alpha$), so that differences among the variants reflect their mechanisms rather than their search ranges.
+
+[^pkg]: \url{https://github.com/kachergis/XSLmodels}; the exact package version used for the fits is recorded with the analysis code.
 
 
 ## Models
@@ -130,9 +149,8 @@ Though slightly overfit, this evaluation allows us to make the best test of gene
 ```{r, model-list}
 # Canonical model metadata: package name -> paper abbreviation, model
 # class, and number of free parameters. Single source of truth for every
-# downstream table/figure so nothing hard-codes an 11-model roster.
-# ToDo (revision): confirm abbreviations/classes for the four post-CogSci
-# models once their Method subsections are finalized.
+# downstream table/figure so nothing hard-codes a fixed-size roster.
+# Must match the fitted roster in fits/v05/specs.R (v05 refit).
 model_meta <- tibble::tribble(
   ~Model,               ~abbr,   ~class,                 ~P,
   "kachergis",          "FU",    "associative",          3,
@@ -148,16 +166,20 @@ model_meta <- tibble::tribble(
   "pursuit",            "Pur",   "hybrid",               3,
   "uncfam_attention",   "FU-A",  "associative",          3,
   "uncfam_predictive",  "FU-P",  "associative",          3,
+  "uncfam_gamma",       "FU-G",  "associative",          4,
+  "uncfam_elimination", "FU-E",  "associative",          4,
   "kalman_filter",      "KF",    "associative",          3,
+  "tilles",             "TF",    "associative",          3,
   "softmax_rl",         "RL",    "reinforcement learning", 2,
+  "minerva2",           "M2",    "episodic memory",      1,
   "baseline",           "Base",  "baseline",             0,
   "fazlyt",             "PA-t",  "associative",          3
 )
 abbr_of <- function(m) model_meta$abbr[match(m, model_meta$Model)] |> dplyr::coalesce(m)
 ```
-We fit fifteen models together with a zero-parameter baseline co-occurrence model.
+We fit nineteen models together with a zero-parameter baseline co-occurrence model.
 The original evaluation included the baseline, six associative models (the probabilistic associative model, the familiarity- and uncertainty-biased model, its strength-, uncertainty-, and novelty-biased reductions, a Bayesian decay model, and a Rescorla-Wagner model), two hypothesis-testing models, and two hybrid models that store multiple graded hypotheses for only a subset of the possible associations.
-We later added four more: two variants of the familiarity- and uncertainty-biased model that make its learning rate depend on uncertainty, a Kalman-filter generalization of the Rescorla-Wagner model, and a reinforcement-learning model.
+We later added eight more: four variants of the familiarity- and uncertainty-biased model (making its learning rate depend on uncertainty at the trial or item level, giving familiarity a free exponent, or adding learning by elimination), a Kalman-filter generalization of the Rescorla-Wagner model, the reinforcement-and-inference model of @Tilles2013, a reinforcement-learning model, and an episodic memory model (MINERVA 2).
 All models and their free parameters are briefly described below.
 <!-- ToDo (revision): add a summary table (model x class x #params x key mechanism). -->
 
@@ -225,7 +247,7 @@ In the propose-but-verify hypothesis testing model [@Trueswell2013], a presented
 The next time that word occurs, the previously-proposed referent is remembered with probability $\alpha$, a free parameter. 
 If the remembered referent is verified to be present, the future probability of recalling the word is increased by parameter $\epsilon$. 
 If the remembered referent is not present, the old hypothesis is assumed to be forgotten and a new proposal is selected from the available referents.
-This model implements trial-level mutual exclusivity by selecting new proposals only from among the referents that are not yet part of a hypothesis.
+When several words on a trial need new proposals at once, each is drawn independently from the referents present, so two words may propose the same referent.
 
 
 ### Guess-and-Test Model (GnT)
@@ -245,7 +267,7 @@ A given word-object association only enters the lexicon if $p(o|w) > \theta$, a 
 At test, this model chooses the best referent for each word by Luce choice from the lexicon, which is not necessarily 1-to-1.
 
 
-The four models below were added after the initial comparison.
+The models below were added after the initial comparison.
 
 
 ### FU with Trial-Level Attention (FU-A)
@@ -257,8 +279,23 @@ The model has the same three free parameters as the FU model ($\chi$, $\lambda$,
 ### FU with Item-Level Prediction Error (FU-P)
 This variant replaces the FU model's normalization step -- which distributes a fixed total amount of associative weight across the word-object pairings on a trial -- with an item-level, Rescorla-Wagner-style [@Rescorla1972] prediction error term: the amount learned about a given word-object association is scaled by how far the word's predicted strength (summed over the trial's objects) falls short of a maximum value.
 Surprising (e.g., initially mispaired) items therefore draw more learning than the normalized model allows.
-Because there is no normalization step, associations can be driven negative and are floored at zero.
+Because there is no normalization step, associations are kept in their valid range by flooring them at zero and capping them at their maximum value.
 The model has the same three free parameters as the FU model and uses Luce choice at test.
+
+
+### FU with a Familiarity Exponent (FU-G)
+In the FU model, the attention a pairing receives on a trial is the product of an uncertainty term, $e^{\lambda (H(w) + H(o))}$, whose influence is set by the free parameter $\lambda$, and the pairing's current strength $M_{w,o}$, which enters linearly with no free weight of its own.
+This variant raises the familiarity term to a free power $\gamma$, replacing $M_{w,o}$ with $M_{w,o}^{\gamma}$ in both the numerator and the denominator of Equation \ref{eq:fullmodel}.
+Setting $\gamma = 1$ recovers the FU model; $\gamma < 1$ gives diminishing returns to already-strong pairings, dampening the model's "rich get richer" dynamic, while $\gamma > 1$ amplifies it toward winner-take-all.
+The model has four free parameters ($\chi$, $\lambda$, $\alpha$, $\gamma$) and uses Luce choice at test.
+
+
+### FU with Learning by Elimination (FU-E)
+This variant adds inference by elimination [cf. @Halberda2003eg] to the FU model's allocation of attention.
+If the other words and objects on a trial are already confidently paired with each other, the remaining word and object probably go together, so their pairing should draw attention even while it is still weak; in the FU model, by contrast, already-strong pairs on a trial draw attention *away* from such a pairing.
+Each pair $(w', o')$ on the trial has a mutual confidence $q(w', o') = P(o' | w')\,P(w' | o')$, computed from the row- and column-normalized associations, and a pairing $(w, o)$ receives elimination support $s(w, o) = \sum_{w' \neq w,\, o' \neq o} q(w', o')$ -- how much of the rest of the trial is already accounted for.
+The share of the trial's associative weight given to $(w, o)$ is then $\big(b(w, o) + \epsilon\, s(w, o)\big) / \big(1 + \epsilon \sum s\big)$, where $b(w, o)$ is the FU model's normalized share, so $\epsilon = 0$ recovers the FU model.
+The model has four free parameters ($\chi$, $\lambda$, $\alpha$, $\epsilon$) and uses Luce choice at test.
 
 
 ### Kalman Filter Model (KF)
@@ -270,6 +307,14 @@ At test, it uses Luce choice over the mean association matrix.
 <!-- ToDo (revision): decide whether to fix sigma2_obs and report P = 2 for KF in Table 1; currently all three are fit and P = 3. -->
 
 
+### Reinforcement-and-Inference Model (TF)
+The model of @Tilles2013 [see also @tilles2012minimal] represents each word's meaning as a probability distribution over the objects seen so far, updated by two processes.
+*Reinforcement*, with strength $x$, transfers confidence for each word heard on a trial from the objects absent from that trial to those present.
+*Inference*, with strength $b$, implements a form of mutual exclusivity: a novel word assigns extra probability to the novel objects present on its first trial, and for familiar words *not* heard on a trial, confidence is transferred away from the objects present toward absent ones.
+Both updates are scaled by a word-specific learning efficiency that starts at $\alpha_0$ while the word's distribution is maximally uncertain and rises toward 1 as its entropy falls; the remaining share of each update relaxes the distribution toward uniform, acting as noise.
+The model has three free parameters ($x$, $b$, $\alpha_0$) and uses Luce choice over these distributions at test.
+
+
 ### Softmax Reinforcement Learning Model (RL)
 The reinforcement learning model recasts word learning as learning, from a reward signal, the value of choosing each referent for a word.
 Unlike every other model considered here -- all of which update every word-object pair that co-occurs on a trial -- this model makes a discrete choice: for each word heard, it samples a single candidate referent from a softmax policy over its current values for all known objects (its current best guess at that word's meaning), analogous to the way the propose-but-verify and pursuit models commit to a single hypothesis before checking it.
@@ -279,33 +324,40 @@ At test, the model's probability of choosing the correct referent for a word is 
 This model thus shares the propose-and-verify logic of the hypothesis-testing models but replaces their all-or-none keep/discard rules with graded value learning and explicit, tunable exploration.
 
 
+### MINERVA 2 Episodic Memory Model (M2)
+Unlike every other model here, each of which maintains a single word $\times$ object association matrix, MINERVA 2 [@Hintzman1984; @Hintzman1986] stores each training trial as a separate episodic trace.
+Words and objects are represented as random feature vectors, and a trial's trace concatenates the sum of its words' vectors with the sum of its objects' vectors; memory is exact, with no decay or forgetting.
+At test, a word probe activates every trace in proportion to the cube of its similarity to that trace's word half, and the activation-weighted sum of all traces -- the "echo" -- is compared on its object half with each candidate object.
+These similarities are exponentiated by a single free parameter $X$, which sets how sharply choice favors the best-matching object, and normalized as in Luce choice.
+The dimensionality of the feature vectors (100) is a fixed representational choice rather than a fitted parameter; because the vectors are random, the model is stochastic.
+Two further distributed and episodic memory models, TODAM [@Murdock1982] and REM [@Shiffrin1997], are implemented in \texttt{XSLmodels} but are 20--40 times more expensive to evaluate, which put fitting them at the scale of this comparison out of reach; we leave them to future work.
+
+
 ## Data
 
 ```{r load-data}
-library(XSLmodels)
-# The modeled conditions are now XSLmodels::xsl_datasets (53 conditions:
-# the original 44 plus 9 added post-CogSci -- temporal contiguity x2,
-# Suanda et al. 2014 x3, Koehne et al. 2013 x4). The frozen
-# data/combined_data.RData (44 conditions) is kept only for the appendix
-# until that is repointed too.
-nConds  <- length(xsl_datasets)
+# The modeled conditions are XSLmodels::xsl_datasets (0.4.0: 56 conditions
+# -- the original 44, plus 5 temporal-contiguity conditions from Kachergis,
+# Yu & Shiffrin 2009, 3 from Suanda et al. 2014, and 4 from Koehne et al.
+# 2013). Every count/range below is computed, not hard-coded.
+nConds   <- length(xsl_datasets)
 totItems <- sum(sapply(xsl_datasets, \(d) length(d$accuracy)))
 totSs    <- sum(sapply(xsl_datasets, \(d) d$n_subj))
 nTrials  <- sapply(xsl_datasets, \(d) length(d$train$words))
+nPairs   <- sapply(xsl_datasets, \(d) length(unique(unlist(d$train$words))))
+wPerTr   <- unlist(lapply(xsl_datasets, \(d) lengths(d$train$words)))
+oPerTr   <- unlist(lapply(xsl_datasets, \(d) lengths(d$train$objects)))
+rng      <- \(x) paste(range(x), collapse = "--")
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r nConds` experimental conditions, in which a total of `r format(totSs, big.mark=",")` subjects participated.
 A table containing details of each condition is available on OSF[^2], along with the full trial orderings and aggregate human performance.
-The number of trials per condition ranged from `r min(nTrials)` to `r max(nTrials)`, with 1-4 words and objects presented per trial, and a total of 12-24 pairs to be learned per condition.
-<!-- ToDo (revision): update provenance for the 53-condition set. The nine
-     post-CogSci conditions are Kachergis, Yu, & Shiffrin (2009; temporal
-     contiguity, x2), Suanda, Mugwanya, & Namy (2014; x3), and Koehne,
-     Trueswell, & Gleitman (2013; x4). Suanda 2014 and Koehne 2013 were
-     held-out generalization experiments in the CogSci version. -->
-The bulk of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
-However, data from several conditions are contributed by Chen Yu's lab at Indiana University, and have never before been published.
-Each condition consists of an ordered list of training trials consisting of 1-4 words and 2-4 objects per trial.
+Each condition consists of an ordered list of `r rng(nTrials)` training trials, each presenting `r rng(wPerTr)` words and `r rng(oPerTr)` objects, with a total of `r rng(nPairs)` word-object pairs to be learned per condition.
 At test, participants heard each word and were asked to select the best referent from either all $m$ presented objects (*m*-alternative forced choice; AFC), or from a subset (e.g., 4AFC).
+The bulk of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
+Data from several conditions were contributed by Chen Yu's lab at Indiana University, and have not been published before.
+To these 44 conditions of the original comparison we added five from @Kachergis2009tc, which manipulated the temporal contiguity of repeated word-object pairs; three from @Suanda2014, which varied contextual diversity for 6-year-old children; and four from @Koehne2013, which varied the order in which adults encountered each noun's two differently frequent referents.
+The Suanda et al. and Koehne et al. conditions were held-out generalization tests in the earlier report of this comparison, and report only condition-level accuracy, so each of their items is assigned its condition's mean.
 
 [^2]: Information about the dataset: [https://osf.io/REDACTED](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5)
 
@@ -319,18 +371,13 @@ Because a large fraction of caregiver utterances are not about anything in the i
 
 # Results
 
+```{r prelim-banner, results="asis"}
+if (FITS_PRELIMINARY) cat("\\textbf{[DRAFT -- provisional numbers. Fits used: ",
+                          paste(names(FITS_SOURCE), FITS_SOURCE, sep = " = ", collapse = "; "), ".]}\n\n")
+```
+
 ```{r load-group-fits}
-# Group fits (all conditions fit jointly), recreated with the XSLmodels
-# package. Two files: the 11 original models + baseline + fazlyt
-# (group_fits_all_experiments.Rdata), and the four post-CogSci models
-# (group_fits_new_models.Rdata). See fits/fit_all_models_all_experiments.R
-# and fits/fit_new_models_all_experiments.R.
-local({
-  e1 <- new.env(); load(here("fits/group_fits_all_experiments.Rdata"), envir = e1)
-  e2 <- new.env(); load(here("fits/group_fits_new_models.Rdata"),       envir = e2)
-  gfd        <<- dplyr::bind_rows(e1$gfd_all, e2$gfd_new)
-  group_fits <<- c(e1$group_fits_all, e2$group_fits_new)
-})
+# gfd / group_fits come from paper/load_fits.R, sourced in the libraries chunk
 
 Nitems = nrow(gfd) / length(unique(gfd$Model))
 group_fit_tab <- gfd %>% filter(!is.na(HumanPerf)) %>%
@@ -342,36 +389,71 @@ group_fit_tab <- gfd %>% filter(!is.na(HumanPerf)) %>%
 
 
 ```{r load-cv-fits}
-# 5-fold cross-validated fits on the same 53 conditions. Two files, same
-# split as the group fits: cv_all_experiments.Rdata (11 original models)
-# and cv_new_models.Rdata (four post-CogSci models). See
-# fits/cv_all_experiments.R and fits/cv_new_models.R.
-# NOTE (revision, 2026-09): cv_new_models.Rdata is complete (all 4). The
-# cv_all_experiments.R run was still fitting kachergis_sampling (FUs) as of
-# this writing -- the code below binds whatever is present so the document
-# knits, and Table 1 / Table 2 gain the FUs row once that finishes and the
-# file is re-saved.
-local({
-  e1 <- new.env(); load(here("fits/cv_all_experiments.Rdata"), envir = e1)
-  e2 <- new.env(); load(here("fits/cv_new_models.Rdata"),       envir = e2)
-  cv_group_fits <<- c(e1$cv_all, e2$cv_new)
-})
-cvg <- purrr::list_rbind(lapply(cv_group_fits, `[[`, "testdf"))
+# cv_group_fits / cvg come from paper/load_fits.R, sourced in the libraries chunk.
+#
+# Table 1 metric: the quantity the fits minimize -- each condition's SSE
+# (summed over its items), averaged over conditions weighted by n_subj.
+#  - CV SSE: every condition scored once, out of fold (at the parameters fit
+#    to the other four folds), pooled over all conditions.
+#  - Group SSE: recomputed from the group fit's predictions (gfd), NOT
+#    DEoptim's reported optimum: for stochastic models that optimum is the
+#    minimum over thousands of noisy evaluations and so is biased low (by
+#    .007-.033 here); gfd re-simulates at the best parameters (n_sim = 200),
+#    an unbiased estimate. For deterministic models the two are identical.
+#  - r: item-level correlation of out-of-fold predictions with human accuracy.
+wsse_by_model <- function(df) df %>% filter(!is.na(HumanPerf)) %>%
+  group_by(Model, condnum) %>%
+  summarise(sse = sum((ModelPerf - HumanPerf)^2), n = first(Nsubj), .groups = "drop") %>%
+  group_by(Model) %>% summarise(wSSE = sum(sse * n) / sum(n), .groups = "drop")
 
-cvg_fit_tab <- cvg %>% group_by(Model) %>%
-  summarise(SSE = sum((ModelPerf-HumanPerf)^2), #  / Nitems,
-            r = cor(ModelPerf, HumanPerf)) %>%
-  arrange(SSE) %>%
-  rename(`CV SSE` = SSE,
-         ` r` = r) %>% left_join(group_fit_tab) %>%
-  rename(`All SSE` = SSE) %>%
-  left_join(select(model_meta, Model, P), by = "Model") %>%
-  mutate(Model = abbr_of(Model))
+fold_range <- function(m) {
+  f <- cv_group_fits[[m]]$folds
+  if (is.null(f)) return(c(NA_real_, NA_real_))   # round-1 fallback has no per-fold record
+  range(map_dbl(f, "test_sse"))
+}
+# the baseline has no parameters (not cross-validated): its out-of-fold
+# predictions are its group predictions, scored on each fold's conditions
+fold_conds <- map(cv_group_fits[[1]]$folds, "test_conditions")
+baseline_fold_sse <- if (length(fold_conds)) map_dbl(fold_conds, \(cc)
+  filter(wsse_by_model(filter(gfd, Model == "baseline", condnum %in% cc)), Model == "baseline")$wSSE) else NA
+
+fit_tab <- wsse_by_model(cvg) %>% rename(cv = wSSE) %>%
+  left_join(cvg %>% group_by(Model) %>% summarise(r = cor(ModelPerf, HumanPerf)), by = "Model") %>%
+  bind_rows(tibble(Model = "baseline",
+                   cv = filter(wsse_by_model(gfd), Model == "baseline")$wSSE,
+                   r = with(filter(gfd, Model == "baseline"), cor(ModelPerf, HumanPerf)))) %>%
+  left_join(wsse_by_model(gfd) %>% rename(group = wSSE), by = "Model") %>%
+  mutate(lo = map_dbl(Model, \(m) if (m == "baseline") min(baseline_fold_sse) else fold_range(m)[1]),
+         hi = map_dbl(Model, \(m) if (m == "baseline") max(baseline_fold_sse) else fold_range(m)[2])) %>%
+  left_join(select(model_meta, Model, abbr, class, P), by = "Model") %>%
+  arrange(cv)
+
+# unweighted alternative (SSE summed over items, ignoring sample size), for the text
+item_sse <- cvg %>% filter(!is.na(HumanPerf)) %>% group_by(Model) %>%
+  summarise(sse = sum((ModelPerf - HumanPerf)^2), .groups = "drop") %>% arrange(sse)
 ```
 
-Table 1 shows the sum of squared error (SSE) and correlation ($r$) for each model's best-fitting parameters vs. average human performance on the `r totItems` items, both for the CV fits and for the all-condition fits, along with the number of fitted parameters in each model (P).
-The results of the two fitting procedures mostly yielded similar SSEs and correlations, and a consistent rank-ordering of the models, with the Kachergis sampling model performing best, followed closely by the Fazly et al. model and then the associative Kachergis et al. model.
-The hypothesis testing models (Propose-but-Verify and Guess-and-Test), the Pursuit model, and R-W fit roughly as well as the 0-parameter baseline co-occurrence counting model, which had SSE = 32.0 and $r = 0.53$.
+```{r table1-text}
+fmt3 <- \(x) sub("^0\\.", ".", sprintf("%.3f", x))
+listify <- \(x) if (length(x) <= 2) paste(x, collapse = " and ") else paste0(paste(head(x, -1), collapse = ", "), ", and ", tail(x, 1))
+b_row  <- filter(fit_tab, Model == "baseline")
+models <- filter(fit_tab, Model != "baseline")
+cv_of  <- \(m) fmt3(fit_tab$cv[match(m, fit_tab$Model)])
+TOL <- .01  # "near the baseline": CV SSE within .01 of it
+better <- filter(models, cv < b_row$cv - TOL)$abbr
+near   <- filter(models, abs(cv - b_row$cv) <= TOL)$abbr
+worse  <- filter(models, cv > b_row$cv + TOL)$abbr
+item_top <- abbr_of(item_sse$Model[1:2])
+```
+
+Table 1 summarizes each model's fit.
+Because parameters were fit by minimizing each condition's squared error, weighted by its number of participants, we report that same quantity for the cross-validated (CV) fits -- in which each condition is scored once, at parameters fit without it -- and for the group fit to all `r nConds` conditions.
+The best CV fits were from `r models$abbr[1]` (SSE = `r fmt3(models$cv[1])`), `r models$abbr[2]` (`r fmt3(models$cv[2])`), and `r models$abbr[3]` (`r fmt3(models$cv[3])`), whose errors on the five folds' held-out conditions overlap substantially.
+<!-- ToDo (revision, D2): add the paired fold / bootstrap-over-conditions comparison of the top tier here. -->
+The order within this top group depends on how conditions are weighted: ranking by squared error summed over all `r totItems` items, ignoring sample size, puts `r item_top[1]` first and `r item_top[2]` second.
+Compared with the zero-parameter baseline co-occurrence model (CV SSE = `r fmt3(b_row$cv)`, $r$ = `r sub("^0\\.", ".", sprintf("%.2f", b_row$r))`), `r length(better)` models fit better by more than `r TOL` (`r listify(better)`), `r listify(near)` fit within `r TOL` of it, and `r listify(worse)` fit worse.
+<!-- ToDo (revision): the next sentence is model-specific -- re-check after any refit that R-W and KF still sit at the parameter bounds where they reduce to counting. -->
+The Rescorla-Wagner and Kalman filter models (CV SSE = `r cv_of("rescorla-wagner")` and `r cv_of("kalman_filter")`) are best fit at parameters where learning is so slow relative to the associations' asymptote that each co-occurrence adds a nearly constant increment: at their best, both reduce to tallying co-occurrences.
 Correlations between data and models are presented in Figure 1. 
 
 ```{r model-correlations}
@@ -397,10 +479,22 @@ colnames(mod_cors) = mod_names_short
 ```
 
 ```{r cv-fits-table, results="asis"}
-tab2 <- xtable::xtable(cvg_fit_tab, digits=c(0,0, 2, 2, 2, 2, 0), 
-                       caption = "Sorted cross-validated and group model fits.")
-
-print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "H")
+f3 <- \(x) sprintf("%.3f", x)
+tab1 <- fit_tab %>%
+  transmute(Model = abbr, Class = class, k = P,
+            `CV SSE` = f3(cv), `CV range (folds)` = paste0(f3(lo), "--", f3(hi)),
+            `Group SSE` = f3(group), `CV $r$` = sprintf("%.2f", r))
+best <- which.min(fit_tab$cv)
+tab1$`CV SSE`[best] <- paste0("\\textbf{", tab1$`CV SSE`[best], "}")
+kable(tab1, "latex", booktabs = TRUE, escape = FALSE, align = "llrrcrr",
+      caption = paste0("Model fits, sorted by cross-validated (CV) error. SSE is the quantity the fits minimize: ",
+                       "each condition's squared error summed over its items, averaged over conditions weighted by ",
+                       "their number of participants. CV SSE scores every condition once, at parameters fit to the ",
+                       "other four folds; the range is over the five folds' held-out sets. Group SSE is for parameters ",
+                       "fit to all ", nConds, " conditions (for stochastic models, from a fresh simulation of 200 learners ",
+                       "at the best parameters). CV $r$ is the item-level correlation of out-of-fold predictions with ",
+                       "human accuracy; $k$ is the number of free parameters.")) %>%
+  kable_styling(latex_options = c("scale_down", "hold_position"))
 ```
 
 <!--How related are these models?-->
