@@ -22,3 +22,4 @@ fits/v05/*/*.log
 fits/v05/*/quick/
 fits/v05/stopped_*/
 fits/v05/tilles/Rlib/
+fits/v05/priming/Rlib/
