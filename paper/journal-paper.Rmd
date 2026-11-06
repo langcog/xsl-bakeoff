@@ -17,20 +17,26 @@ abstract: >
     have been proposed, yet there is little consensus on the main mechanisms 
     supporting learning, in part due to the profusion of disparate studies and models,
     and lack of systematic model comparisons across a wide range of studies. 
-    This study compares the performance of several extant models on a dataset 
-    of 44 experimental conditions and a total of 1,696 participants.
-    Using cross-validation, we fit multiple models representing theories of both
-    associative learning and hypothesis-testing theories of word learning, find two  
-    best-fitting models, and discuss issues of model and mechanism identifiability. 
-    Finally, we test the models' ability to generalize to additional
-    experiments, including developmental data. 
+    This study compares 23 models, representing associative, hypothesis-testing,
+    reinforcement-learning, and episodic-memory accounts, on a dataset of 47
+    experimental conditions with a total of 1,609 adult participants.
+    Using cross-validation, we find that a small group of associative models
+    fit best, that error-driven models do so only with a choice rule sensitive
+    to the scale of the learned associations, and that simulation-based model
+    and parameter recovery can tell most of these mechanisms apart.
+    Finally, we test the models' ability to generalize to seven held-out
+    experiments, including developmental data: fitting well does not predict
+    generalizing well, and every model fit to adults overestimates children's
+    learning. 
     
 keywords: >
     cross-situational word learning; model comparison; language learning
     
 output: cogsci2016::cogsci_paper
 final-submission: \cogscifinalcopy
-# abstract is a bit long: 152 words
+# abstract: ~170 words. Its counts (23 models, 47 conditions, 1,609
+# participants, 7 held-out experiments) are typed in, since YAML is read before
+# any chunk runs; the data-check chunk below stops the knit if they go stale.
 ---
 
 ```{r global_options, include=FALSE}
@@ -363,6 +369,8 @@ nPairs   <- sapply(xsl_datasets, \(d) length(unique(unlist(d$train$words))))
 wPerTr   <- unlist(lapply(xsl_datasets, \(d) lengths(d$train$words)))
 oPerTr   <- unlist(lapply(xsl_datasets, \(d) lengths(d$train$objects)))
 rng      <- \(x) paste(range(x), collapse = "--")
+# the abstract's typed-in counts
+stopifnot(nConds == 47, totSs == 1609)
 ```
 
 The modeled data are average accuracies from `r totItems` word-object pairs in `r nConds` experimental conditions, in which a total of `r format(totSs, big.mark=",")` subjects participated.
@@ -541,59 +549,23 @@ kable(mod_cors, "latex", booktabs = T, escape=F, digits = 2, caption="Correlatio
   kable_styling(latex_options = "scale_down") 
 ```
 
-```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=5.2, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model item-level accuracy using best-fitting parameters per model for all conditions (colored by condition). Note that on some items, PbV, GnT, and Pursuit all show more extreme responding (1 or 0) than people ever do."}
-# ToDo: maybe also add r or MSE to each plot
-
-# condition-level performance: 
-# interesting to look at which conditions are best/worst fit by each model?
-gcondm <- gfd %>% group_by(Model, Condition, Nsubj) %>%
-  summarise(HumanPerf=mean(HumanPerf), 
-            ModelPerf = mean(ModelPerf))
-
-cond_perf <- gcondm %>% group_by(Model) %>% 
-  summarise(SSE = sum((ModelPerf-HumanPerf)^2),
-            r = cor(ModelPerf, HumanPerf)) %>% 
-  arrange(SSE)
-
-#gcondm %>%
-#  ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition, size=Nsubj)) + 
-#  geom_point(alpha=.7) + facet_wrap(vars(Model)) + theme_bw() +
-#  geom_abline(intercept=0, slope=1, linetype="dashed")
-
-gfd %>% mutate(Model = case_when(Model == 'kachergis' ~ 'Fam./Unc.',
-                             Model == 'fazly' ~ 'Prob. Assoc.',
-                             Model == 'novelty' ~ 'Novelty',
-                             Model == 'Bayesian_decay' ~ 'Bayesian Decay', 
-                             Model == 'strength' ~ 'Strength',
-                             Model == 'uncertainty' ~ 'Uncertainty',
-                             Model == 'rescorla-wagner' ~ 'Rescorla-Wagner',
-                             Model == 'trueswell2012' ~ 'Propose-but-Verify',
-                             Model == 'guess-and-test' ~ 'Guess-and-Test',
-                             Model == 'kachergis_sampling' ~ 'Fam./Unc. sampling',
-                             Model == 'pursuit' ~ 'Pursuit',
-                             Model == 'baseline' ~ 'Baseline',
-                          TRUE ~ Model)) %>%
-  mutate(Model = factor(Model, levels = c("Fam./Unc. sampling", "Prob. Assoc.", 
-                                          "Fam./Unc.", "Novelty", 
-                                          "Uncertainty", "Bayesian Decay",
-                                          "Propose-but-Verify", "Guess-and-Test",
-                                          "Rescorla-Wagner", "Baseline", 
-                                          "Strength", "Pursuit"))) %>% 
-  ggplot(aes(x=ModelPerf, y=HumanPerf, 
-                   group=Condition, color=Condition)) + 
-  geom_point(alpha=.3) + 
-  facet_wrap(vars(Model)) + 
-  theme_bw(base_size=10) + 
+```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=5.3, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model item-level accuracy at each model's group-fit parameters, for all conditions (colored by condition); panels in order of cross-validated fit (Table 1). Note that on some items, PbV, GnT, and Pur all show more extreme responding (1 or 0) than people ever do."}
+# one panel per model in Table 1 (PA-t, whose predictions equal PA's, is left
+# out), labelled by its abbreviation and ordered by CV SSE
+fig1_models <- fit_tab$Model[fit_tab$Model != "fazlyt"]
+gfd %>%
+  filter(Model %in% fig1_models) %>%
+  mutate(Model = factor(abbr_of(Model), levels = abbr_of(fig1_models))) %>%
+  ggplot(aes(x=ModelPerf, y=HumanPerf, group=Condition, color=Condition)) + 
+  geom_point(alpha=.3, size = .6) + 
+  facet_wrap(vars(Model), ncol = 6) + 
+  coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
+  scale_x_continuous(breaks = c(0, .5, 1), labels = c("0", ".5", "1")) +
+  scale_y_continuous(breaks = c(0, .5, 1), labels = c("0", ".5", "1")) +
+  theme_bw(base_size=9) + 
   ylab("Human Proportion Correct") + xlab("Model Proportion Correct") + 
   geom_abline(intercept=0, slope=1, linetype="dashed") + 
-  theme(legend.position = "none") # save space for initial submission (maybe put legend at OSF link?)
-#  theme(legend.margin = margin(0, 0, 0, 0, "cm"),
-#        legend.box.margin = margin(0, 0, 0, 0, "cm"), 
-#        legend.box.spacing = unit(0.0, "cm"),
-#        legend.position = "bottom", 
-#        legend.text = element_text(size = 7, margin = margin(t=2)), 
-#        legend.spacing.x = unit(.1, 'cm'),
-#        legend.spacing.y = unit(0, 'cm'))
+  theme(legend.position = "none") # save space (the condition key is on OSF)
 ```
 
 ## Generalization Experiment Results
@@ -764,33 +736,63 @@ kable(ctab, "latex", booktabs = T, escape = F,
 
 # Discussion
 
-We set out to conduct a systematic comparison of several models of cross-situational word learning models across a wide variety of experimental conditions. 
-Using a large dataset, we found best-fitting parameters for 11 models both by simultaneously fitting all of the data, and using cross-validation.
-The results of both fitting regimes were consistent and clear: shown in Table 1, the associative models generally achieved better fits (lower SSE and higher correlations) than the hypothesis-testing models (GnT; @Medina2011 and PbV; @Trueswell2013), which made correlated predictions (see Table 2: $r=.65$).
-However, it was also striking how similar many models' predictions were, even to models representing disparate learning theories.
+```{r discussion-stats}
+# Every number in the Discussion is computed here, from the CV predictions
+# (cvg, as in Table 2) and the group fits (gfd).
+disc_models <- setdiff(unique(cvg$Model), "fazlyt")
+pred_r <- function(a, b) cor(cvg$ModelPerf[cvg$Model == a], cvg$ModelPerf[cvg$Model == b])
+closest <- function(m) {  # the model whose predictions correlate most with m's
+  others <- setdiff(disc_models, m)
+  v <- vapply(others, \(o) pred_r(m, o), numeric(1))
+  list(model = others[which.max(v)], r = max(v))
+}
+r2 <- \(x) sub("^(-?)0\\.", "\\1.", sprintf("%.2f", x))
+top3 <- models$Model[1:3]
+top3_r <- c(pred_r(top3[1], top3[2]), pred_r(top3[1], top3[3]), pred_r(top3[2], top3[3]))
+top3_human_r <- fit_tab$r[match(top3, fit_tab$Model)]
+ht <- c("guess-and-test", "trueswell2012")
+pur_close <- closest("pursuit"); pa_close <- closest("fazly")
+hum_mean <- mean(filter(gfd, Model == "baseline")$HumanPerf)
+pur_mean <- mean(filter(gfd, Model == "pursuit")$ModelPerf)
+# each model's best- and worst-fit condition, by item-level correlation of its
+# CV predictions with human accuracy (as in the appendix)
+cond_r <- cvg %>% filter(Model %in% disc_models) %>% group_by(Model, Condition) %>%
+  summarise(r = suppressWarnings(cor(ModelPerf, HumanPerf)), .groups = "drop") %>% filter(!is.na(r))
+bw <- cond_r %>% group_by(Model) %>% summarise(best = Condition[which.max(r)], worst = Condition[which.min(r)])
+best_tab <- sort(table(bw$best), decreasing = TRUE); worst_tab <- sort(table(bw$worst), decreasing = TRUE)
+# where the two best CV models' group-fit predictions diverge most
+pa_vs <- top3[top3 != "fazly"][1]
+div <- gfd %>% filter(Model %in% c("fazly", pa_vs)) %>% group_by(Model) %>% mutate(i = row_number()) %>% ungroup() %>%
+  select(Model, i, Condition, ModelPerf) %>% pivot_wider(names_from = Model, values_from = ModelPerf) %>%
+  group_by(Condition) %>% summarise(div = sum((.data[["fazly"]] - .data[[pa_vs]])^2)) %>% arrange(desc(div))
+```
 
-The Rescorla-Wagner model, a prediction error-based associative model, performed similarly to the GnT model, with highly correlated predictions ($r=.87$), while PbV had the poorest fit, and made responses most similar to the R-W model ($r=.67$).
-Moreover, the predictions of the R-W model are nearly identical to those of the baseline co-occurrence counting model.
+We set out to conduct a systematic comparison of models of cross-situational word learning across a wide variety of experimental conditions.
+Using a large dataset, we found best-fitting parameters for `r length(disc_models)` models (plus the parameter-free baseline), both by simultaneously fitting all of the data and by cross-validation.
+The results of both fitting regimes were consistent: as shown in Table 1, the associative models generally achieved better fits (lower SSE and higher correlations) than the hypothesis-testing models (GnT; @Medina2011 and PbV; @Trueswell2013), whose predictions were almost interchangeable (Table 2: $r$ = `r r2(pred_r(ht[1], ht[2]))`).
+However, it was also striking how similar many models' predictions were, even for models representing disparate learning theories.
+<!-- ToDo (revision): the model named in the next sentences is computed, but the prose around it is not -- re-read after any refit. -->
+
+Under Luce choice, the Rescorla-Wagner model's predictions were essentially identical to those of the Kalman filter ($r$ `r if (pred_r("rescorla-wagner", "kalman_filter") > .995) "> .99" else paste("=", r2(pred_r("rescorla-wagner", "kalman_filter")))`) and of the baseline, all three reducing to co-occurrence counting.
 This is not a coincidence of the fitted parameters: with Luce choice, the R-W model's learning rate barely changes its predictions on these designs, so the two models cannot be told apart even on data simulated from one of them (Appendix C).
 Given a choice rule sensitive to the scale of the learned associations, however, the error-driven models fit far better than the same choice rule applied to co-occurrence counts, so prediction-error learning may deserve more attention than its Luce-choice versions suggest.
-However, some models' particular patterns of responses suggest certain theoretical shortcomings.
-For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{Pur} =$ `r round(mean(subset(gfd, Model=="pursuit")$ModelPerf), 2)`, $M_{hum} = 0.48$).
-Indeed, as shown in Figure 1, Pur, PbV, and GnT all showed a pattern of inhuman responses: for a subset of items, the models either always got them correct or always got them incorrect, while people were more stochastic.
-And yet Pur made responses that were most highly correlated with the FUs model ($r=.74$)--one of the best-fitting models.
-In summary, although the hypothesis testing models evaluated here did not fare well, it is worth nothing that models from different theories can often mimic each other--at least in some experimental conditions--and so it is necessary to both 1) test other instances of general theories (including hypothesis testing models with, say, a decaying memory to reduce ceiling performance), and 2) use models to generate predictions during experiment design, in order to choose more informative experiments. 
+Some models' particular patterns of responses suggest theoretical shortcomings.
+For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{Pur}$ = `r r2(pur_mean)`, $M_{hum}$ = `r r2(hum_mean)`).
+Indeed, as shown in Figure 1, Pur, PbV, and GnT all showed a pattern of inhuman responses: for a subset of items, the models either always got them correct or always got them incorrect, while people were more variable.
+And yet Pur's predictions were most highly correlated with those of `r abbr_of(pur_close$model)` ($r$ = `r r2(pur_close$r)`), one of the best-fitting models.
+In summary, although the hypothesis-testing models evaluated here did not fare well, models from different theories can often mimic each other -- at least in some experimental conditions -- so it is necessary both to test other instances of general theories (including hypothesis-testing models with, say, a decaying memory to reduce ceiling performance) and to use models to generate predictions during experiment design, in order to choose more informative experiments.
 
 <!-- There is even some suggestion that under certain assumptions models representing very different intuitions (e.g., storing a single hypothesized referent for each word vs. accumulating a word x referent association matrix representing all experienced co-occurrences) can mimic each other in some experimental conditions, making some model comparisons ill-posed altogether [@Yu2012hyp]. -->
 
-Among the associative models, the PA model [@Fazly2010] and the FU model [@Kachergis2012gi] both fared quite well, and the sampling version of the FU model (FUs) performed slightly better, albeit with three free parameters compared to two in the PA model.
-The predictions of the top three models were more correlated with each other than with the human data (see Table 1): PA vs. FUs: .87, PA vs. FU: .84, FU vs. FUs: .92.
-But the PA model also showed a .84 correlation with the Rescorla-Wagner model, and both FU and FUs showed a .87 correlation with the simpler novelty-biased associative model (Nov)--stronger than for the uncertainty-bias mechanism used by the FU models.
-Examining the experimental conditions that were easiest for the models to fit can indicate what types of designs are less useful to conduct to test theories of learning. 
-For example, the condition best accounted for by six of the models had varied frequency (pairs appeared 3, 6, or 9 times) with low contextual diversity (i.e., the words of each frequency co-occurred only with each other): it turns out that showing a performance advantage for more frequent items is straightforward for many theories.
-Future work should aim to further explore when these models make overlapping predictions, but another approach is to find conditions where models make disparate predictions. 
-The FUs and PA models make maximally divergent predictions in the conditions with fewer words than objects per trial (esp. 1 word x 3 referents and 1 word x 4 referents conditions), which hints at a difference in mechanism for these models. 
+Among the associative models, `r listify(abbr_of(top3))` fit best.
+Their predictions were more correlated with each other (`r abbr_of(top3[1])` vs. `r abbr_of(top3[2])`: `r r2(top3_r[1])`; `r abbr_of(top3[1])` vs. `r abbr_of(top3[3])`: `r r2(top3_r[2])`; `r abbr_of(top3[2])` vs. `r abbr_of(top3[3])`: `r r2(top3_r[3])`) than with the human data ($r$ = `r r2(min(top3_human_r))`--`r r2(max(top3_human_r))`; Table 1).
+But PA's predictions were as close to those of `r abbr_of(pa_close$model)` ($r$ = `r r2(pa_close$r)`), a model with a quite different mechanism, as to those of the FU family.
+Examining the experimental conditions that were easiest for the models to fit can indicate what types of designs are less useful for testing theories of learning.
+For example, the condition best accounted for by the most models (`r best_tab[[1]]` of `r nrow(bw)`) had varied frequency (pairs appeared 3, 6, or 9 times) with low contextual diversity (i.e., the words of each frequency co-occurred only with each other): it turns out that showing a performance advantage for more frequent items is straightforward for many theories.
+The models' worst-fit conditions, by contrast, were spread across designs: the most common, `r names(worst_tab)[1]`, was the worst for only `r worst_tab[[1]]` models.
+Future work should aim to further explore when these models make overlapping predictions, but another approach is to find conditions where models make disparate predictions.
+`r abbr_of(pa_vs)` and PA make their most divergent predictions in the conditions `r listify(div$Condition[1:3])`, which hints at a difference in mechanism between these models.
 A fruitful next step would be to use optimal experiment design to generate a definitive experiment to differentiate these models.
-Models also struggled with conditions that tested how learners relax their bias for mutually exclusive pairings in the face of evidence that two words may both map to two referents: five models had the worst fit for conditions from @Kachergis2012gi.
-
 
 Although we have aimed for broad coverage of models and experimental conditions, this study is far from complete in both respects.
 First, there are many other models that we have not yet implemented [e.g., @mcmurray2012word]. <!-- or that we have not finished fitting to the data [e.g., @YurovskyFrank2015].  @tilles2012minimal; -->
