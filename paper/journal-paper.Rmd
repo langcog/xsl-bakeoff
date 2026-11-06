@@ -351,10 +351,10 @@ Two further distributed and episodic memory models, TODAM [@Murdock1982] and REM
 ## Data
 
 ```{r load-data}
-# The modeled conditions are XSLmodels::xsl_datasets (0.4.0: 56 conditions
-# -- the original 44, plus 5 temporal-contiguity conditions from Kachergis,
-# Yu & Shiffrin 2009, 3 from Suanda et al. 2014, and 4 from Koehne et al.
-# 2013). Every count/range below is computed, not hard-coded.
+# The modeled conditions are XSLmodels::xsl_datasets (v05: 47 adult
+# conditions -- 42 of the original 44 plus 5 temporal-contiguity conditions
+# from Kachergis, Yu & Shiffrin 2009; Suanda et al. 2014 and Koehne et al.
+# 2013 are held out for generalization). Every count/range below is computed.
 nConds   <- length(xsl_datasets)
 totItems <- sum(sapply(xsl_datasets, \(d) length(d$accuracy)))
 totSs    <- sum(sapply(xsl_datasets, \(d) d$n_subj))
@@ -371,8 +371,10 @@ Each condition consists of an ordered list of `r rng(nTrials)` training trials, 
 At test, participants heard each word and were asked to select the best referent from either all $m$ presented objects (*m*-alternative forced choice; AFC), or from a subset (e.g., 4AFC).
 The bulk of these data have been previously published: data from 13 of the conditions were reported in @Kachergis2013nat, data from 12 conditions are from @Kachergis2012gi, and data from another nine conditions are from @Kachergis2016.
 Data from several conditions were contributed by Chen Yu's lab at Indiana University, and have not been published before.
-To these 44 conditions of the original comparison we added five from @Kachergis2009tc, which manipulated the temporal contiguity of repeated word-object pairs; three from @Suanda2014, which varied contextual diversity for 6-year-old children; and four from @Koehne2013, which varied the order in which adults encountered each noun's two differently frequent referents.
-The Suanda et al. and Koehne et al. conditions were held-out generalization tests in the earlier report of this comparison, and report only condition-level accuracy, so each of their items is assigned its condition's mean.
+To 42 of the 44 conditions of the original comparison we added five from @Kachergis2009tc, which manipulated the temporal contiguity of repeated word-object pairs.
+<!-- ToDo (revision): say why the two original conditions (orig_3x3, orig_4x4) were dropped -- their participant-level data still need to be traced to the contributing lab. -->
+All `r nConds` conditions tested adults.
+Experiments that report only condition-level accuracy, or that tested children, are used only to test generalization (see Generalization Experiment Results).
 
 [^2]: Information about the dataset: [https://osf.io/REDACTED](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5)
 
@@ -597,61 +599,80 @@ gfd %>% mutate(Model = case_when(Model == 'kachergis' ~ 'Fam./Unc.',
 ## Generalization Experiment Results
 
 ```{r gen-exps}
-# Generalization results from fits/generalization_with_package.R: each model
-# run at its 53-condition group-fit parameters on experiments outside that
-# fit. Two tiers: Medina 2011 and Smith & Yu 2008 are genuinely held out;
-# Suanda 2014 was held out in the CogSci version but has since been added to
-# xsl_datasets, so its numbers here come straight from the group fit
-# (tier == "now in fit set").
-# NOTE (revision, 2026-09-13): Koehne et al. (2013) is likewise now in
-# xsl_datasets/the group fit, but per author feedback it is no longer
-# reported as a generalization result at all -- it's just an in-sample
-# condition set now (see Table 1), not something to single out here.
-load(here("fits/generalization_with_package.RData"))
-
-gen_wide <- gen_exps %>%
-  select(model, exp, RMSE) %>%
-  pivot_wider(names_from = exp, values_from = RMSE) %>%
-  rename(Medina = `Medina et al.`, `Smith & Yu` = `Smith & Yu`,
-         Suanda = `Suanda et al.`) %>%
-  mutate(`Held-out mean` = (Medina + `Smith & Yu`) / 2) %>%
-  arrange(`Held-out mean`) %>%
-  mutate(Model = abbr_of(model), .before = 1) %>%
-  select(Model, Medina, `Smith & Yu`, `Held-out mean`, Suanda)
-
-gen_best <- gen_exps %>% group_by(exp) %>% slice_min(RMSE, n = 1) %>%
-  select(exp, model, RMSE) %>% mutate(model = abbr_of(model))
-best_of <- function(e) gen_best$model[gen_best$exp == e]
+# v05 generalization (fits/v05/generalize.R; run_generalize.sh): every model
+# at its v05 group-fit parameters, NOT refit, on data held out of the 47
+# fitting conditions. Each model is scored with the library its fits used
+# (fits/v05/extras/common.R's model_lib(); meta$libs).
+load(here("fits/v05/generalization/generalization.Rdata"))  # gen_items, gen_cond, gen_summary, meta
+gen_cols <- c(Medina = "medina2011_rmse",
+              `Benitez adults` = "benitez2020 adults_mse", `Benitez children` = "benitez2020 children_mse",
+              `Initial acc.` = "kachergis_initial_accuracy_mse",
+              Koehne = "koehne2013_mean_abs_error", Suanda = "suanda2014_mean_abs_error",
+              `Smith \\& Yu` = "smith_yu2008_mean_abs_error", `Vlach \\& DeBrock` = "vlach_debrock2017_mean_abs_error")
+gen_err <- gen_summary %>%
+  filter(model != "fazlyt") %>%   # PA-t's predictions equal PA's at its group fit
+  select(model, cv_mse, all_of(unname(gen_cols))) %>%
+  rename(all_of(gen_cols)) %>%
+  # item-level sets as RMSE, on the same scale as the other columns
+  mutate(across(c(`Benitez adults`, `Benitez children`, `Initial acc.`), sqrt))
+gen_rank <- gen_err %>%
+  mutate(across(all_of(names(gen_cols)), rank)) %>%
+  transmute(model, mean_rank = rowMeans(across(all_of(names(gen_cols)))))
+gen_wide <- gen_err %>% left_join(gen_rank, by = "model") %>% arrange(mean_rank)
+gen_abbr <- \(m) abbr_of(m)
+best_in <- \(col, n = 1) gen_abbr(gen_wide$model[order(gen_wide[[col]])][seq_len(n)])
+val_of  <- \(m, col) gen_wide[[col]][gen_wide$model == m]
+f2g <- \(x) sub("^(-?)0\\.", "\\1.", sprintf("%.2f", x))
+# does fitting the 47 conditions well predict generalizing well?
+cv_gen_rho <- with(filter(gen_wide, !is.na(cv_mse)), cor(rank(cv_mse), mean_rank, method = "spearman"))
+counting <- c("baseline", "rescorla-wagner", "kalman_filter")
+# condition-mean sets: human vs. the range of model means
+cm <- gen_cond %>% filter(level == "mean", model != "fazlyt") %>%
+  group_by(set, condition) %>%
+  summarise(human = first(human_mean), lo = min(model_mean), med = median(model_mean), hi = max(model_mean), .groups = "drop")
+sy <- filter(cm, set == "smith_yu2008"); vd <- filter(cm, set == "vlach_debrock2017")
+su <- filter(cm, set == "suanda2014"); ko <- filter(cm, set == "koehne2013")
+ben_r <- gen_summary %>% filter(model != "fazlyt") %>% select(`benitez2020 adults_r`, `benitez2020 children_r`) %>% unlist()
 ```
 
+To test whether the fitted models generalize, we ran each model at its group-fit parameters -- without refitting -- on `r n_distinct(gen_cond$set)` further experiments, none of which is among the `r nConds` fitting conditions.
+They are scored at three levels, depending on what the original studies report.
+*Learning trajectories*: @Medina2011 had adults guess a referent on every trial and reported the proportion of correct guesses in each of five blocks, in four conditions that varied when the informative trials occurred; a model's analogue is its probability of choosing the correct referent among the trial's objects, given what it learned on earlier trials.
+*Item-level accuracy*: @Benitez2020 compared massed, interleaved, and unstructured naming schedules in children and adults (8 words, 2AFC test; `r length(benitez2020)` conditions), and an unpublished experiment of ours (Kachergis, Grimmick, & Gureckis) varied how many words were first shown with an object other than their eventual referent (2 conditions).
+*Condition means*: @Koehne2013 (four orders in which adults met each word's two referents), @Suanda2014 (contextual diversity in 6-year-olds), @Smith2008vg (12- and 14-month-old infants, 6 words), and @Vlach2017dax (spaced and massed repetitions in 2- to 5-year-olds).
+Table 3 gives each model's error on each experiment: RMSE across blocks or items for the first two levels, and the absolute difference from the human mean (averaged over conditions) for the third.
 
-Using each model's group-fit parameters, we simulated its performance on further published experiments for which only group-level human accuracy is available.
-@Medina2011 manipulated trial informativeness (the number of referents per trial) and the order of trials, over four between-subjects conditions with adults; @Smith2008vg and @yu2011you trained 12- and 14-month-old infants on 6 words across 30 trials, with infants learning about 4 words on average.
-Neither experiment is in the fitting set, so both are genuine tests of generalization.
-@Suanda2014, who varied contextual diversity for 6-year-olds, was held out in an earlier version of this comparison but has since been added to the fitting set; we report it here for continuity, with the caveat that the models were fit to it.
-(@Koehne2013 was also held out in the earlier version and has likewise since been added to the fitting set, but we no longer break it out separately here -- its conditions are simply part of the 53-condition fit reported in Table 1.)
-Table 3 gives the root-mean-square error (RMSE) between each model and average human performance on each experiment.
+**No model generalizes best across the board, and fitting the 47 conditions well does not predict generalizing well.**
+The models' mean ranks across the eight columns of Table 3 are essentially unrelated to their cross-validated fit (Spearman $\rho$ = `r f2g(cv_gen_rho)`).
+Three of the four best mean ranks belong to the models that reduce to counting co-occurrences -- KF, the baseline, and R-W -- mainly because they are among the closest to the adults of @Koehne2013 and of the initial-accuracy experiment, but they are among the worst on the @Medina2011 trajectories (RMSE = `r f2g(val_of("baseline", "Medina"))`, against `r f2g(min(gen_wide$Medina))` for the best models, `r listify(best_in("Medina", 3))`).
+The models that fit the 47 conditions best are middling: `r abbr_of(models$Model[1])`, the best cross-validated model, ranks `r which(gen_wide$model == models$Model[1])` of `r nrow(gen_wide)` on average.
+No model captures which items were easy in the @Benitez2020 data: no model's item-level correlation with either age group exceeds `r f2g(max(ben_r, na.rm = TRUE))`, and most are near zero.
 
-On the two genuinely held-out experiments, the models that generalize best are the simplest ones: the co-occurrence baseline, the Rescorla-Wagner and Kalman-filter models, and the reinforcement-learning model all predict the @Medina2011 trajectory and the @Smith2008vg data about as well as anything (RMSE near `r sprintf("%.2f", min(gen_wide$"Held-out mean"))`), while the more elaborate associative models -- the FU family and its variants -- fit these experiments worst.
-In other words, the models generalize to held-out data roughly to the extent that they resemble co-occurrence counting.
-The infant and child data (@Smith2008vg; @Suanda2014) are mostly underfit: the models tend to outperform the learners.
-Among the now-in-set experiments, the @Suanda2014 data is best captured by the Bayesian decay model, as in the earlier comparison.
-<!-- ToDo (revision): once cv_all finishes and the group fit is final, re-check every model name in this paragraph against Table 3. -->
+**The models consistently overestimate young learners.**
+Fit to adults, every model learns more than the infants of @Smith2008vg (human accuracy `r f2g(sy$human)`; models `r f2g(sy$lo)`--`r f2g(sy$hi)`) and the 2- to 5-year-olds of @Vlach2017dax (human `r f2g(vd$human)`; models `r f2g(vd$lo)`--`r f2g(vd$hi)`), and the median model exceeds the 6-year-olds of @Suanda2014 in all three conditions (by `r f2g(min(su$med - su$human))`--`r f2g(max(su$med - su$human))`).
+The adult held-out conditions show no comparable bias: on @Koehne2013 the median model is within `r f2g(max(abs(ko$med - ko$human)))` of the adults' mean in every condition, above it in some and below it in others.
+Adult-fit parameters thus transfer reasonably well to adults in new designs but not to children, who learn less from the same input than any of the models predicts at adult parameters.
+<!-- ToDo (revision): the children's data could be fit separately (an age-specific learning-rate or memory parameter) once there are enough developmental conditions to cross-validate. -->
 
 ```{r gen-exp-table, results="asis"}
-gentab <- as.matrix(gen_wide)
-# bold the minimum (best) RMSE in each experiment column
-for (cc in which(colnames(gentab) %in% c("Medina", "Smith & Yu", "Suanda"))) {
-  v <- as.numeric(gentab[, cc])
-  gentab[, cc] <- sprintf("%.2f", v)
-  gentab[which.min(v), cc] <- cell_spec(sprintf("%.2f", min(v)), "latex", bold = TRUE)
+gentab <- gen_wide %>% transmute(Model = gen_abbr(model), across(all_of(names(gen_cols))), `Mean rank` = mean_rank)
+for (cc in names(gen_cols)) {
+  v <- gentab[[cc]]
+  gentab[[cc]] <- f2g(v)
+  gentab[[cc]][which.min(v)] <- cell_spec(f2g(min(v)), "latex", bold = TRUE)
 }
-gentab[, "Held-out mean"] <- sprintf("%.2f", as.numeric(gentab[, "Held-out mean"]))
-colnames(gentab)[colnames(gentab) == "Smith & Yu"] <- "Smith \\& Yu"
-kable(gentab, "latex", booktabs = T, escape = F,
-      caption = "Generalization RMSE by model. Medina et al. and Smith \\& Yu are held out of fitting; Suanda et al. is in the fitting set (shown for continuity). Best (lowest) per column in bold.") %>%
-  kable_styling(latex_options = "scale_down") %>%
-  add_header_above(c(" " = 1, "Held out" = 3, "In fitting set" = 1))
+gentab$`Mean rank` <- sprintf("%.1f", gentab$`Mean rank`)
+kable(gentab, "latex", booktabs = TRUE, escape = FALSE, align = c("l", rep("r", 9)), linesep = "",
+      col.names = c("Model", "Medina", "Adults", "Children", "Initial acc.", "Koehne", "Suanda", "Smith \\& Yu",
+                    "Vlach \\& DeBrock", "Mean rank"),
+      caption = paste0("Generalization error at the group-fit parameters, on experiments held out of fitting, sorted by ",
+                       "mean rank over the eight columns. Medina: RMSE over the four conditions' five blocks. ",
+                       "Benitez et al. (adults, children) and initial accuracy: item-level RMSE. Koehne et al. ",
+                       "through Vlach \\& DeBrock: absolute difference between the model's and the learners' mean ",
+                       "accuracy, averaged over conditions. Best (lowest) per column in bold.")) %>%
+  add_header_above(c(" " = 1, "Trajectory" = 1, "Benitez et al." = 2, " " = 1, "Condition means" = 4, " " = 1)) %>%
+  add_header_above(c(" " = 1, " " = 1, "Item level" = 3, " " = 5)) %>%
+  kable_styling(latex_options = c("scale_down", "hold_position"))
 ```
 
 ```{r}
