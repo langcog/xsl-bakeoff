@@ -43,7 +43,12 @@ phase <- if (length(args)) args[1] else "summarize"
 stopifnot(phase %in% c("param", "model", "summarize", "plan"))
 QUICK   <- identical(Sys.getenv("QUICK"), "1")
 N_CORES <- as.integer(Sys.getenv("N_CORES", "6"))
-OUT <- file.path(EXTRAS_DIR, "recovery", if (QUICK) "quick" else "")
+# REC_SET=rwkf: the fixed rescorla-wagner and the error-driven redesigns
+# (specs.R's RWKF_MODELS, fit 2026-11-05 under fits/v05/rwkf/Rlib), recovered
+# separately under that library, output in recovery/rwkf/ (see below)
+REC_SET <- Sys.getenv("REC_SET", "main")
+stopifnot(REC_SET %in% c("main", "rwkf"))
+OUT <- file.path(EXTRAS_DIR, "recovery", if (QUICK) "quick" else if (REC_SET == "rwkf") "rwkf" else "")
 dir.create(file.path(OUT, "jobs"), recursive = TRUE, showWarnings = FALSE)
 dir.create(file.path(OUT, "synth"), showWarnings = FALSE)
 
@@ -58,6 +63,16 @@ N_SIM_TRUE <- if (QUICK) 5 else 500
 N_SIM_FIT  <- if (QUICK) 5 else 50
 N_SIM_EVAL <- if (QUICK) 5 else 200
 if (QUICK) { REC_MODELS <- c("baseline", "fazly", "trueswell2012"); PARAM_MODELS <- c("fazly", "trueswell2012") }
+# The rwkf set: parameter recovery for each RWKF model, and model recovery
+# among them plus their controls (baseline, the counting model they reduce to
+# without error-driven learning) and the two best-fitting deterministic
+# models of other mechanisms (fazly, kachergis), whose v05 fits fits/v05/rwkf/Rlib
+# reproduces exactly (it differs from the v05 pin only in RW and tilles).
+if (REC_SET == "rwkf") {
+  if (!identical(XSL_LIB_USED, "rwkf")) stop("REC_SET=rwkf needs R_LIBS=fits/v05/rwkf/Rlib")
+  REC_MODELS   <- c("baseline", RWKF_MODELS, "fazly", "kachergis")
+  PARAM_MODELS <- RWKF_MODELS
+} else if (!QUICK && any(PARAM_MODELS %in% RWKF_MODELS)) stop("RWKF models are recovered with REC_SET=rwkf")
 # PARAM_ONLY=tilles restricts the param phase to the named models, e.g. to
 # redo one model's draws under fits/v05/tilles/Rlib without touching the rest
 if (nzchar(Sys.getenv("PARAM_ONLY"))) {
@@ -204,8 +219,9 @@ run_phase <- function(type) {
 summarize_recovery <- function() {
   jobs <- map(list.files(file.path(OUT, "jobs"), "\\.rds$", full.names = TRUE), readRDS)
   if (!length(jobs)) stop("no finished recovery jobs in ", OUT)
-  md <- c("# Model and parameter recovery (v05)", "",
-          paste0("Generated ", format(Sys.time()), " by `fits/v05/extras/recovery.R`", if (QUICK) " (QUICK smoke test)" else "", "."), "")
+  md <- c(paste0("# Model and parameter recovery (v05", if (REC_SET == "rwkf") ", error-driven models" else "", ")"), "",
+          paste0("Generated ", format(Sys.time()), " by `fits/v05/extras/recovery.R`", if (QUICK) " (QUICK smoke test)" else "",
+                 if (REC_SET == "rwkf") paste0(" with REC_SET=rwkf, XSLmodels ", XSL_LIB_USED, " library") else "", "."), "")
   out <- list()
 
   pj <- keep(jobs, \(j) j$type == "param")
