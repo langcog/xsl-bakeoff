@@ -1,12 +1,22 @@
 ---
-# title: "Let me count the ways to decompose a contingency table"
 title: "A large-scale comparison of cross-situational word learning models"
-bibliography: refs.bib
-csl: apa6.csl
-document-params: "10pt, letterpaper"
+shorttitle: "Comparing cross-situational word learning models"
 
-author-information: > 
-    \author{{\large \bf George Kachergis (kachergis@stanford.edu)} \and {\large \bf Michael C.~Frank (mcfrank@stanford.edu)} \\ Department of Psychology, 450 Jane Stanford Way \\ Stanford, CA 94305 USA}
+author:
+  - name: "George Kachergis"
+    affiliation: "1"
+    corresponding: yes
+    address: "Department of Psychology, Stanford University, 450 Jane Stanford Way, Stanford, CA 94305"
+    email: "kachergis@stanford.edu"
+  - name: "Michael C. Frank"
+    affiliation: "1"
+
+affiliation:
+  - id: "1"
+    institution: "Department of Psychology, Stanford University"
+
+authornote: |
+  Data, model code, and fitting procedures are available on OSF and in the R package XSLmodels (https://github.com/kachergis/XSLmodels).
 
 abstract: >
     One problem language learners face is extracting word meanings from 
@@ -27,16 +37,31 @@ abstract: >
     Finally, we test the models' ability to generalize to seven held-out
     experiments, including developmental data: fitting well does not predict
     generalizing well, and every model fit to adults overestimates children's
-    learning. 
-    
-keywords: >
-    cross-situational word learning; model comparison; language learning
-    
-output: cogsci2016::cogsci_paper
-final-submission: \cogscifinalcopy
-# abstract: ~170 words. Its counts (23 models, 47 conditions, 1,609
-# participants, 7 held-out experiments) are typed in, since YAML is read before
-# any chunk runs; the data-check chunk below stops the knit if they go stale.
+    learning.
+
+keywords: "cross-situational word learning; model comparison; language learning; computational modeling"
+wordcount: "X"
+
+bibliography: refs.bib
+csl: apa7.csl
+
+floatsintext: yes
+linenumbers: no
+draft: no
+mask: no
+
+header-includes:
+  - \usepackage{etoolbox}
+  # single-spaced table bodies in the double-spaced manuscript ("man") mode
+  - \AtBeginEnvironment{tabular}{\renewcommand{\baselinestretch}{1}\selectfont}
+
+documentclass: "apa7"
+classoption: "man"
+output: papaja::apa6_pdf
+# APA 7 manuscript (papaja with the apa7 LaTeX class). The abstract's counts
+# (23 models, 47 conditions, 1,609 participants, 7 held-out experiments) are
+# typed in, since YAML is read before any chunk runs; the data chunk's
+# stopifnot() stops the knit if they go stale.
 ---
 
 ```{r global_options, include=FALSE}
@@ -549,7 +574,7 @@ kable(mod_cors, "latex", booktabs = T, escape=F, digits = 2, caption="Correlatio
   kable_styling(latex_options = "scale_down") 
 ```
 
-```{r 2-col-image, fig.env = "figure*", fig.pos = "h", fig.width=7, fig.height=5.3, fig.align = "center", set.cap.width=T, num.cols.cap=2, fig.cap = "Human vs. model item-level accuracy at each model's group-fit parameters, for all conditions (colored by condition); panels in order of cross-validated fit (Table 1). Note that on some items, PbV, GnT, and Pur all show more extreme responding (1 or 0) than people ever do."}
+```{r 2-col-image, fig.pos = "p", fig.width=7, fig.height=5.3, fig.align = "center", out.width = "100%", fig.cap = "Human vs. model item-level accuracy at each model's group-fit parameters, for all conditions (colored by condition); panels in order of cross-validated fit (Table 1). Note that on some items, PbV, GnT, and Pur all show more extreme responding (1 or 0) than people ever do."}
 # one panel per model in Table 1 (PA-t, whose predictions equal PA's, is left
 # out), labelled by its abbreviation and ordered by CV SSE
 fig1_models <- fit_tab$Model[fit_tab$Model != "fazlyt"]
@@ -777,7 +802,7 @@ Under Luce choice, the Rescorla-Wagner model's predictions were essentially iden
 This is not a coincidence of the fitted parameters: with Luce choice, the R-W model's learning rate barely changes its predictions on these designs, so the two models cannot be told apart even on data simulated from one of them (Appendix C).
 Given a choice rule sensitive to the scale of the learned associations, however, the error-driven models fit far better than the same choice rule applied to co-occurrence counts, so prediction-error learning may deserve more attention than its Luce-choice versions suggest.
 Some models' particular patterns of responses suggest theoretical shortcomings.
-For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{Pur}$ = `r r2(pur_mean)`, $M_{hum}$ = `r r2(hum_mean)`).
+For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{\mathrm{Pur}}$ = `r r2(pur_mean)`, $M_{\mathrm{hum}}$ = `r r2(hum_mean)`).
 Indeed, as shown in Figure 1, Pur, PbV, and GnT all showed a pattern of inhuman responses: for a subset of items, the models either always got them correct or always got them incorrect, while people were more variable.
 And yet Pur's predictions were most highly correlated with those of `r abbr_of(pur_close$model)` ($r$ = `r r2(pur_close$r)`), one of the best-fitting models.
 In summary, although the hypothesis-testing models evaluated here did not fare well, models from different theories can often mimic each other -- at least in some experimental conditions -- so it is necessary both to test other instances of general theories (including hypothesis-testing models with, say, a decaying memory to reduce ceiling performance) and to use models to generate predictions during experiment design, in order to choose more informative experiments.
@@ -819,15 +844,14 @@ More broadly, we believe that structured model comparison is a critical step tow
 We thank Chen Yu for allowing us to include data from several previously-unpublished experimental conditions. 
 -->
 
-# References 
-```{r}
-# References will be generated automatically by Pandoc and included here.
-# The following code is some latex to format the bibliography. Do not remove it.
-```
+\newpage
 
-<div id="refs"></div>
+# References
 
-\setlength{\parindent}{-0.1in} 
-\setlength{\leftskip}{0.125in}
-\noindent
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id="refs" custom-style="Bibliography"></div>
+\endgroup
 

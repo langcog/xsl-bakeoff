@@ -305,8 +305,10 @@ The package currently gets one sentence and a footnote.
 
 ### R4.5 Housekeeping
 
-25. ❌ **Template (D6):** replace `cogsci2016::cogsci_paper`, `\cogscifinalcopy`, the
-    "152 words" comment, the affiliations block and the `fig.env` hacks.
+25. ✅ **Template (D6):** now an APA 7 manuscript (`papaja::apa6_pdf` with
+    `documentclass: apa7`, `classoption: man`, `apa7.csl`), 2026-11-06. The CogSci
+    header, affiliations block and `fig.env` hacks are gone. A journal's own class
+    can still replace it once the target is chosen (D6).
 26. ❌ **Bib and back matter:**
     - Cite CogSci 2024 (ToDo :136).
     - Un-comment the Chen Yu acknowledgement.
@@ -626,7 +628,7 @@ rerun (2026-10-03) on the fixed build.
 | Corpus re-run on the fixed build (`XSLmodels/tests/bakeoff_comparison/corpus_gold_{comparison,fits}.R`, `R_LIBS=../XSLmodels-fix-sample/.Rlib-corpus`) | ✅ done 2026-10-03 (comparison 02:14, fits 06:08); outputs in `XSLmodels/tests/bakeoff_comparison/` (uncommitted there); logs `../XSLmodels-fix-sample/corpus_rerun_*.log` |
 | Corpus section: pick up the re-run (+ new models) | ❌ after re-run |
 | Abstract/Intro: 19 models, 56 conditions, 2,359 participants, memory-model framing | ❌ |
-| Template: replace `cogsci2016::cogsci_paper` (not installed here) with the target journal's | ❌ needs journal choice |
+| Template: replace `cogsci2016::cogsci_paper` (not installed here) with the target journal's | ✅ APA 7 manuscript (papaja); journal-specific class still open |
 | Cite the CogSci 2024 conference version (ToDo in Method) | ❌ needs bib entry |
 
 ---
