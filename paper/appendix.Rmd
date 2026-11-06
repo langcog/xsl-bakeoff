@@ -1,27 +1,13 @@
----
-#title: "Appendix"
-output: pdf_document
----
+```{r appendix-setup}
+# Appendices A-C. Knit as a child of journal-paper.Rmd (after the references,
+# under \appendix), so it shares that document's packages, chunk options and
+# fits (gfd, cvg, ... from paper/load_fits.R); it no longer renders on its own.
+# Objects created here are prefixed or local so they never overwrite the main
+# text's (e.g. the relabelled CV predictions are cvg_app, not cvg).
+suppressMessages({ library(gplots); library(RColorBrewer); library(pals) })
 
-```{r, echo=F, warning=F, message=F}
-require(here)
-require(gplots)
-require(tidyverse)
-require(RColorBrewer)
-knitr::opts_chunk$set(echo=F, message=F, warning=F)
-# XSLmodels pinned to the commit the v05 fits used (fits/v05/XSLMODELS_COMMIT)
-.libPaths(c(here("fits/v05/Rlib"), .libPaths()))
-require(XSLmodels)
-stopifnot(as.character(packageVersion("XSLmodels")) == "0.4.0")
-# gfd, group_fits, cv_group_fits, cvg, FITS_META -- shared with
-# journal-paper.Rmd (the v05 refit, fits/v05/adults/)
-source(here("paper/load_fits.R"))
-
-# Model metadata (name -> abbreviation), kept in sync with the same table in
-# journal-paper.Rmd's `model-list` chunk. Duplicated here because this
-# appendix currently knits standalone rather than as a child of the main
-# document (see plan: "promote appendix to numbered supplementary material").
-model_meta <- tibble::tribble(
+# Long model labels for the appendix tables and figures
+app_labels <- tibble::tribble(
   ~Model,               ~label,
   "kachergis",          "Fam./Unc. (FU)",
   "kachergis_sampling", "Fam./Unc. sampling (FUs)",
@@ -48,12 +34,12 @@ model_meta <- tibble::tribble(
   "kalman_filter_full",             "Kalman Filter, Full Cov. (KF-F)",
   "baseline_softmax",               "Baseline + Softmax (Base-S)"
 )
-relabel <- function(m) dplyr::coalesce(model_meta$label[match(m, model_meta$Model)], m)
+relabel <- function(m) dplyr::coalesce(app_labels$label[match(m, app_labels$Model)], m)
 ```
 
-# Appendix A: Summary of Experimental Conditions
+# Summary of Experimental Conditions
 
-Table 1 describes the `r length(xsl_datasets)` experimental conditions included in the model comparison, including the number of trials, the number of words presented per trial (Words/Trial), the number of referents presented per trial (Objects/Trial), the number of to-be-learned word-referent pairs (Items), people's overall mean accuracy ($p(o|w)$ across all intended $w-o$ mappings) in each condition (Accuracy), the standard deviation of performance (SD), and the number of participants per condition (N).
+Table \ref{tab:app-conditions} describes the `r length(xsl_datasets)` experimental conditions included in the model comparison, including the number of trials, the number of words presented per trial (Words/Trial), the number of referents presented per trial (Objects/Trial), the number of to-be-learned word-referent pairs (Items), people's overall mean accuracy ($p(o|w)$ across all intended $w-o$ mappings) in each condition (Accuracy), the standard deviation of performance (SD), and the number of participants per condition (N).
 
 ```{r conditions-table, results="asis", echo=F}
 # NOTE (revision): repointed at XSLmodels::xsl_datasets (53 conditions) in
@@ -73,35 +59,33 @@ tab <- purrr::map_dfr(xsl_datasets, function(d) {
   )
 })
 
-tab1 <- xtable::xtable(tab, digits=2,
+app_tab_cond <- xtable::xtable(tab, digits=2, label = "tab:app-conditions",
                        caption = "Summary of modeled datasets.")
 
-print(tab1, type="latex", comment = F, include.rownames = F, table.placement = "p")
+print(app_tab_cond, type="latex", comment = F, include.rownames = F, table.placement = "p", caption.placement = "top", size = "\\footnotesize")
 ```
 
-# Appendix B: Clustering experiments and models by misfit
+# Model Misfit by Experimental Condition
 
 ```{r load-cv-appendix}
 # CV fits come from paper/load_fits.R (sourced in the setup chunk): the v05
 # refit's 5-fold CV over the 47 conditions.
-cvg <- cvg %>% mutate(Model = relabel(Model))
-n_models_appendix <- length(unique(cvg$Model))
+cvg_app <- cvg %>% mutate(Model = relabel(Model))
+n_models_appendix <- length(unique(cvg_app$Model))
 
-# Seven conditions (the four Koehne et al. 2013 meaning-order conditions and
-# the three Suanda et al. 2014 contextual-diversity conditions) only have a
-# single condition-level human accuracy figure, replicated across items --
-# there is no item-level variance for a correlation to be computed against,
-# so cor(ModelPerf, HumanPerf) is undefined (NA) for every model on these.
-# Excluded from every correlation-based view below (SSE-based views are
-# unaffected and keep all conditions).
-zero_var_conds <- cvg %>% group_by(Condition) %>%
+# Conditions with only a condition-level human accuracy (replicated across
+# items) have no item-level variance to correlate with, so they're excluded
+# from the correlation-based views below. None remain in the v05 fit set
+# (Koehne et al. 2013 and Suanda et al. 2014 are held out), but the check
+# stays.
+zero_var_conds <- cvg_app %>% group_by(Condition) %>%
   summarize(human_sd = sd(HumanPerf), .groups = "drop") %>%
   filter(human_sd == 0) %>% pull(Condition)
 ```
 
-The heatmap below shows cross-validated model fit (SSE; sum of squared error) for each experimental condition, across all `r n_models_appendix` fitted models and the `r length(unique(cvg$Condition))` conditions with cross-validated fits.
+The heatmap below shows cross-validated model fit (SSE; sum of squared error) for each experimental condition, across all `r n_models_appendix` fitted models and the `r length(unique(cvg_app$Condition))` conditions with cross-validated fits.
 Note that each model has difficulty fitting at least one or more experimental conditions--and these difficult conditions vary somewhat by model.
-For example, the strength-biased model has particular difficulty with the `filt` conditions[^1] (Kachergis et al., 2012), which present a group of word-referent pairs early in training which then systematically co-occur with particular novel late-stage word-referent pairs, testing how strictly learners will maintain a mutual exclusivity (ME) constraint.
+For example, the strength-biased model has particular difficulty with the `filt` conditions[^filt0E] (Kachergis et al., 2012), which present a group of word-referent pairs early in training which then systematically co-occur with particular novel late-stage word-referent pairs, testing how strictly learners will maintain a mutual exclusivity (ME) constraint.
 The Propose-but-Verify model also shows greater misfit in most of these conditions (except for the `filtXE_3L` conditions, which have only 3 repetitions of the late-stage pairings, and thus do not overwhelm learners' ME bias).
 <!-- ToDo (revision): re-check both of these claims against the 53-condition,
      15-model heatmap below once cv_all_experiments.R finishes -- they were
@@ -109,10 +93,10 @@ The Propose-but-Verify model also shows greater misfit in most of these conditio
 
 On the other hand, many experimental conditions are nearly equally well fit by all models, especially those that have a fixed number of repetitions per word-referent pair (e.g., 3x3 and 4x4, although 2x2 presents difficulties for some models).
 
-[^1]: Except for the `filt0E_` conditions, which consist only of the late-stage pairs, with no early stage.
+[^filt0E]: Except for the `filt0E_` conditions, which consist only of the late-stage pairs, with no early stage.
 
-```{r, fig.width=9, fig.height=10}
-exp_by_mod <- cvg %>%
+```{r app-sse-heatmap, fig.width=9, fig.height=10, out.width="100%", fig.pos="p", fig.cap="Cross-validated misfit (mean squared error per item) of each model on each experimental condition, clustered by condition (rows) and model (columns); brighter red is worse."}
+exp_by_mod <- cvg_app %>%
   mutate(SSE = (ModelPerf-HumanPerf)^2) %>% # should we weight be sample size?
   group_by(Condition, Model) %>%
   summarize(meanSSE = mean(SSE), .groups = "drop") %>%
@@ -130,13 +114,13 @@ heatmap.2(xm_mat, col=colfunc(20), cexCol=.7, srtCol=45, margins = c(8,6.5)) # ,
 <!-- Other ideas: -->
 <!-- - Find experiment with maximal discrimination between the models? (highest SD of fit?) -->
 
-# Correlation of model vs. human item-level performance per condition
+## Correlation of Model and Human Item-Level Performance per Condition
 
 Each cell displays the correlation coefficient of model vs. human item-level performance in a given experimental condition.
-`r length(zero_var_conds)` conditions (the Koehne et al. 2013 and Suanda et al. 2014 conditions, which only have condition-level human accuracy) are excluded here, since a correlation is undefined without item-level variance in the human data; they are included in the SSE-based heatmap above and in Table 2 below.
+`r if (length(zero_var_conds)) paste(length(zero_var_conds), "conditions with only condition-level human accuracy are excluded here, since a correlation is undefined without item-level variance in the human data.") else ""`
 
-```{r, fig.width=9, fig.height=10}
-exp_by_mod_r <- cvg %>%
+```{r app-r-heatmap, fig.width=9, fig.height=10, out.width="100%", fig.pos="p", fig.cap="Item-level correlation between each model's cross-validated predictions and human accuracy, per experimental condition, clustered by condition (rows) and model (columns)."}
+exp_by_mod_r <- cvg_app %>%
   filter(!Condition %in% zero_var_conds) %>%
   group_by(Condition, Model) %>%
   summarize(r = cor(ModelPerf, HumanPerf), .groups = "drop") %>%
@@ -144,18 +128,17 @@ exp_by_mod_r <- cvg %>%
 
 xm_mat <- as.matrix(exp_by_mod_r[, -1, drop = FALSE])
 row.names(xm_mat) = exp_by_mod_r$Condition
-require(pals)
 heatmap.2(xm_mat, col=brewer.spectral(30), # brewer.pal(11,"RdBu")
           scale="none", trace="none",
           cexCol=.7, srtCol=45, margins = c(8,6.5)) # scale="row", "col" <- interesting
 ```
 
-# Which experimental designs are easy or hard, overall?
+## Which Experimental Designs Are Easy or Hard Overall?
 
 The heatmaps above group misfit by model; here we instead average over models, to ask which experimental designs are uniformly easy or hard to predict for *any* model -- a useful signal for choosing which conditions actually discriminate between theories, versus which conditions every model gets right (or wrong) regardless of mechanism.
 
 ```{r overall-difficulty}
-exp_by_mod_long <- cvg %>%
+exp_by_mod_long <- cvg_app %>%
   mutate(SSE = (ModelPerf - HumanPerf)^2) %>%
   group_by(Condition, Model) %>%
   summarize(SSE = mean(SSE), r = cor(ModelPerf, HumanPerf), .groups = "drop")
@@ -171,17 +154,17 @@ hardest <- cond_overall %>% arrange(desc(`Mean SSE`)) %>% head(5) %>% mutate(Ran
 extremes_tab <- bind_rows(easiest, hardest) %>% select(Rank, everything())
 ```
 
-Table 2 shows the five conditions with the lowest mean SSE across all `r n_models_appendix` models (easiest, fit well by essentially every model) and the five with the highest (hardest, fit poorly by essentially every model).
+Table \ref{tab:app-extremes} shows the five conditions with the lowest mean SSE across all `r n_models_appendix` models (easiest, fit well by essentially every model) and the five with the highest (hardest, fit poorly by essentially every model).
 The `SD SSE` column shows how much models disagree on a condition: a low SD alongside a high mean SSE means every model struggles with that design about equally -- a design that is hard for principled reasons rather than one that merely discriminates between theories.
 <!-- ToDo (revision): once cv_all_experiments.R finishes (adding FUs), re-verify which conditions land in this table -- name the design manipulation for the hardest few explicitly in this paragraph (e.g., which filt/freq condition, contextual diversity level, or AFC condition). -->
 
 ```{r overall-difficulty-table, results="asis"}
-tab_ext <- xtable::xtable(extremes_tab, digits = 3,
+tab_ext <- xtable::xtable(extremes_tab, digits = 3, label = "tab:app-extremes",
                           caption = "The five easiest and five hardest experimental conditions, by mean SSE across all fitted models.")
-print(tab_ext, type="latex", comment = F, include.rownames = F, table.placement = "p")
+print(tab_ext, type="latex", comment = F, include.rownames = F, table.placement = "p", caption.placement = "top")
 ```
 
-# Model disagreement: a discriminability index independent of human data
+## Model Disagreement: A Discriminability Index Independent of Human Data
 
 ```{r model-disagreement}
 gfd_group <- gfd %>% filter(Model != "fazlyt") # gfd from paper/load_fits.R; fazlyt is a group-fit-only bonus
@@ -220,21 +203,21 @@ We index this directly, independent of human data, as the standard deviation of 
 Because several of our associative models are one-parameter-removed cousins of each other (FU/FUs/FU-A/FU-P/Str/Unc/Nov all share the same core mechanism), their mutual spread can pad this index without reflecting genuine disagreement between *theories*.
 We therefore report it two ways: across all `r length(unique(gfd_group$Model))` fitted models, and across `r length(mech_reps)` representatives, one per distinct mechanism (`r paste(relabel(mech_reps), collapse=", ")`) -- the two versions correlate at `r round(cor(cond_disagree$sd_all, cond_disagree$sd_reps), 2)`, but reorder some conditions meaningfully (see below).
 
-Table 3 shows the most- and least-discriminative conditions by this measure.
+Table \ref{tab:app-disagree} shows the most- and least-discriminative conditions by this measure.
 The `filt9E_*`/`filt6E_*` conditions -- which present a group of pairs early, then systematically pair a subset of the late-stage objects with the early-stage words to test how strictly a mutual-exclusivity bias is maintained -- are the most model-discriminating conditions in the whole set, on both versions of the index; the temporal- and spatial-contiguity conditions also rise near the top once the FU family's internal spread is removed, indicating a genuine cross-theory split there rather than one associative model disagreeing with its own close cousins.
 At the other end, `filt0E_6L`/`filt0E_9L` (the late-stage-only `filt` conditions, with no early pairs to violate) and several of the fixed-repetition `3x4`/`4x4` conditions are answered almost identically by every model regardless of mechanism -- useful as sanity checks, but uninformative for adjudicating between theories.
 This index correlates with the SSE-based "hardest" ranking above at only $r \approx$ `r round(sse_disagree_cor, 2)`, confirming that "hard for everyone" and "discriminates between theories" are related but distinct properties of a design.
 <!-- ToDo (revision): re-check top/bottom lists once cv_all_experiments.R finishes and FUs is added to the group-fit roster used here (group fits are already complete and don't depend on that CV run, so this section is NOT blocked on it -- only re-verify the specific numbers land the same way). -->
 
 ```{r model-disagreement-table, results="asis"}
-tab_disagree <- xtable::xtable(disagree_extremes, digits = 3,
-                               caption = "Most- and least-discriminative experimental conditions: standard deviation of model-predicted item accuracy across models, at each model's group-fit parameters. `all models' is 16 models (the 15-model roster plus baseline); `mechanism reps' is one representative per distinct theoretical mechanism.")
-print(tab_disagree, type="latex", comment = F, include.rownames = F, table.placement = "p")
+tab_disagree <- xtable::xtable(disagree_extremes, digits = 3, label = "tab:app-disagree",
+                               caption = paste0("Most- and least-discriminative experimental conditions: standard deviation of model-predicted item accuracy across models, at each model's group-fit parameters. `All models' is all ", length(unique(gfd_group$Model)), " models including the baseline; `mechanism reps' is one representative per distinct theoretical mechanism (", length(mech_reps), ")."))
+print(tab_disagree, type="latex", comment = F, include.rownames = F, table.placement = "p", caption.placement = "top")
 ```
 
 ## Each Model's Best- and Worst-Fitting Experiment
 
-Table 4 summarizes for each model, what experimental condition is best fit by that model (in terms of correlation, `best` and `best_cond`), and what condition has the worst fit for that model (`worst` and `worst_cond`), again excluding the `r length(zero_var_conds)` conditions with no item-level human variance.
+Table \ref{tab:app-model-bw} summarizes for each model, what experimental condition is best fit by that model (in terms of correlation, `best` and `best_cond`), and what condition has the worst fit for that model (`worst` and `worst_cond`).
 
 ```{r, results="asis"}
 # A handful of remaining (condition, model) pairs still have r = NA even
@@ -258,10 +241,10 @@ most_common_worst <- names(sort(table(mod_best_worst$worst_cond), decreasing = T
 n_best  <- max(table(mod_best_worst$best_cond))
 n_worst <- max(table(mod_best_worst$worst_cond))
 
-tab2 <- xtable::xtable(mod_best_worst, digits=2,
+app_tab_bw <- xtable::xtable(mod_best_worst, digits=2, label = "tab:app-model-bw",
                        caption = "Each model's best- and worst-fitting experiment.")
 
-print(tab2, type="latex", comment = F, include.rownames = F, table.placement = "p")
+print(app_tab_bw, type="latex", comment = F, include.rownames = F, table.placement = "p", caption.placement = "top")
 ```
 
 Across models, `r most_common_best` is most often the best-fit condition (best for `r n_best` of `r nrow(mod_best_worst)` models), and `r most_common_worst` is most often the worst-fit condition (worst for `r n_worst` models).
@@ -269,7 +252,7 @@ Across models, `r most_common_best` is most often the best-fit condition (best f
 
 ## Best- and Worst-Fitting Models per Experiment
 
-Table 5 takes the complementary view: for each experimental condition, which model fits it best and which fits it worst (by item-level correlation), and then, aggregating over conditions, how many conditions each model "wins" (is the single best-fitting model for) and "loses" (is the single worst-fitting model for).
+Table \ref{tab:app-cond-bw} takes the complementary view: for each experimental condition, which model fits it best and which fits it worst (by item-level correlation), and then, aggregating over conditions, how many conditions each model "wins" (is the single best-fitting model for) and "loses" (is the single worst-fitting model for).
 A model that wins many, varied conditions is a safe default; a model that wins a few conditions no other model wins is doing something distinctive worth understanding.
 
 ```{r, results="asis"}
@@ -292,13 +275,13 @@ best_worst_tab <- full_join(best, worst, by = "Model") %>%
   mutate(across(c(best_fits, worst_fits), ~replace_na(., 0))) %>%
   arrange(desc(best_fits))
 
-tab3 <- xtable::xtable(best_worst_tab, digits=0,
+app_tab_cbw <- xtable::xtable(best_worst_tab, digits=0, label = "tab:app-cond-bw",
                        caption = "Number of experimental conditions that each model fits best, and worst (by item-level correlation).")
 
-print(tab3, type="latex", comment = F, include.rownames = F, table.placement = "p")
+print(app_tab_cbw, type="latex", comment = F, include.rownames = F, table.placement = "p", caption.placement = "top")
 ```
 
 \clearpage
 
-```{r appendix-recovery, child = "appendix_recovery.Rmd"}
+```{r appendix-recovery, child = here::here("paper/appendix_recovery.Rmd")}
 ```

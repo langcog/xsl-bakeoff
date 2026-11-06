@@ -1,6 +1,6 @@
 ```{r recovery-setup, include=FALSE}
-# Appendix: model and parameter recovery. Included as a child of appendix.Rmd;
-# self-contained (its own packages and data), so it can also be rendered alone.
+# Appendix C: model and parameter recovery. A child of appendix.Rmd (itself a
+# child of journal-paper.Rmd); self-contained (its own packages and data).
 # Data: fits/v05/extras/recovery/recovery.rds (fits/v05/extras/recovery.R).
 # Figures: paper/recovery_figs.R.
 source(here::here("paper/recovery_figs.R"))
@@ -39,7 +39,7 @@ rivals <- marg |> count(gen, best_other_model) |> group_by(gen) |> slice_max(n, 
   ungroup() |> mutate(g = rec_models[gen], r = rec_models[best_other_model])
 ```
 
-# Appendix C: Model and Parameter Recovery
+# Model and Parameter Recovery
 
 Two questions bear on how far the comparison can be trusted.
 First, if one of these models had generated the data, would fitting all of them have identified it, or do some mechanisms mimic each other so closely on these 47 designs that the comparison could not tell them apart?
@@ -104,15 +104,15 @@ knitr::kable(tabC1, "latex", booktabs = TRUE, escape = FALSE, align = "llcrr", l
   kableExtra::kable_styling(latex_options = "hold_position")
 ```
 
-```{r recovery-param-fig, fig.width=7, fig.height=7.4, fig.cap="Parameter recovery.\\label{fig:recovery-param-fig} Each panel is one parameter of one model; each point is one synthetic dataset, generated at the value on the x axis and fit by the same model. Points on the dashed identity line are recovered exactly."}
+```{r recovery-param-fig, fig.width=7, fig.height=7.4, fig.cap="Parameter recovery. Each panel is one parameter of one model; each point is one synthetic dataset, generated at the value on the x axis and fit by the same model. Points on the dashed identity line are recovered exactly."}
 fig_param_recovery(rec)
 ```
 
-```{r recovery-model-fig, fig.width=6, fig.height=6.4, fig.cap="Model recovery.\\label{fig:recovery-model-fig} Rows: the model that generated the synthetic data (at its group-fit parameters); columns: the model fit to them. Off-diagonal cells give the mean amount by which the fitting model's objective exceeded the generating model's (darker = easier to tell apart); the diagonal gives the number of datasets the generating model won."}
+```{r recovery-model-fig, fig.width=6, fig.height=6.4, fig.cap="Model recovery. Rows: the model that generated the synthetic data (at its group-fit parameters); columns: the model fit to them. Off-diagonal cells give the mean amount by which the fitting model's objective exceeded the generating model's (darker = easier to tell apart); the diagonal gives the number of datasets the generating model won."}
 fig_model_recovery(rec)
 ```
 
-```{r recovery-margin-fig, fig.width=6, fig.height=3.2, fig.cap="Margin of victory:\\label{fig:recovery-margin-fig} for each synthetic dataset, how much worse the best-fitting rival model's objective was than the generating model's, with the rival that came closest most often."}
+```{r recovery-margin-fig, fig.width=6, fig.height=3.2, fig.cap="Margin of victory: for each synthetic dataset, how much worse the best-fitting rival model's objective was than the generating model's, with the rival that came closest most often."}
 fig_recovery_margin(rec)
 ```
 
@@ -185,10 +185,10 @@ knitr::kable(tabC2, "latex", booktabs = TRUE, escape = FALSE, align = "llcrr", l
   kableExtra::kable_styling(latex_options = "hold_position")
 ```
 
-```{r recovery-rwkf-param-fig, fig.width=7, fig.height=5.6, fig.cap="Parameter recovery for the error-driven models.\\label{fig:recovery-rwkf-param-fig} As in Figure \\ref{fig:recovery-param-fig}."}
+```{r recovery-rwkf-param-fig, fig.width=7, fig.height=5.6, fig.cap="Parameter recovery for the error-driven models. As in Figure \\ref{fig:recovery-param-fig}."}
 fig_param_recovery(rw)
 ```
 
-```{r recovery-rwkf-model-fig, fig.width=6, fig.height=6, fig.cap="Model recovery for the error-driven models.\\label{fig:recovery-rwkf-model-fig} As in Figure \\ref{fig:recovery-model-fig}. Base and R-W are indistinguishable (gaps under .01 in both directions); every other generator won all its datasets."}
+```{r recovery-rwkf-model-fig, fig.width=6, fig.height=6, fig.cap="Model recovery for the error-driven models. As in Figure \\ref{fig:recovery-model-fig}. Base and R-W are indistinguishable (gaps under .01 in both directions); every other generator won all its datasets."}
 fig_model_recovery(rw)
 ```

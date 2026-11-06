@@ -855,3 +855,10 @@ We thank Chen Yu for allowing us to include data from several previously-unpubli
 <div id="refs" custom-style="Bibliography"></div>
 \endgroup
 
+\newpage
+
+\appendix
+
+```{r appendices, child = here::here("paper/appendix.Rmd")}
+```
+

@@ -1,0 +1,5 @@
+# render byproducts of journal-paper.Rmd (the PDF itself is tracked)
+journal-paper.log
+journal-paper.tex
+journal-paper_files/
+figs/*-1.png

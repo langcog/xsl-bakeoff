@@ -976,3 +976,5 @@ hung?) rather than just waiting for it. Everything else needed for the fits is d
    best-worst tables (currently 14/15 models); walk the §5 table and every inline stat.
 8. **Rewrite Discussion** against final numbers (esp. the PbV story; add corpus results).
 9. **Final knit + stat-by-stat diff** vs. `cogsci-final.pdf`; typeset pass for the venue.
+
+- ✅ 2026-11-06: appendix folded into the paper (child of journal-paper.Rmd after the references, `\appendix`: A conditions, B misfit, C recovery); standalone appendix.pdf removed.
