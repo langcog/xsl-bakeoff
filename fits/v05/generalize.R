@@ -55,11 +55,13 @@ group_pars <- load_group_pars()
 models <- commandArgs(trailingOnly = TRUE)
 if (!length(models)) {
   models <- intersect(RUN_ORDER, names(group_pars))
-  models <- if (XSL_LIB_USED == "tilles") "tilles" else setdiff(models, "tilles")
+  models <- models[model_lib(models) == XSL_LIB_USED]
 }
 stopifnot(all(models %in% names(group_pars)))
-if ("tilles" %in% models && XSL_LIB_USED != "tilles") {
-  stop("score tilles with its corrected model: R_LIBS=$(pwd)/fits/v05/tilles/Rlib")
+if (any(model_lib(models) != XSL_LIB_USED)) {
+  stop("score ", paste(models[model_lib(models) != XSL_LIB_USED], collapse = ", "), " with the ",
+       paste(unique(model_lib(models[model_lib(models) != XSL_LIB_USED])), collapse = "/"),
+       " library (fits/v05/extras/common.R's XSL_LIB)")
 }
 
 # ---- held-out data ----------------------------------------------------------
@@ -132,6 +134,7 @@ score_model <- function(m, par) {
       dat <- xslData(train = list(words = as.list(cond$words[seq_len(t - 1)]),
                                   objects = cond$objects[seq_len(t - 1)]))
       mat <- run_model(m, par, dat, n_sim = N_SIM)$fits[[1]]$matrix
+      if (!is.null(mod$params[["phi"]])) mat <- softmax_weights(mat / (if (spec$stochastic) N_SIM else 1), mod$params[["phi"]])
       probs <- predict_referent(mat, as.character(cond$words[t]), as.character(objs), d = d)
       probs[match(cond$words[t], objs)]
     })

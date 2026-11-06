@@ -37,6 +37,11 @@
 # fits/v05/priming/Rlib. Every model in specs.R other than tilles (whose
 # corrected model is the master one) is unchanged between the two.
 #
+# The fixed rescorla-wagner and the error-driven redesigns (specs.R's
+# RWKF_MODELS) are scored in both phases with fits/v05/rwkf/Rlib (XSLmodels
+# after PRs #41-#42); see fits/v05/rwkf/queue_rwkf.sh. Each cached result
+# records its library and commit.
+#
 # Usage (from xsl-bakeoff/): bash fits/v05/priming/run_priming.sh [N_WORKERS]
 # or by hand:
 #   R_LIBS=$(pwd)/fits/v05/Rlib          Rscript fits/v05/priming/priming.R generalize
@@ -69,9 +74,12 @@ N_WORKERS <- as.integer(Sys.getenv("N_WORKERS", "10"))
 stamp <- function(...) message(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "  ", ...)
 
 lib <- find.package("XSLmodels")
-LIBS <- c(v05 = here("fits/v05/Rlib"), tilles = here("fits/v05/tilles/Rlib"), priming = file.path(DIR, "Rlib"))
+LIBS <- c(v05 = here("fits/v05/Rlib"), tilles = here("fits/v05/tilles/Rlib"), priming = file.path(DIR, "Rlib"),
+          rwkf = here("fits/v05/rwkf/Rlib"))
+COMMIT_FILES <- c(v05 = here("fits/v05/XSLMODELS_COMMIT"), tilles = here("fits/v05/tilles/XSLMODELS_COMMIT"),
+                  priming = file.path(DIR, "XSLMODELS_COMMIT"), rwkf = here("fits/v05/rwkf/XSLMODELS_COMMIT"))
 LIB_USED <- names(LIBS)[startsWith(lib, LIBS)]
-need <- switch(phase, generalize = c("v05", "tilles"), fit = "priming", summary = names(LIBS))
+need <- switch(phase, generalize = c("v05", "tilles", "rwkf"), fit = c("priming", "rwkf"), summary = names(LIBS))
 if (!length(LIB_USED) || !LIB_USED %in% need) {
   stop("the ", phase, " phase needs R_LIBS=", paste(LIBS[need], collapse = " or "), " (found ", lib, ")")
 }
@@ -95,6 +103,11 @@ block_conditions <- imap(priming, \(x, cn) map(1:4, \(b) xslData(
   label = paste0(cn, " block", b), condition = cn))) |> list_flatten() |> unname()
 
 ctrl_for <- function(spec) if (spec$stochastic) xslControl(n_sim = N_SIM) else xslControl()
+# the fixed rescorla-wagner and the error-driven redesigns (specs.R's
+# RWKF_MODELS) are scored with fits/v05/rwkf/Rlib, tilles with its own, and
+# the rest with the v05 pin (generalize) or this directory's pin (fit)
+lib_of <- function(m, phase) ifelse(m %in% RWKF_MODELS, "rwkf",
+                                    ifelse(phase == "fit", "priming", ifelse(m == "tilles", "tilles", "v05")))
 ch_dec_of <- function(name, par) if (name == "Bayesian_decay") par[3] else NULL
 
 # One row per test item: the model's accuracy and choice distribution over
@@ -102,12 +115,16 @@ ch_dec_of <- function(name, par) if (name == "Bayesian_decay") par[3] else NULL
 # accuracy and response counts.
 score <- function(name, par) {
   spec <- specs_v04[[name]]
-  res <- xsl_run(spec$constructor(par), block_conditions, control = ctrl_for(spec))
+  mod <- spec$constructor(par)
+  res <- xsl_run(mod, block_conditions, control = ctrl_for(spec))
   d <- ch_dec_of(name, par); d <- if (is.null(d)) 1 else d
+  phi <- mod$params[["phi"]]
   map(res$fits, \(f) {
     dat <- f$data; mat <- f$matrix; rm <- dat$response_matrix
     stopifnot(length(dat$test) == 0, identical(colnames(mat), colnames(rm)),
               identical(rownames(mat), colnames(mat)))
+    # softmax (phi) on the mean matrix, then the power rule, as xsl_run()
+    if (!is.null(phi)) mat <- softmax_weights(mat / nrow(f$responses), phi)
     M <- pmax(mat, 0)^d
     probs <- map(seq_len(nrow(M)), \(i) { tot <- sum(M[i, ]); if (tot > 0) unname(M[i, ]) / tot else rep(1 / ncol(M), ncol(M)) })
     p_correct <- map2_dbl(probs, seq_along(probs), \(p, i) p[i])
@@ -123,7 +140,7 @@ if (phase == "generalize") {
   e <- new.env(); load(here("fits/v05/adults/group_fits.Rdata"), envir = e)
   pars <- map(e$group_fits, \(g) unname(g$optim$bestmem))
   models <- if (length(args) > 1) args[-1] else intersect(RUN_ORDER, names(pars))
-  models <- if (LIB_USED == "tilles") intersect(models, "tilles") else setdiff(models, "tilles")
+  models <- models[lib_of(models, "generalize") == LIB_USED]
   out_dir <- file.path(DIR, "generalize"); dir.create(out_dir, showWarnings = FALSE)
   for (m in models) {
     out <- file.path(out_dir, paste0(m, ".rds"))
@@ -131,8 +148,7 @@ if (phase == "generalize") {
     stamp("generalize ", m)
     set.seed(2026)
     saveRDS(list(par = pars[[m]], items = score(m, pars[[m]]), lib = LIB_USED,
-                 commit = readLines(here(if (LIB_USED == "tilles") "fits/v05/tilles/XSLMODELS_COMMIT" else "fits/v05/XSLMODELS_COMMIT"))),
-            out)
+                 commit = readLines(COMMIT_FILES[[LIB_USED]])), out)
   }
   stamp("generalize phase done")
 }
@@ -142,6 +158,7 @@ if (phase == "fit") {
   options(mc.cores = N_WORKERS)
   models <- if (length(args) > 1) args[-1] else RUN_ORDER
   stopifnot(all(models %in% names(specs_v04)))
+  models <- models[lib_of(models, "fit") == LIB_USED]
   out_dir <- file.path(DIR, "fits"); dir.create(out_dir, showWarnings = FALSE)
   err_file <- file.path(DIR, "fit_objective_errors.log")
   # as fits/v05/refit.R's fit_one(), on the multi-block conditions
@@ -179,7 +196,7 @@ if (phase == "fit") {
     set.seed(2026)
     saveRDS(list(par = par, sse = fit$optim$bestval, k = length(par), items = score(m, par),
                  minutes = as.numeric(difftime(Sys.time(), t0, units = "mins")),
-                 commit = readLines(file.path(DIR, "XSLMODELS_COMMIT"))), out)
+                 lib = LIB_USED, commit = readLines(COMMIT_FILES[[LIB_USED]])), out)
     stamp("  done in ", round(difftime(Sys.time(), t0, units = "mins"), 1), " min; sse = ", signif(fit$optim$bestval, 4),
           "; par = ", paste(signif(par, 3), collapse = ", "))
   }
@@ -223,7 +240,7 @@ if (phase == "summary") {
 
   meta <- list(n_responses = n_resp, n_sim = N_SIM, chance_ll_per_resp = chance_ll,
                generalize_commits = unique(map_chr(res$generalize, "commit")),
-               fit_commit = unique(map_chr(res$fit, "commit")), updated = format(Sys.time()))
+               fit_commits = unique(map_chr(res$fit, "commit")), updated = format(Sys.time()))
   save(items, curves, summary, meta, file = file.path(DIR, "priming.Rdata"))
   print(as.data.frame(select(summary, regime, model, item_r, item_rmse, curve_mae, ll_per_resp, eps, bic)),
         digits = 3, row.names = FALSE)

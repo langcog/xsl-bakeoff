@@ -64,7 +64,8 @@ items_at <- function(m, par, conds, seed) {
   set.seed(seed)
   res <- run_model(m, par, data = xsl_datasets[labels %in% conds], n_sim = N_SIM)
   ch_dec <- if (m == "Bayesian_decay") par[3] else NULL
-  map(res$fits, \(f) choice_items(f, ch_dec)) |> list_rbind() |> filter(!excluded)
+  phi <- specs_v04[[m]]$constructor(par)$params[["phi"]]
+  map(res$fits, \(f) choice_items(f, ch_dec, phi)) |> list_rbind() |> filter(!excluded)
 }
 
 score_items <- function(it) {

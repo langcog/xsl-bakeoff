@@ -116,8 +116,57 @@ specs_v04 <- list(
                       epsilon = 0.001, theta = params$theta),
         data = data, control = control),
       params = list(lambda = p[1], beta = p[2], theta = p[3]), stochastic = FALSE),
-    lower = c(.01, 2, .01), upper = c(2, 1000, 1), stochastic = FALSE)
+    lower = c(.01, 2, .01), upper = c(2, 1000, 1), stochastic = FALSE),
+
+  ## ---- error-driven redesigns (XSLmodels PRs #41-#42; fits/v05/rwkf/) --------
+  # A softmax choice rule (phi, inverse temperature) and the canonical
+  # outcome coding / covariance. Under Luce choice the v05 rescorla-wagner and
+  # kalman_filter reduce to (near) co-occurrence counting. Each model's params
+  # are ordered as its parameter vector, since refit.R's objective sets them
+  # positionally; xsl_run() reads `phi` from them and scores by softmax.
+  # lambda and sigma2_obs are fixed at 1 (scale redundancies), alpha at 1.
+  `rescorla-wagner_softmax` = list(
+    constructor = \(p) xslMod(
+      name = "rescorla_wagner", description = "Rescorla-Wagner, softmax choice",
+      model = \(params, data, control) XSLmodels:::rescorla_wagner_model(
+        params = list(C = params$C, alpha = 1, beta = params$beta, lambda = 1, phi = params$phi),
+        data = data, control = control),
+      params = list(beta = p[1], C = p[2], phi = p[3]), stochastic = FALSE),
+    lower = c(1e-5, .5, .1), upper = c(1, 1, 50), stochastic = FALSE),
+  `rescorla-wagner_discriminative` = list(
+    # absent objects are outcomes with target 0 (Rescorla & Wagner, 1972)
+    constructor = \(p) xslMod(
+      name = "rescorla_wagner", description = "Rescorla-Wagner, absent outcomes, softmax choice",
+      model = \(params, data, control) XSLmodels:::rescorla_wagner_model(
+        params = list(C = params$C, alpha = 1, beta = params$beta, lambda = 1, outcomes = "all", phi = params$phi),
+        data = data, control = control),
+      params = list(beta = p[1], C = p[2], phi = p[3]), stochastic = FALSE),
+    lower = c(1e-5, .5, .1), upper = c(1, 1, 50), stochastic = FALSE),
+  kalman_filter_full = list(
+    # full covariance over words per object, absent objects observed as 0
+    # (Dayan & Kakade, 2001; Kruschke, 2008)
+    constructor = \(p) xslMod(
+      name = "kalman_filter", description = "Kalman filter, full covariance, absent outcomes, softmax choice",
+      model = \(params, data, control) XSLmodels:::kalman_filter_model(
+        params = list(tau2 = params$tau2, sigma2_obs = 1, sigma2_0 = params$sigma2_0,
+                      covariance = "full", outcomes = "all", phi = params$phi),
+        data = data, control = control),
+      params = list(tau2 = p[1], sigma2_0 = p[2], phi = p[3]), stochastic = FALSE),
+    lower = c(1e-6, .001, .1), upper = c(1, 100, 50), stochastic = FALSE),
+  baseline_softmax = list(
+    # control: co-occurrence counts with the same softmax choice rule, to
+    # separate the choice rule's contribution from the learning mechanism's
+    constructor = \(p) xslMod(
+      name = "baseline", description = "co-occurrence counts, softmax choice",
+      model = XSLmodels:::baseline_model, params = list(phi = p[1]), stochastic = FALSE),
+    lower = .001, upper = 50, stochastic = FALSE)
 )
+
+# models scored with XSLmodels at fits/v05/rwkf/XSLMODELS_COMMIT (which has
+# the fixed rescorla_wagner() and the options above): the fixed v05
+# rescorla-wagner and the redesigns
+RWKF_MODELS <- c("rescorla-wagner", "rescorla-wagner_softmax", "rescorla-wagner_discriminative",
+                 "kalman_filter_full", "baseline_softmax")
 
 # models that are group-fit but not cross-validated (as in round 1)
 GROUP_ONLY <- c("baseline", "fazlyt")
@@ -129,6 +178,7 @@ RUN_ORDER <- c(
   "kachergis", "novelty", "uncertainty", "strength", "uncfam_attention",
   "uncfam_predictive", "uncfam_gamma", "uncfam_elimination", "fazlyt",
   "trueswell2012", "guess-and-test", "pursuit", "softmax_rl", "minerva2",
-  "kachergis_sampling"
+  "kachergis_sampling",
+  "baseline_softmax", "rescorla-wagner_softmax", "rescorla-wagner_discriminative", "kalman_filter_full"
 )
 stopifnot(setequal(RUN_ORDER, names(specs_v04)))

@@ -8,7 +8,7 @@
 # says which library a run used)
 #
 # Defines: specs_v04 (fits/v05/specs.R), load_group_pars(), run_model(),
-# choice_items(), EXCLUDE_CHOICE, lapse(), stamp().
+# model_lib(), choice_items(), EXCLUDE_CHOICE, lapse(), stamp().
 
 suppressMessages({
   library(XSLmodels)
@@ -20,13 +20,20 @@ suppressMessages({
 # fits/v05/Rlib is the v05 pin; fits/v05/tilles/Rlib (XSLmodels b44b9fa) adds
 # only the corrected tilles() (PRs #32-#34), so use it for tilles' analyses
 # (identical results for every other model; see fits/v05/tilles/refit_tilles.R)
-XSL_LIB <- c(v05 = here("fits/v05/Rlib"), tilles = here("fits/v05/tilles/Rlib"))
+# fits/v05/rwkf/Rlib (XSLmodels master after PRs #41-#42) has the fixed
+# rescorla_wagner() and the error-driven redesigns (specs.R's RWKF_MODELS);
+# for the models in specs.R it differs from the v05 pin only in those and in
+# tilles (fits/v05/rwkf/refit_rwkf.R)
+XSL_LIB <- c(v05 = here("fits/v05/Rlib"), tilles = here("fits/v05/tilles/Rlib"), rwkf = here("fits/v05/rwkf/Rlib"))
 XSL_LIB_USED <- names(XSL_LIB)[startsWith(find.package("XSLmodels"), XSL_LIB)]
 if (!length(XSL_LIB_USED)) {
   stop("XSLmodels must come from fits/v05/Rlib or fits/v05/tilles/Rlib (found ", find.package("XSLmodels"),
        "). Run with R_LIBS=fits/v05/Rlib (or fits/v05/tilles/Rlib for tilles).")
 }
-source(here("fits/v05/specs.R"))  # specs_v04, GROUP_ONLY, RUN_ORDER
+source(here("fits/v05/specs.R"))  # specs_v04, GROUP_ONLY, RUN_ORDER, RWKF_MODELS
+
+# which library scores a model
+model_lib <- function(m) ifelse(m == "tilles", "tilles", ifelse(m %in% RWKF_MODELS, "rwkf", "v05"))
 
 EXTRAS_DIR <- here("fits/v05/extras")
 stamp <- function(...) message(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "  ", ...)
@@ -61,8 +68,10 @@ EXCLUDE_CHOICE <- list()
 # predict_referent()), and choice among all objects otherwise (get_perf());
 # both with Bayesian_decay's exponent ch_dec, as xsl_run() applies it on both
 # paths since XSLmodels PR #31.
-choice_items <- function(f, ch_dec = NULL) {
+choice_items <- function(f, ch_dec = NULL, phi = NULL) {
   dat <- f$data; mat <- f$matrix; rm <- dat$response_matrix
+  # a softmax choice rule (phi), on the mean matrix, as xsl_run() applies it
+  if (!is.null(phi)) mat <- softmax_weights(mat / nrow(f$responses), phi)
   n_items <- length(dat$accuracy)
   if (length(dat$test)) {
     t <- XSLmodels:::labelled_test(dat$test)
