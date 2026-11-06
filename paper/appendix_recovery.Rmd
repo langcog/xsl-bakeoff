@@ -115,3 +115,80 @@ fig_model_recovery(rec)
 ```{r recovery-margin-fig, fig.width=6, fig.height=3.2, fig.cap="Margin of victory:\\label{fig:recovery-margin-fig} for each synthetic dataset, how much worse the best-fitting rival model's objective was than the generating model's, with the rival that came closest most often."}
 fig_recovery_margin(rec)
 ```
+
+```{r recovery-rwkf-setup, include=FALSE}
+# Error-driven models: fits/v05/extras/recovery/rwkf/recovery.rds
+# (fits/v05/extras/recovery.R with REC_SET=rwkf, under fits/v05/rwkf/Rlib)
+rw <- load_recovery_rwkf()
+rwps <- rw$param$summary |>
+  mutate(idx = as.integer(sub("^p", "", param)), abbr = rec_models[model],
+         sym = mapply(\(m, i) rec_params[[m]][i], model, idx))
+rw_n_draws <- max(rwps$n)
+rw_r <- \(m, i) filter(rwps, model == m, idx == i)$r
+sm_models <- c("baseline_softmax", "rescorla-wagner_softmax", "rescorla-wagner_discriminative", "kalman_filter_full")
+sm_min_r <- min(filter(rwps, model %in% sm_models, !(model == "kalman_filter_full" & idx == 1))$r)
+# fixed R-W: its effective learning rate is beta * lambda
+rwd <- filter(rw$param$draws, model == "rescorla-wagner") |>
+  select(draw, param, true, fit, at_bound) |>
+  tidyr::pivot_wider(names_from = param, values_from = c(true, fit, at_bound))
+rw_rate_r <- with(rwd, cor(log(true_p1 * true_p3), log(fit_p1 * fit_p3)))
+rw_bound <- with(rwd, mean(at_bound_p1 | at_bound_p3))
+rw_kf_bound <- mean(filter(rw$param$draws, model == "kalman_filter_full")$at_bound)
+rwm <- rw$model
+rw_n_mmod <- n_distinct(rwm$fits$gen); rw_n_reps <- n_distinct(rwm$fits$rep)
+rw_wins <- rwm$wins
+base_self <- sum(rw_wins$gen == "baseline" & rw_wins$fitter == "baseline")
+rw_marg <- rwm$margin |> mutate(m = best_other - true_obj)
+pair_gap <- rwm$fits |> filter(gen %in% c("baseline", "rescorla-wagner"), fitter %in% c("baseline", "rescorla-wagner")) |>
+  group_by(gen, rep) |> summarise(d = abs(diff(obj)), .groups = "drop")
+others_min <- min(filter(rw_marg, !gen %in% c("baseline", "rescorla-wagner"))$m)
+sm_marg <- filter(rw_marg, gen %in% sm_models)
+```
+
+## Error-driven models
+
+The Rescorla-Wagner model was refit after a bug was corrected in its update (in the version first fit, each word received the prediction error of a different object, which reduced the model to co-occurrence counting).
+We also added three error-driven models that follow the original formulations more closely, all with a softmax choice rule at test ($P(o|w) \propto \exp(\phi\, M_{w,o})$, inverse temperature $\phi$) in place of Luce choice:
+R-W-S, the Rescorla-Wagner model with a softmax choice rule;
+R-W-D, which also treats the objects absent from a trial as outcomes with target 0, as in Rescorla and Wagner (1972), so that associations with absent objects are unlearned;
+and KF-F, a Kalman filter with full covariance among the words predicting each object and absent objects as outcomes (Dayan & Kakade, 2001), in which a word's association with an object can change on trials where that word is not heard (e.g., backward blocking).
+In all three, the salience and the asymptote are fixed at 1 and the observation noise at 1, since they only rescale the other parameters; the free parameters are the learning rate $\beta$ (or, for KF-F, the process noise $\tau^2$ and initial uncertainty $\sigma^2_0$), the decay $\alpha$ (R-W-S and R-W-D), and $\phi$.
+Base-S, the co-occurrence baseline with the same softmax rule, is the control: it shows how much of the variants' improvement comes from the choice rule alone.
+
+These models were recovered in a separate run with the same procedure (Table \ref{tab:recovery-rwkf-table}; Figures \ref{fig:recovery-rwkf-param-fig}--\ref{fig:recovery-rwkf-model-fig}): `r rw_n_draws` parameter draws per model, and model recovery among the `r rw_n_mmod` models Base, PA, FU, Base-S, R-W, R-W-S, R-W-D, and KF-F, with `r rw_n_reps` synthetic datasets per generator.
+All are deterministic, so every fit used the deterministic budget.
+
+**The softmax models are identifiable.**
+Every parameter of Base-S, R-W-S, R-W-D, and KF-F was recovered with $r \ge$ `r f2(sm_min_r)`, except KF-F's process noise $\tau^2$ ($r$ = `r f2(rw_r("kalman_filter_full", 1))`), whose two large misses came from draws with very small initial uncertainty $\sigma^2_0$, where diffusion has little effect on the predictions.
+In model recovery, each of them won all `r rw_n_reps` of its own datasets, by margins of `r f2(min(sm_marg$m))`--`r f2(max(sm_marg$m))` over its closest rival, usually another error-driven softmax model.
+These margins are smaller than those separating the main models (at least `r f2(nonbase_min)` above), so the 47 designs distinguish the error-driven variants from one another, but only just.
+
+**The corrected Rescorla-Wagner model with Luce choice is not.**
+Its decay $\alpha$ is recovered ($r$ = `r f2(rw_r("rescorla-wagner", 2))`), but its learning rate $\beta$ ($r$ = `r f2(rw_r("rescorla-wagner", 1))`) and asymptote $\lambda$ ($r$ = `r f2(rw_r("rescorla-wagner", 3))`) are not, nor is their product, the effective learning rate ($r$ = `r f2(rw_rate_r)` on a log scale); `r round(100 * rw_bound)`% of fits put one of them on a fitting bound.
+In model recovery, R-W and the baseline cannot be told apart: on each other's data their objectives differed by at most `r sub("^0", "", sprintf("%.4f", max(pair_gap$d)))`, and the baseline won only `r base_self` of its own `r rw_n_reps` datasets, the rest going to R-W's extra free parameters.
+Under Luce choice, then, the learning rate barely changes this model's predictions on these designs, and its fit should be read as the baseline's.
+The error-driven mechanism is distinguishable only with a choice rule that is sensitive to the scale of the learned associations.
+
+```{r recovery-rwkf-table, results="asis"}
+tabC2 <- rwps |>
+  arrange(factor(model, names(rec_models)), idx) |>
+  transmute(Model = abbr,
+            Parameter = paste0("$\\", sub("\\[0\\]", "_0", sym), "$"),
+            Scale = ifelse(logscale, "log", "linear"),
+            r = f2(r),
+            `Median abs. error` = as.character(signif(median_abs_err, 2)))
+model_end2 <- c(tabC2$Model[-1] != head(tabC2$Model, -1), FALSE)
+knitr::kable(tabC2, "latex", booktabs = TRUE, escape = FALSE, align = "llcrr", label = "recovery-rwkf-table",
+             linesep = ifelse(model_end2, "\\addlinespace", ""),
+             caption = paste0("Parameter recovery for the error-driven models, as in Table \\ref{tab:recovery-table}: ",
+                              rw_n_draws, " synthetic datasets per model.")) |>
+  kableExtra::kable_styling(latex_options = "hold_position")
+```
+
+```{r recovery-rwkf-param-fig, fig.width=7, fig.height=5.6, fig.cap="Parameter recovery for the error-driven models.\\label{fig:recovery-rwkf-param-fig} As in Figure \\ref{fig:recovery-param-fig}."}
+fig_param_recovery(rw)
+```
+
+```{r recovery-rwkf-model-fig, fig.width=6, fig.height=6, fig.cap="Model recovery for the error-driven models.\\label{fig:recovery-rwkf-model-fig} As in Figure \\ref{fig:recovery-model-fig}. Base and R-W are indistinguishable (gaps under .01 in both directions); every other generator won all its datasets."}
+fig_model_recovery(rw)
+```

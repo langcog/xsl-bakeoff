@@ -173,13 +173,18 @@ model_meta <- tibble::tribble(
   "softmax_rl",         "RL",    "reinforcement learning", 2,
   "minerva2",           "M2",    "episodic memory",      1,
   "baseline",           "Base",  "baseline",             0,
-  "fazlyt",             "PA-t",  "associative",          3
+  "fazlyt",             "PA-t",  "associative",          3,
+  "rescorla-wagner_softmax",        "R-W-S", "associative", 3,
+  "rescorla-wagner_discriminative", "R-W-D", "associative", 3,
+  "kalman_filter_full",             "KF-F",  "associative", 3,
+  "baseline_softmax",               "Base-S", "baseline",   1
 )
 abbr_of <- function(m) model_meta$abbr[match(m, model_meta$Model)] |> dplyr::coalesce(m)
 ```
-We fit nineteen models together with a zero-parameter baseline co-occurrence model.
+We fit twenty-three models together with a zero-parameter baseline co-occurrence model.
 The original evaluation included the baseline, six associative models (the probabilistic associative model, the familiarity- and uncertainty-biased model, its strength-, uncertainty-, and novelty-biased reductions, a Bayesian decay model, and a Rescorla-Wagner model), two hypothesis-testing models, and two hybrid models that store multiple graded hypotheses for only a subset of the possible associations.
 We later added eight more: four variants of the familiarity- and uncertainty-biased model (making its learning rate depend on uncertainty at the trial or item level, giving familiarity a free exponent, or adding learning by elimination), a Kalman-filter generalization of the Rescorla-Wagner model, the reinforcement-and-inference model of @Tilles2013, a reinforcement-learning model, and an episodic memory model (MINERVA 2).
+Finally, we added three error-driven models that follow the original Rescorla-Wagner and Kalman-filter formulations more closely, each with a softmax choice rule, together with a control that applies the same choice rule to co-occurrence counts.
 All models and their free parameters are briefly described below.
 <!-- ToDo (revision): add a summary table (model x class x #params x key mechanism). -->
 
@@ -236,10 +241,11 @@ At test, this model uses a softmax choice rule with parameter $\tau$ to select t
 
 ### Rescorla-Wagner Model (R-W)
 This associative model is inspired by the prediction-error-based learning model of @Rescorla1972. 
-Objects on each trial serve as cues to predict which words will be heard.
-When a given word is heard, the associations between that word and each object on the trial are scaled at a learning rate $\beta$ in proportion to the magnitude of the difference between the prediction and the maximum association value ($\lambda$). 
+The words on each trial serve as cues that predict which objects are present: each object's prediction is the summed association of the trial's words with it.
+Each present object's prediction error -- the difference between the maximum association value $\lambda$ and its prediction -- then changes the association of every word on the trial with that object, at learning rate $\beta$, so that the words on a trial compete to predict its objects.
 Each trial, the association matrix is subject to decay (parameter $\alpha$).
 At test, this model uses Luce choice to select the best referent for each word from the presented alternatives.
+(The version of this model fit in earlier rounds of this comparison misapplied the prediction errors, giving each word the error of a different object, which reduced it to co-occurrence counting; the fits reported here use the corrected model.)
 
 
 ### Propose-but-Verify Model (PbV)
@@ -305,6 +311,15 @@ Between trials, every association's variance grows by $\tau^2$, so the model can
 The model has three parameters -- process noise $\tau^2$, observation noise $\sigma^2_{obs}$, and initial uncertainty $\sigma^2_0$ -- of which only two are identifiable (scaling all three by a constant leaves the learned matrix unchanged).
 At test, it uses Luce choice over the mean association matrix.
 <!-- ToDo (revision): decide whether to fix sigma2_obs and report P = 2 for KF in Table 1; currently all three are fit and P = 3. -->
+
+
+### Error-Driven Models with a Softmax Choice Rule (R-W-S, R-W-D, KF-F) and Their Control (Base-S)
+Under Luce choice, the R-W and KF models' predictions change little with their learning parameters (Appendix C), so we added three variants that follow the original formulations more closely and score the learned associations with a softmax choice rule, $P(o \mid w) \propto \exp(\phi\, M_{w,o})$, with inverse temperature $\phi$ as a free parameter.
+*R-W-S* is the R-W model above with this choice rule.
+*R-W-D* also treats the objects absent from a trial as outcomes with target 0, as @Rescorla1972 did for absent outcomes, so that a word's associations with objects that fail to appear are unlearned.
+*KF-F* is a Kalman filter [@Dayan2001] that keeps the full covariance among the words predicting each object, again with absent objects as outcomes; because words that co-occur acquire correlated uncertainty, a word's association with an object can change on trials where that word is not heard, as in backward blocking.
+In all three, the cue salience, the asymptote $\lambda$, and the observation noise are fixed at 1, since they only rescale the other parameters, leaving three free parameters each: $\beta$, the decay $\alpha$, and $\phi$ for R-W-S and R-W-D; the process noise $\tau^2$, the initial uncertainty $\sigma^2_0$, and $\phi$ for KF-F.
+*Base-S*, the baseline co-occurrence model with the same softmax rule (one parameter, $\phi$), is their control: it shows how much of any improvement comes from the choice rule alone.
 
 
 ### Reinforcement-and-Inference Model (TF)
@@ -444,6 +459,9 @@ better <- filter(models, cv < b_row$cv - TOL)$abbr
 near   <- filter(models, abs(cv - b_row$cv) <= TOL)$abbr
 worse  <- filter(models, cv > b_row$cv + TOL)$abbr
 item_top <- abbr_of(item_sse$Model[1:2])
+# R-W vs baseline predictions (group fit)
+# (gfd rows are in the same item order for every model)
+rw_base_r <- cor(filter(gfd, Model == "rescorla-wagner")$ModelPerf, filter(gfd, Model == "baseline")$ModelPerf)
 ```
 
 Table 1 summarizes each model's fit.
@@ -452,8 +470,11 @@ The best CV fits were from `r models$abbr[1]` (SSE = `r fmt3(models$cv[1])`), `r
 <!-- ToDo (revision, D2): add the paired fold / bootstrap-over-conditions comparison of the top tier here. -->
 The order within this top group depends on how conditions are weighted: ranking by squared error summed over all `r totItems` items, ignoring sample size, puts `r item_top[1]` first and `r item_top[2]` second.
 Compared with the zero-parameter baseline co-occurrence model (CV SSE = `r fmt3(b_row$cv)`, $r$ = `r sub("^0\\.", ".", sprintf("%.2f", b_row$r))`), `r length(better)` models fit better by more than `r TOL` (`r listify(better)`), `r listify(near)` fit within `r TOL` of it, and `r listify(worse)` fit worse.
-<!-- ToDo (revision): the next sentence is model-specific -- re-check after any refit that R-W and KF still sit at the parameter bounds where they reduce to counting. -->
-The Rescorla-Wagner and Kalman filter models (CV SSE = `r cv_of("rescorla-wagner")` and `r cv_of("kalman_filter")`) are best fit at parameters where learning is so slow relative to the associations' asymptote that each co-occurrence adds a nearly constant increment: at their best, both reduce to tallying co-occurrences.
+<!-- ToDo (revision): the next sentences are model-specific -- re-check after any refit. -->
+With Luce choice, neither error-driven model improves on counting.
+The Rescorla-Wagner model's predictions are nearly identical to the baseline's (CV SSE = `r cv_of("rescorla-wagner")`; item-level $r$ `r if (rw_base_r > .999) "> .999" else paste("=", sub("^0\\.", ".", sprintf("%.3f", rw_base_r)))` with the baseline's), and in simulation its learning rate could not be recovered nor the model distinguished from the baseline (Appendix C).
+The Kalman filter (CV SSE = `r cv_of("kalman_filter")`) is best fit at parameters where learning is so slow relative to the associations' asymptote that each co-occurrence adds a nearly constant increment, so that it, too, reduces to tallying co-occurrences.
+With a softmax choice rule, however, error-driven learning helps substantially: KF-F, R-W-S, and R-W-D (CV SSE = `r cv_of("kalman_filter_full")`, `r cv_of("rescorla-wagner_softmax")`, and `r cv_of("rescorla-wagner_discriminative")`) all fit far better than their control, Base-S (`r cv_of("baseline_softmax")`), which shows that the gain is not due to the choice rule alone.
 Correlations between data and models are presented in Figure 1. 
 
 ```{r model-correlations}
@@ -728,7 +749,9 @@ The results of both fitting regimes were consistent and clear: shown in Table 1,
 However, it was also striking how similar many models' predictions were, even to models representing disparate learning theories.
 
 The Rescorla-Wagner model, a prediction error-based associative model, performed similarly to the GnT model, with highly correlated predictions ($r=.87$), while PbV had the poorest fit, and made responses most similar to the R-W model ($r=.67$).
-Moreover, the predictions of the R-W model were also highly correlated with the baseline co-occurrence counting model ($r = .99$): such similar predictions yielded by seemingly different theories is surprising and warrants further investigation.
+Moreover, the predictions of the R-W model are nearly identical to those of the baseline co-occurrence counting model.
+This is not a coincidence of the fitted parameters: with Luce choice, the R-W model's learning rate barely changes its predictions on these designs, so the two models cannot be told apart even on data simulated from one of them (Appendix C).
+Given a choice rule sensitive to the scale of the learned associations, however, the error-driven models fit far better than the same choice rule applied to co-occurrence counts, so prediction-error learning may deserve more attention than its Luce-choice versions suggest.
 However, some models' particular patterns of responses suggest certain theoretical shortcomings.
 For example, the hybrid Pursuit model [@Stevens2017pursuit] fared poorly, in part because it often outperformed humans ($M_{Pur} =$ `r round(mean(subset(gfd, Model=="pursuit")$ModelPerf), 2)`, $M_{hum} = 0.48$).
 Indeed, as shown in Figure 1, Pur, PbV, and GnT all showed a pattern of inhuman responses: for a subset of items, the models either always got them correct or always got them incorrect, while people were more stochastic.

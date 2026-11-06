@@ -42,7 +42,11 @@ model_meta <- tibble::tribble(
   "tilles",             "Reinforcement & Inference (TF)",
   "softmax_rl",         "Reinforcement Learning (RL)",
   "minerva2",           "MINERVA 2 (M2)",
-  "baseline",           "Baseline"
+  "baseline",           "Baseline",
+  "rescorla-wagner_softmax",        "R-W + Softmax (R-W-S)",
+  "rescorla-wagner_discriminative", "R-W + Absent Outcomes (R-W-D)",
+  "kalman_filter_full",             "Kalman Filter, Full Cov. (KF-F)",
+  "baseline_softmax",               "Baseline + Softmax (Base-S)"
 )
 relabel <- function(m) dplyr::coalesce(model_meta$label[match(m, model_meta$Model)], m)
 ```

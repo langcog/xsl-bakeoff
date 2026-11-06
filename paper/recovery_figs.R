@@ -1,6 +1,7 @@
 # Figures for the model- and parameter-recovery appendix
 # (paper/appendix_recovery.Rmd), drawn from fits/v05/extras/recovery/recovery.rds
-# (made by fits/v05/extras/recovery.R).
+# and, for the error-driven models, fits/v05/extras/recovery/rwkf/recovery.rds
+# (both made by fits/v05/extras/recovery.R, the second with REC_SET=rwkf).
 #
 # Sourced by the appendix, or run standalone to write the figures to
 # paper/figs/recovery/ for review:
@@ -13,13 +14,18 @@ suppressMessages({
   library(here)
 })
 
-rec_path <- here("fits/v05/extras/recovery/recovery.rds")
+rec_path      <- here("fits/v05/extras/recovery/recovery.rds")
+rec_path_rwkf <- here("fits/v05/extras/recovery/rwkf/recovery.rds")
 
 # Paper abbreviations, in mechanism order (baseline, associative, episodic,
 # reinforcement learning, hypothesis testing)
 rec_models <- c(baseline = "Base", fazly = "PA", kachergis = "FU", kachergis_sampling = "FUs",
                 Bayesian_decay = "BD", tilles = "TF", minerva2 = "M2", softmax_rl = "RL",
-                trueswell2012 = "PbV")
+                trueswell2012 = "PbV",
+                # error-driven models (fits/v05/specs.R's RWKF_MODELS); recovered separately
+                baseline_softmax = "Base-S", `rescorla-wagner` = "R-W",
+                `rescorla-wagner_softmax` = "R-W-S", `rescorla-wagner_discriminative` = "R-W-D",
+                kalman_filter_full = "KF-F")
 # Parameter symbols in the paper's notation, in fits/v05/specs.R order (p1, p2, ...)
 rec_params <- list(
   fazly              = c("lambda", "beta"),
@@ -29,7 +35,13 @@ rec_params <- list(
   tilles             = c("x", "b", "alpha[0]"),
   minerva2           = c("X"),
   softmax_rl         = c("eta", "beta"),
-  trueswell2012      = c("alpha", "epsilon"))
+  trueswell2012      = c("alpha", "epsilon"),
+  baseline_softmax   = c("phi"),
+  # R-W's decay (specs.R's C) is the paper's alpha
+  `rescorla-wagner`                = c("beta", "alpha", "lambda"),
+  `rescorla-wagner_softmax`        = c("beta", "alpha", "phi"),
+  `rescorla-wagner_discriminative` = c("beta", "alpha", "phi"),
+  kalman_filter_full               = c("tau^2", "sigma[0]^2", "phi"))
 
 # Colors: one series (blue, slot 1); sequential blue ramp for the heatmap;
 # text in ink tokens, never the series color
@@ -50,6 +62,7 @@ theme_rec <- function(base_size = 8) {
 }
 
 load_recovery <- function(path = rec_path) readRDS(path)
+load_recovery_rwkf <- function(path = rec_path_rwkf) readRDS(path)
 
 # Axis labels that stay readable from 1e-10 to 20000
 lab_num <- function(x) vapply(x, function(v) {
@@ -107,13 +120,19 @@ fig_model_recovery <- function(rec) {
            gen = factor(rec_models[gen], rev(rec_models)),
            fitter = factor(rec_models[fitter], rec_models),
            diag = as.character(gen) == as.character(fitter),
-           label = ifelse(diag, sprintf("%d/%d", wins, n_rep), sprintf("%.2f", gap)),
-           fill_val = ifelse(diag, NA, gap))
+           # gaps that round to zero (either sign) as "<.01", not "0.00" / "-0.00"
+           label = ifelse(diag, sprintf("%d/%d", wins, n_rep),
+                          ifelse(abs(gap) < .005, "<.01", sprintf("%.2f", gap))),
+           # a fitter that beat the generator on average (gap < 0) gets the lightest fill
+           fill_val = ifelse(diag, NA, pmax(gap, 1e-4)),
+           ramp_pos = (log(fill_val) - log(min(fill_val, na.rm = TRUE))) /
+             diff(log(range(fill_val, na.rm = TRUE))))
   ggplot(gap, aes(fitter, gen)) +
     geom_tile(aes(fill = fill_val), colour = "white", linewidth = 1) +
     geom_tile(data = filter(gap, diag), fill = "white", colour = COL_INK, linewidth = .4) +
-    # white text once the fill is darker than the ramp's ~#3987e5 step
-    geom_text(aes(label = label, colour = ifelse(!diag & fill_val > .15, "light", "dark")),
+    # white text once the fill passes the middle of the ramp (~#3987e5); the
+    # ramp spans each figure's own (log) range of gaps
+    geom_text(aes(label = label, colour = ifelse(!diag & ramp_pos > .5, "light", "dark")),
               size = 2.4, show.legend = FALSE) +
     scale_colour_manual(values = c(light = "white", dark = COL_INK)) +
     scale_fill_gradientn(colours = SEQ_BLUE, trans = "log10", na.value = "white",
@@ -129,7 +148,7 @@ fig_model_recovery <- function(rec) {
 }
 
 ## ---- Figure: margin of the generator over its closest rival, per dataset ------
-fig_recovery_margin <- function(rec) {
+fig_recovery_margin <- function(rec, signed = FALSE) {
   m <- rec$model$margin |>
     mutate(margin = best_other - true_obj,
            gen = factor(rec_models[gen], rev(rec_models)),
@@ -140,9 +159,17 @@ fig_recovery_margin <- function(rec) {
     geom_point(colour = COL_POINT, size = 2, alpha = .85) +
     geom_text(data = rivals, aes(x = x, label = paste0("closest rival: ", rival)),
               hjust = -.15, size = 2.5, colour = COL_MUTED) +
-    scale_x_log10(labels = lab_num,
-                  expand = expansion(mult = c(.05, .45))) +
-    labs(x = "Closest rival's objective minus the generating model's (log scale; > 0 = generator wins)",
+    # signed: a symmetric log scale, for sets where a rival can beat the generator
+    (if (signed) {
+      list(geom_vline(xintercept = 0, colour = COL_MUTED, linewidth = .3),
+           scale_x_continuous(trans = scales::pseudo_log_trans(sigma = 1e-4, base = 10),
+                              breaks = c(-1e-3, 0, 1e-3, .01, .1), labels = lab_num,
+                              expand = expansion(mult = c(.05, .45))))
+    } else {
+      scale_x_log10(labels = lab_num, expand = expansion(mult = c(.05, .45)))
+    }) +
+    labs(x = paste0("Closest rival's objective minus the generating model's (",
+                    if (signed) "symmetric log" else "log", " scale; > 0 = generator wins)"),
          y = NULL) +
     theme_rec(9)
 }
@@ -156,5 +183,9 @@ if (sys.nframe() == 0) {
   ggsave(file.path(out, "model_recovery.png"), fig_model_recovery(rec), width = 6, height = 6.4, dpi = 200, bg = "white")
   ggsave(file.path(out, "recovery_margin.pdf"), fig_recovery_margin(rec), width = 6, height = 3.2)
   ggsave(file.path(out, "recovery_margin.png"), fig_recovery_margin(rec), width = 6, height = 3.2, dpi = 200, bg = "white")
+  rw <- load_recovery_rwkf()
+  ggsave(file.path(out, "param_recovery_rwkf.png"), fig_param_recovery(rw), width = 7, height = 5.6, dpi = 200, bg = "white")
+  ggsave(file.path(out, "model_recovery_rwkf.png"), fig_model_recovery(rw), width = 6, height = 6, dpi = 200, bg = "white")
+  ggsave(file.path(out, "recovery_margin_rwkf.png"), fig_recovery_margin(rw, signed = TRUE), width = 6, height = 3, dpi = 200, bg = "white")
   message("wrote figures to ", out)
 }
