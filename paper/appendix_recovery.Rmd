@@ -1,0 +1,194 @@
+```{r recovery-setup, include=FALSE}
+# Appendix C: model and parameter recovery. A child of appendix.Rmd (itself a
+# child of journal-paper.Rmd); self-contained (its own packages and data).
+# Data: fits/v05/extras/recovery/recovery.rds (fits/v05/extras/recovery.R).
+# Figures: paper/recovery_figs.R.
+source(here::here("paper/recovery_figs.R"))
+rec <- load_recovery()
+f2 <- \(x) sub("^(-?)0\\.", "\\1.", sprintf("%.2f", x))
+listify <- \(x) if (length(x) <= 2) paste(x, collapse = " and ") else
+  paste0(paste(head(x, -1), collapse = ", "), ", and ", tail(x, 1))
+
+ps <- rec$param$summary |>
+  mutate(idx = as.integer(sub("^p", "", param)),
+         abbr = rec_models[model],
+         sym = mapply(\(m, i) rec_params[[m]][i], model, idx))
+n_draws  <- max(ps$n)
+n_pmod   <- n_distinct(ps$model)
+n_par    <- nrow(ps)
+good     <- filter(ps, r >= .7)
+mr       <- rec$model
+n_reps   <- n_distinct(mr$fits$rep)
+n_mmod   <- n_distinct(mr$fits$gen)
+n_data   <- nrow(mr$margin)
+n_won    <- sum(mr$wins$gen == mr$wins$fitter)
+marg     <- mr$margin |> mutate(m = best_other - true_obj)
+base_m   <- filter(marg, gen == "baseline")
+nonbase_min <- min(filter(marg, gen != "baseline")$m)
+pa_lambda <- filter(rec$param$draws, model == "fazly", param == "p1")
+pa_hi    <- filter(pa_lambda, true > 1e-4)
+pa_hi_err <- median(abs(log10(pa_hi$fit) - log10(pa_hi$true)))
+pbv_a    <- filter(ps, model == "trueswell2012", idx == 1)
+# parameters recovered only loosely (.70 <= r < .85), named in the text
+loose    <- filter(ps, r >= .7, r < .85) |> arrange(r)
+poss <- \(a) ifelse(endsWith(a, "s"), paste0(a, "'"), paste0(a, "'s"))
+loose_txt <- listify(sprintf("%s $%s$ (%s)", poss(loose$abbr),
+                             sub("\\[0\\]", "_0", ifelse(loose$sym %in% c("x", "b", "X"), loose$sym, paste0("\\", loose$sym))),
+                             f2(loose$r)))
+rivals <- marg |> count(gen, best_other_model) |> group_by(gen) |> slice_max(n, n = 1, with_ties = FALSE) |>
+  ungroup() |> mutate(g = rec_models[gen], r = rec_models[best_other_model])
+```
+
+# Model and Parameter Recovery
+
+Two questions bear on how far the comparison can be trusted.
+First, if one of these models had generated the data, would fitting all of them have identified it, or do some mechanisms mimic each other so closely on these 47 designs that the comparison could not tell them apart?
+Second, are a model's fitted parameters interpretable, or could quite different parameter values produce the same predictions?
+We answered both with simulation, using a reduced version of the fitting procedure in the main text.
+
+**Synthetic data.**
+A generating model was run on all 47 conditions (with 500 simulated learners for stochastic models, to approximate its true predictions closely); each item's synthetic accuracy was then drawn as a binomial proportion with that item's real number of participants.
+Synthetic data are therefore exactly as noisy as the human data under the binomial noise model behind the noise ceiling, though they lack participant-level individual differences.
+
+**Fitting.**
+Synthetic data were fit with the same objective (participant-weighted SSE) and parameter bounds as the main analysis, but a reduced differential-evolution budget, so that several hundred fits were affordable: a population of 10 per free parameter (at least 20), and 60 generations for deterministic models or 25 for stochastic ones, whose fits used 50 simulated learners per evaluation.
+We used one representative of each mechanism: PA, FU, FUs, BD, TF, M2, RL, and PbV, plus the baseline in model recovery.
+
+**Parameter recovery.**
+For each of the `r n_pmod` models, `r n_draws` parameter vectors were drawn uniformly within the fitting bounds (log-uniformly for scale parameters whose bounds span two or more orders of magnitude), discarding draws whose mean predicted accuracy fell below .1 or above .95, since such designs carry little information.
+Each synthetic dataset was then fit by the model that generated it.
+
+**Model recovery.**
+Each of the `r n_mmod` models generated `r n_reps` synthetic datasets at its group-fit parameters from the main analysis, and every dataset was fit by all `r n_mmod` models.
+The winner was the model with the lowest objective; stochastic models were re-evaluated with 200 simulated learners at their best parameters, since the minimum the optimizer reports for a noisy objective is biased low.
+
+## Results
+
+**Parameters are mostly recoverable.**
+Figure \ref{fig:recovery-param-fig} plots recovered against generating values, and Table \ref{tab:recovery-table} summarizes them.
+`r nrow(good)` of the `r n_par` parameters were recovered with $r \ge .70$ (on a log scale for the log-scaled ones), and `r sum(ps$r >= .95)` with $r \ge .95$.
+No recovered value fell on a fitting bound.
+There are three caveats.
+
+- **The propose-but-verify model's recall probability $\alpha$ is not identifiable** ($r$ = `r f2(pbv_a$r)`): recovered values cluster near .5 whatever the generating value, plausibly because $\alpha$ and the recall increment $\epsilon$ both control how often a proposed referent survives to be verified, so different combinations predict similar accuracy. PbV's fitted $\alpha$ should not be interpreted on its own.
+- **PA's smoothing constant $\lambda$ is identifiable only when it is not negligible.** Above about $10^{-4}$ it is recovered closely (median error `r sprintf("%.2f", pa_hi_err)` log~10~ units); below that, any small value predicts the same accuracies, so the recovered value is arbitrary.
+- **Several parameters are recovered only loosely:** `r loose_txt`. Their occasional large misses (Figure \ref{fig:recovery-param-fig}) suggest partial trade-offs with the same model's other parameters, so these values should be interpreted with caution.
+
+**Models are perfectly recoverable at their fitted parameters.**
+In every one of the `r n_data` synthetic datasets, the generating model fit best (`r n_won` of `r n_data`; Figure \ref{fig:recovery-model-fig}).
+For every generator except the baseline, the closest rival's objective exceeded the generator's by at least `r f2(nonbase_min)` (Figure \ref{fig:recovery-margin-fig}).
+The baseline is the hardest case: its data were best fit by the baseline every time, but by margins of only `r f2(min(base_m$m))`--`r f2(max(base_m$m))` over the reinforcement-learning model.
+The closest rivals are mostly the expected ones: FU and FUs for each other; PA for BD, TF and M2; M2 for RL; and RL for PbV, the two models that commit to one referent per word on each trial.
+
+**What this does and does not show.**
+Perfect recovery means that the 47 designs, at their real sample sizes, are informative enough to distinguish these mechanisms *when the data sit where each model's best fit to the human data puts them*.
+It does not show that every region of each model's parameter space is distinguishable, and the reduced fitting budget and in-sample selection make it, if anything, a lenient test.
+Nor does it make the human-data ranking any less dependent on the models' specific assumptions: a model can be recoverable and still be wrong.
+
+```{r recovery-table, results="asis"}
+tabC1 <- ps |>
+  arrange(factor(model, names(rec_models)), idx) |>
+  transmute(Model = abbr,
+            Parameter = paste0("$\\", sub("\\[0\\]", "_0", sym), "$") |>
+              sub(pattern = "^\\$\\\\(x|b|X)\\$$", replacement = "$\\1$"),
+            Scale = ifelse(logscale, "log", "linear"),
+            r = f2(r),
+            `Median abs. error` = as.character(signif(median_abs_err, 2)))
+# a gap between models, not booktabs' default of every 5 rows
+model_end <- c(tabC1$Model[-1] != head(tabC1$Model, -1), FALSE)
+knitr::kable(tabC1, "latex", booktabs = TRUE, escape = FALSE, align = "llcrr", label = "recovery-table",
+             linesep = ifelse(model_end, "\\addlinespace", ""),
+             caption = paste0("Parameter recovery: correlation between generating and recovered values over ",
+                              n_draws, " synthetic datasets per model, and the median absolute error, both on the ",
+                              "scale shown (natural log for log-scaled parameters).")) |>
+  kableExtra::kable_styling(latex_options = "hold_position")
+```
+
+```{r recovery-param-fig, fig.width=7, fig.height=7.4, fig.cap="Parameter recovery. Each panel is one parameter of one model; each point is one synthetic dataset, generated at the value on the x axis and fit by the same model. Points on the dashed identity line are recovered exactly."}
+fig_param_recovery(rec)
+```
+
+```{r recovery-model-fig, fig.width=6, fig.height=6.4, fig.cap="Model recovery. Rows: the model that generated the synthetic data (at its group-fit parameters); columns: the model fit to them. Off-diagonal cells give the mean amount by which the fitting model's objective exceeded the generating model's (darker = easier to tell apart); the diagonal gives the number of datasets the generating model won."}
+fig_model_recovery(rec)
+```
+
+```{r recovery-margin-fig, fig.width=6, fig.height=3.2, fig.cap="Margin of victory: for each synthetic dataset, how much worse the best-fitting rival model's objective was than the generating model's, with the rival that came closest most often."}
+fig_recovery_margin(rec)
+```
+
+```{r recovery-rwkf-setup, include=FALSE}
+# Error-driven models: fits/v05/extras/recovery/rwkf/recovery.rds
+# (fits/v05/extras/recovery.R with REC_SET=rwkf, under fits/v05/rwkf/Rlib)
+rw <- load_recovery_rwkf()
+rwps <- rw$param$summary |>
+  mutate(idx = as.integer(sub("^p", "", param)), abbr = rec_models[model],
+         sym = mapply(\(m, i) rec_params[[m]][i], model, idx))
+rw_n_draws <- max(rwps$n)
+rw_r <- \(m, i) filter(rwps, model == m, idx == i)$r
+sm_models <- c("baseline_softmax", "rescorla-wagner_softmax", "rescorla-wagner_discriminative", "kalman_filter_full")
+sm_min_r <- min(filter(rwps, model %in% sm_models, !(model == "kalman_filter_full" & idx == 1))$r)
+# fixed R-W: its effective learning rate is beta * lambda
+rwd <- filter(rw$param$draws, model == "rescorla-wagner") |>
+  select(draw, param, true, fit, at_bound) |>
+  tidyr::pivot_wider(names_from = param, values_from = c(true, fit, at_bound))
+rw_rate_r <- with(rwd, cor(log(true_p1 * true_p3), log(fit_p1 * fit_p3)))
+rw_bound <- with(rwd, mean(at_bound_p1 | at_bound_p3))
+rw_kf_bound <- mean(filter(rw$param$draws, model == "kalman_filter_full")$at_bound)
+rwm <- rw$model
+rw_n_mmod <- n_distinct(rwm$fits$gen); rw_n_reps <- n_distinct(rwm$fits$rep)
+rw_wins <- rwm$wins
+base_self <- sum(rw_wins$gen == "baseline" & rw_wins$fitter == "baseline")
+rw_marg <- rwm$margin |> mutate(m = best_other - true_obj)
+pair_gap <- rwm$fits |> filter(gen %in% c("baseline", "rescorla-wagner"), fitter %in% c("baseline", "rescorla-wagner")) |>
+  group_by(gen, rep) |> summarise(d = abs(diff(obj)), .groups = "drop")
+others_min <- min(filter(rw_marg, !gen %in% c("baseline", "rescorla-wagner"))$m)
+sm_marg <- filter(rw_marg, gen %in% sm_models)
+```
+
+## Error-driven models
+
+The Rescorla-Wagner model was refit after a bug was corrected in its update (in the version first fit, each word received the prediction error of a different object, which reduced the model to co-occurrence counting).
+We also added three error-driven models that follow the original formulations more closely, all with a softmax choice rule at test ($P(o|w) \propto \exp(\phi\, M_{w,o})$, inverse temperature $\phi$) in place of Luce choice:
+R-W-S, the Rescorla-Wagner model with a softmax choice rule;
+R-W-D, which also treats the objects absent from a trial as outcomes with target 0, as in Rescorla and Wagner (1972), so that associations with absent objects are unlearned;
+and KF-F, a Kalman filter with full covariance among the words predicting each object and absent objects as outcomes (Dayan & Kakade, 2001), in which a word's association with an object can change on trials where that word is not heard (e.g., backward blocking).
+In all three, the salience and the asymptote are fixed at 1 and the observation noise at 1, since they only rescale the other parameters; the free parameters are the learning rate $\beta$ (or, for KF-F, the process noise $\tau^2$ and initial uncertainty $\sigma^2_0$), the decay $\alpha$ (R-W-S and R-W-D), and $\phi$.
+Base-S, the co-occurrence baseline with the same softmax rule, is the control: it shows how much of the variants' improvement comes from the choice rule alone.
+
+These models were recovered in a separate run with the same procedure (Table \ref{tab:recovery-rwkf-table}; Figures \ref{fig:recovery-rwkf-param-fig}--\ref{fig:recovery-rwkf-model-fig}): `r rw_n_draws` parameter draws per model, and model recovery among the `r rw_n_mmod` models Base, PA, FU, Base-S, R-W, R-W-S, R-W-D, and KF-F, with `r rw_n_reps` synthetic datasets per generator.
+All are deterministic, so every fit used the deterministic budget.
+
+**The softmax models are identifiable.**
+Every parameter of Base-S, R-W-S, R-W-D, and KF-F was recovered with $r \ge$ `r f2(sm_min_r)`, except KF-F's process noise $\tau^2$ ($r$ = `r f2(rw_r("kalman_filter_full", 1))`), whose two large misses came from draws with very small initial uncertainty $\sigma^2_0$, where diffusion has little effect on the predictions.
+In model recovery, each of them won all `r rw_n_reps` of its own datasets, by margins of `r f2(min(sm_marg$m))`--`r f2(max(sm_marg$m))` over its closest rival, usually another error-driven softmax model.
+These margins are smaller than those separating the main models (at least `r f2(nonbase_min)` above), so the 47 designs distinguish the error-driven variants from one another, but only just.
+
+**The corrected Rescorla-Wagner model with Luce choice is not.**
+Its decay $\alpha$ is recovered ($r$ = `r f2(rw_r("rescorla-wagner", 2))`), but its learning rate $\beta$ ($r$ = `r f2(rw_r("rescorla-wagner", 1))`) and asymptote $\lambda$ ($r$ = `r f2(rw_r("rescorla-wagner", 3))`) are not, nor is their product, the effective learning rate ($r$ = `r f2(rw_rate_r)` on a log scale); `r round(100 * rw_bound)`% of fits put one of them on a fitting bound.
+In model recovery, R-W and the baseline cannot be told apart: on each other's data their objectives differed by at most `r sub("^0", "", sprintf("%.4f", max(pair_gap$d)))`, and the baseline won only `r base_self` of its own `r rw_n_reps` datasets, the rest going to R-W's extra free parameters.
+Under Luce choice, then, the learning rate barely changes this model's predictions on these designs, and its fit should be read as the baseline's.
+The error-driven mechanism is distinguishable only with a choice rule that is sensitive to the scale of the learned associations.
+
+```{r recovery-rwkf-table, results="asis"}
+tabC2 <- rwps |>
+  arrange(factor(model, names(rec_models)), idx) |>
+  transmute(Model = abbr,
+            Parameter = paste0("$\\", sub("\\[0\\]", "_0", sym), "$"),
+            Scale = ifelse(logscale, "log", "linear"),
+            r = f2(r),
+            `Median abs. error` = as.character(signif(median_abs_err, 2)))
+model_end2 <- c(tabC2$Model[-1] != head(tabC2$Model, -1), FALSE)
+knitr::kable(tabC2, "latex", booktabs = TRUE, escape = FALSE, align = "llcrr", label = "recovery-rwkf-table",
+             linesep = ifelse(model_end2, "\\addlinespace", ""),
+             caption = paste0("Parameter recovery for the error-driven models, as in Table \\ref{tab:recovery-table}: ",
+                              rw_n_draws, " synthetic datasets per model.")) |>
+  kableExtra::kable_styling(latex_options = "hold_position")
+```
+
+```{r recovery-rwkf-param-fig, fig.width=7, fig.height=5.6, fig.cap="Parameter recovery for the error-driven models. As in Figure \\ref{fig:recovery-param-fig}."}
+fig_param_recovery(rw)
+```
+
+```{r recovery-rwkf-model-fig, fig.width=6, fig.height=6, fig.cap="Model recovery for the error-driven models. As in Figure \\ref{fig:recovery-model-fig}. Base and R-W are indistinguishable (gaps under .01 in both directions); every other generator won all its datasets."}
+fig_model_recovery(rw)
+```
