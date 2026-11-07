@@ -408,6 +408,9 @@ To 42 of the 44 conditions of the original comparison we added five from @Kacher
 <!-- ToDo (revision): say why the two original conditions (orig_3x3, orig_4x4) were dropped -- their participant-level data still need to be traced to the contributing lab. -->
 All `r nConds` conditions tested adults.
 Experiments that report only condition-level accuracy, or that tested children, are used only to test generalization (see Generalization Experiment Results).
+Two conditions from @Kachergis2013nat share the 1x3 design, with one word and three objects per trial and each word presented six times: v215 and v222 use different random trial orders, and v215 tested learners with four alternatives per word rather than all 18.
+Because v215's test foils are not in the dataset, the models are scored on it as an 18-alternative test; its accuracy (`r sub("^0", "", sprintf("%.2f", mean(xsl_datasets[[match("215", sapply(xsl_datasets, \(d) d$label))]]$accuracy)))`, against `r sub("^0", "", sprintf("%.2f", mean(xsl_datasets[[match("222", sapply(xsl_datasets, \(d) d$label))]]$accuracy)))` for v222) is therefore beyond what any model predicts, and v215 is the hardest condition overall (Appendix B).
+<!-- ToDo (revision): rescore or refit v215 once its 4AFC test is encoded (XSLmodels issue #44). -->
 
 [^2]: Information about the dataset: [https://osf.io/REDACTED](https://osf.io/s2aty/?view_only=c91c852f00b847e0a71d5f4deaf7b7a5)
 

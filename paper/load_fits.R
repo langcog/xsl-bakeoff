@@ -36,6 +36,15 @@ stopifnot(.group_meta$n_conditions == 47, length(unique(gfd$condnum)) == 47,
           length(cv_group_fits) == .n_cv_models)
 cvg <- purrr::list_rbind(lapply(cv_group_fits, `[[`, "testdf"))
 
+# Two conditions are both named "1x3": 215 and 222 (Kachergis & Yu, 2013) share
+# the design but have different random trial orders, and 215 was tested 4AFC
+# although xsl_datasets scores it as 18AFC (XSLmodels issue #44). The paper
+# calls them v215 and v222.
+cond_label <- function(condition, condnum)
+  ifelse(condition == "1x3" & condnum %in% c("215", "222"), paste0("1x3 v", condnum), condition)
+gfd <- dplyr::mutate(gfd, Condition = cond_label(Condition, condnum))
+cvg <- dplyr::mutate(cvg, Condition = cond_label(Condition, condnum))
+
 FITS_META <- .group_meta
 FITS_SOURCE <- c(
   group = sprintf("v05 (XSLmodels %s; tilles %s), 47 conditions",

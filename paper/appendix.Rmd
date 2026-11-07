@@ -48,7 +48,7 @@ Table \ref{tab:app-conditions} describes the `r length(xsl_datasets)` experiment
 # so the first trial's count is used.
 tab <- purrr::map_dfr(xsl_datasets, function(d) {
   tibble(
-    "Condition Name" = d$condition,
+    "Condition Name" = cond_label(d$condition, d$label),
     "Trials" = length(d$train$words),
     "Words/Trial" = length(d$train$words[[1]]),
     "Objects/Trial" = length(d$train$objects[[1]]),
@@ -181,7 +181,7 @@ extremes_tab <- bind_rows(easiest, hardest) %>% select(Rank, everything())
 
 Table \ref{tab:app-extremes} shows the five conditions with the lowest mean SSE across all `r n_models_appendix` models and the five with the highest.
 The `SD SSE` column shows how much models disagree on a condition: a low SD alongside a high mean SSE would mean every model struggles with that design about equally, while a high SD means the design is hard for some models but not others.
-`r hard_ratio <- hardest[["SD SSE"]] / hardest[["Mean SSE"]]; hf <- is_filt(hardest$Condition); paste0(c("None", "One", "Two", "Three", "Four", "All five")[sum(hf) + 1], " of the five hardest conditions ", if (sum(hf) == 1) "is a" else "are", " \x60filt\x60 condition", if (sum(hf) == 1) "" else "s", ", and for ", if (sum(hf) == 1) "it" else "them", " the SD is about as large as the mean (", app_f(min(hard_ratio[hf]), 1), "--", app_f(max(hard_ratio[hf]), 1), " times it): ", if (sum(hf) == 1) "it is" else "they are", " hard because some models fail on ", if (sum(hf) == 1) "it" else "them", ", not because every model does.")``r if (any(!hf)) paste0(" ", listify(hardest$Condition[!hf]), ", by contrast, ", if (sum(!hf) == 1) "is" else "are", " hard for every model (SD ", app_f(max(hard_ratio[!hf]), 1), " times the mean or less) -- ", if (sum(!hf) == 1) "a design" else "designs", " that no mechanism here captures.") else ""`
+`r hard_ratio <- hardest[["SD SSE"]] / hardest[["Mean SSE"]]; hf <- is_filt(hardest$Condition); paste0(c("None", "One", "Two", "Three", "Four", "All five")[sum(hf) + 1], " of the five hardest conditions ", if (sum(hf) == 1) "is a" else "are", " \x60filt\x60 condition", if (sum(hf) == 1) "" else "s", ", and for ", if (sum(hf) == 1) "it" else "them", " the SD is about as large as the mean (", app_f(min(hard_ratio[hf]), 1), "--", app_f(max(hard_ratio[hf]), 1), " times it): ", if (sum(hf) == 1) "it is" else "they are", " hard because some models fail on ", if (sum(hf) == 1) "it" else "them", ", not because every model does.")``r if (any(!hf)) paste0(" ", listify(hardest$Condition[!hf]), ", by contrast, ", if (sum(!hf) == 1) "is" else "are", " hard for every model (SD ", app_f(max(hard_ratio[!hf]), 1), " times the mean or less)", if (any(grepl("v215", hardest$Condition[!hf]))) ": v215's learners were tested with four alternatives per word, but it is scored as an 18-alternative test, because its foils are not in the dataset (see Method), so every model underestimates its accuracy." else paste0(" -- ", if (sum(!hf) == 1) "a design" else "designs", " that no mechanism here captures.")) else ""`
 
 ```{r overall-difficulty-table, results="asis"}
 tab_ext <- xtable::xtable(extremes_tab, digits = 3, label = "tab:app-extremes",
