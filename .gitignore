@@ -24,3 +24,8 @@ fits/v05/stopped_*/
 fits/v05/tilles/Rlib/
 fits/v05/priming/Rlib/
 fits/v05/rwkf/Rlib/
+
+# v06 fits (XSLmodels after the 0.5.0 CRAN release): private package
+# libraries and run logs
+fits/v06/*/Rlib/
+fits/v06/*/*.log
