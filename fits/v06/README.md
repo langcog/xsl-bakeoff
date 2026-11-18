@@ -45,3 +45,35 @@ The trial-level Yurovsky & Frank (2015) model, `yf2015()`, from XSLmodels PR
      -1445, and chance -4143.
    - Luce associative models predict Same = Switch = 1: never-seen objects
      have zero strength.
+
+### Fixed gamma (2026-11-18)
+
+`yf2015_g` (sigma and lambda free) and `yf2015_me_g` (adds mu) fix gamma at
+1.62. That is the paper's Integrated model refit to Exp 1 with the indexing
+corrected; the paper reports 1.50. `queue_yf2015.sh` now also runs
+`score_yf_all.R`. `generalize_yf.R` clamps probabilities as the scorer does,
+because yf2015_g predicts Same = 1 at interval 1.
+
+| model | CV SSE (xsl_datasets) | sigma | lambda | mu | held-out loglik (Exps 2-3) |
+|---|---|---|---|---|---|
+| yf2015_me | .456 | .926 | .237 | 3.52 | -3330 |
+| yf2015 | .639 | .967 | .261 | - | -3096 |
+| yf2015_me_g | .913 | .848 | 1.02 | 2.48 | -1874 |
+| yf2015_g | .979 | .864 | .866 | - | -1721 |
+
+- Fixing gamma lets the model transfer to the YF experiments: yf2015_g is
+  third on held-out log-likelihood, behind propose-but-verify and
+  guess-and-test (-1564) and just behind minerva2 (-1683). It has no lapse
+  (fitted lapse ~0).
+- The cost is on `xsl_datasets`. CV SSE rises from .64 to .98, which ranks
+  21st of 27. With gamma fixed, the fit raises the decay rate lambda from .17
+  (paper) to .87, so it can still match end-of-training accuracy. CV fold
+  parameters are stable: sigma .80-.89, lambda .86-1.05.
+- The fixed-gamma models no longer fit Exp 1 better than the free-gamma ones
+  on r^2: .81 against .86. They do fit Exps 1-2 better (r^2 .74 against .63)
+  and Exp 3 competitor choices better (r .82 against .51).
+- mu helps neither dataset as much once gamma is fixed: yf2015_me_g has CV SSE
+  .913 and held-out -1874.
+- No setting of gamma suits both datasets: `xsl_datasets` wants slow decay
+  and weak encoding, while the YF interval manipulation wants strong
+  encoding.

@@ -39,6 +39,8 @@ e3 <- yurovsky_frank2015$exp3 |>
   summarise(n_t = sum(correct), n_c = sum(familiar), n = n(), .groups = "drop") |>
   mutate(n_o = n - n_t - n_c)
 r2 <- \(obs, pred) cor(obs, pred)^2
+# as in score_yf_all.R: a prediction of exactly 0 or 1 would give -Inf
+clamp <- \(p) pmin(pmax(p, 1e-9), 1 - 1e-9)
 
 score <- function(mod, label) {
   p12 <- yf2015_paradigm(mod, as.data.frame(e12))$p_target
@@ -48,11 +50,11 @@ score <- function(mod, label) {
   tibble(model = label,
          e1_r2 = r2(e12$k[e1] / e12$n[e1], p12[e1]),
          e12_r2 = r2(e12$k / e12$n, p12),
-         e12_loglik = sum(dbinom(e12$k, e12$n, p12, log = TRUE)),
+         e12_loglik = sum(dbinom(e12$k, e12$n, clamp(p12), log = TRUE)),
          e3_r_target = cor(e3$n_t / e3$n, p3$p_target),
          e3_r_competitor = cor(e3$n_c / e3$n, p3$p_competitor),
-         e3_loglik = sum(e3$n_t * log(p3$p_target) + e3$n_c * log(p3$p_competitor) +
-                           ifelse(e3$n_o > 0, e3$n_o * log(p3o), 0)),
+         e3_loglik = sum(e3$n_t * log(clamp(p3$p_target)) + e3$n_c * log(clamp(p3$p_competitor)) +
+                           ifelse(e3$n_o > 0, e3$n_o * log(clamp(p3o)), 0)),
          params = paste(names(mod$params)[1:4], signif(unlist(mod$params[1:4]), 3), sep = "=", collapse = " "))
 }
 

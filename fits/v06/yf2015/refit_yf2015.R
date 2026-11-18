@@ -1,5 +1,5 @@
 # Group fit and 5-fold CV of the trial-level Yurovsky & Frank (2015) model,
-# yf2015() and yf2015_me (fits/v06/yf2015/specs_yf2015.R), against XSLmodels
+# yf2015, yf2015_me and their fixed-gamma versions (fits/v06/yf2015/specs_yf2015.R), against XSLmodels
 # at fits/v06/yf2015/XSLMODELS_COMMIT (PR #46, branch add-yurovsky-frank2015).
 #
 # Same procedure as fits/v05/rwkf/refit_rwkf.R: the 47 xsl_datasets
@@ -50,7 +50,7 @@ de_run <- function(spec, data, seed, label) {
   model <- spec$constructor(spec$lower)
   err_file <- ERR_FILE
   objective <- function(p) {
-    v <- tryCatch(XSLmodels::xsl_run(XSLmodels::update_params(model, p), data)$sse,
+    v <- tryCatch(XSLmodels::xsl_run(spec$constructor(p), data)$sse,
                   error = function(e) {
                     cat(format(Sys.time(), "%F %T"), " [", label, "] p = ", paste(signif(p, 4), collapse = ","),
                         " :: ", conditionMessage(e), "\n", sep = "", file = err_file, append = TRUE)
