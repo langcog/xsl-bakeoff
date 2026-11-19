@@ -98,3 +98,18 @@ statistics in `yf_models_predictions.rds`.
   - On Exp 3 (correlation with the human means, with the lapse): fazly .88,
     uncfam_gamma .89, kachergis_sampling .91. Only kachergis_sampling, which
     is stochastic, separates Same from Switch targets.
+
+## clusters/ (2026-11-18)
+
+`cluster_models.R` asks which models, and which experiments, cluster together.
+It uses saved predictions only (v05 group fits plus the yf2015 variants) and
+runs in about a minute. The findings are in `clusters/CLUSTERS.md`.
+
+- **Stage 1** compares models by their predictions on a chance-corrected
+  scale, with humans included: dendrograms, MDS, and each model's distance to
+  humans against the human noise floor.
+- **Stage 2** looks at residuals:
+  - per-condition bias and rank heatmaps, both clustered;
+  - shared misfit across all models;
+  - a PCA of what separates the models;
+  - relations to item and condition design features.
