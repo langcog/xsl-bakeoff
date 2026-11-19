@@ -113,3 +113,19 @@ runs in about a minute. The findings are in `clusters/CLUSTERS.md`.
   - shared misfit across all models;
   - a PCA of what separates the models;
   - relations to item and condition design features.
+- **Stage 3 (2026-11-19)** looks at each model's whole parameter space.
+  - `stage3_sweep.R` runs every model at a Latin-hypercube sample of its
+    fitting bounds: 11,429 points, on `xsl_datasets` and YF.
+    - It takes about 1.5 h on 12 cores. With
+      `R_LIBS=$(pwd)/fits/v06/yf2015/Rlib`, it caches chunks in
+      `clusters/stage3_clouds/`.
+    - That cache (61 MB) is gitignored. Re-running the sweep regenerates
+      it exactly (all seeds are fixed); `stage3_analyse.R` needs it.
+    - It sources `yf2015/yf_scoring.R`, the YF scoring functions split out
+      of `score_yf_all.R`. Those functions are unchanged apart from a
+      `seed_offset` argument, and they reproduce the cached scores
+      exactly.
+  - `stage3_analyse.R` computes, on filtering, other xsl and YF:
+    - which models can mimic which, within human sampling noise;
+    - how close each model can get to humans;
+    - which human qualitative patterns each model can produce.

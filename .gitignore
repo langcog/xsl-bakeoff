@@ -29,3 +29,7 @@ fits/v05/rwkf/Rlib/
 # libraries and run logs
 fits/v06/*/Rlib/
 fits/v06/*/*.log
+
+# stage 3 parameter-space sweep cache (61 MB; regenerate with
+# fits/v06/clusters/stage3_sweep.R)
+fits/v06/clusters/stage3_clouds/
