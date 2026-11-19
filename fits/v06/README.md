@@ -77,3 +77,24 @@ because yf2015_g predicts Same = 1 at interval 1.
 - No setting of gamma suits both datasets: `xsl_datasets` wants slow decay
   and weak encoding, while the YF interval manipulation wants strong
   encoding.
+
+### Plots against human data (2026-11-18)
+
+`plot_yf_models.R` (run after `score_yf_all.R`) plots human performance in
+Exps 1-2 and Exp 3 against models, and saves the predictions and fit
+statistics in `yf_models_predictions.rds`.
+
+- `yf_models_exp12.png`, `yf_models_exp3.png`: the paper's Integrated model
+  (published parameters), the trial-level `yf2015()` at the corrected Exp 1
+  fit with mu = 1.41, and the yf2015_g and yf2015 bake-off fits.
+  - At the paper's own parameters, `yf2015()` equals the paper's model on Same
+    and Switch to 1e-16.
+  - Exps 1-2 r^2: paper .970, trial-level .975, yf2015_g .73, yf2015 .61.
+- `yf_models_assoc_exp12.png`, `yf_models_assoc_exp3.png`: fazly,
+  uncfam_gamma and kachergis_sampling, from the scorer's cached predictions,
+  with and without the lapse fit to Exp 1 (.47 for each).
+  - On Exps 1-2 they are identical: Same = Switch = 1 and New Label at chance
+    without a lapse. Exps 1-2 r^2 is .65 with the lapse.
+  - On Exp 3 (correlation with the human means, with the lapse): fazly .88,
+    uncfam_gamma .89, kachergis_sampling .91. Only kachergis_sampling, which
+    is stochastic, separates Same from Switch targets.
